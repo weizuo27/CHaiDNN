@@ -37,9 +37,9 @@
 
 # Main Variables
 LIBRARY     := libxlnxdnn.so
-PLATFORM    := zcu102
-CLOCK_ID    := 3 # Core clock ID
-DM_CLOCK_ID := 3 # Data Motion Clock ID
+PLATFORM    := /home/user/software/chaiSimplify/CHaiDNN/platform/build/zcu102
+CLOCK_ID    := 1 # Core clock ID
+DM_CLOCK_ID := 1 # Data Motion Clock ID
 # Below path should be relative
 PROJ_PATH   := ..
 # H/W Kernel enables
@@ -58,6 +58,12 @@ else
 	POOL_ENABLE   := 0
 	DECONV_ENABLE := 0
  endif
+else
+ ifeq (${SIMP_CHAI}, 1)
+	POOL_ENABLE   := 1
+	DECONV_ENABLE := 0
+ endif
+
 endif
 
 # Internal Path Variables
