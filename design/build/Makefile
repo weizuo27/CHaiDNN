@@ -57,13 +57,12 @@ else
  ifeq (${DIET_CHAI_ZUPLUS}, 1)
 	POOL_ENABLE   := 0
 	DECONV_ENABLE := 0
- endif
-else
- ifeq (${SIMP_CHAI}, 1)
+ else
+   ifeq (${SIMP_CHAI}, 1)
 	POOL_ENABLE   := 1
 	DECONV_ENABLE := 0
+   endif
  endif
-
 endif
 
 # Internal Path Variables
