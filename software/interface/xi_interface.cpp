@@ -91,6 +91,7 @@ void *xiInit(char *dirpath,  char* prototxt,  char* caffemodel,
 	std::cout << "[INFOx] JobQueue generated"  << std::endl;
 	std::cout << "[INFOx] Creating Memory" << std::endl;
 	//graph->drawGraph("/tmp/optimized_graph.dot");
+	graph->print();
 	//# Call buffer management block
 	xiBuffCreate(xlayer_seq, chaihandle_info->JobQueue, chaihandle_info->ptrsList);
 
