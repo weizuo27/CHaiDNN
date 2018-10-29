@@ -28,6 +28,9 @@ limitations under the License.
 #define __CONV_ENABLE__     	1
 #endif
 
+//#define LAYERWISE_OUTPUT_WRITE
+//#define DBG_CONV_KER
+
 //**** CONFIGURABLE MACROS
 #if XI_DIET_CHAI_Z || XI_DIET_CHAI_ZUPLUS
 #define XI_KER_PROC       	8

@@ -317,7 +317,7 @@ int main(int argc, char **argv)
 
 	
 	//# EXEC STARTS
-	int loop_iter = 100;
+	int loop_iter = 1;
 	int pingpong = 0;
 	pthread_t queue2_thread;
 

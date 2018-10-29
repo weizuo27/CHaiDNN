@@ -19,6 +19,7 @@ limitations under the License.
 
 #include "ap_int.h"
 #include "../common/kernelinfo_class.h"
+#include "../swkernels/xi_format_converter.hpp"
 
 //# Checks Convolution/Pool funtionality
 int cpCheck(
