@@ -351,7 +351,21 @@ void xiExec(void *handle, vector<void *> input, vector<void *> output)
 #if LAYERWISE_PERFORMANCE
 				hwQueue[ImgId][whichPool].startclk = sds_clock_counter();
 #endif
-					
+					int* params = (INT_TYPE*)hwQueue[ImgId][whichPool].params;
+					uRowIdx_t rowStep = 1;
+					uRowIdx_t initialReadRows = pwin_h+(rowStep-1)*ps_h;
+    				uPixelIdx_t inlineBufferPlaneStep = (rowStep*ps_h+initialReadRows)*in_w;
+   					uPixelIdx_t outlineBufferPlaneStep =out_w*2*rowStep;
+    				ap_uint<32> inDDRPlaneStep= in_h*in_w;
+    				ap_uint<32> outDDRPlaneStep= out_w*out_h;
+
+					params[15] = rowStep;
+					params[16] = initialReadRows;
+        			params[17] = inlineBufferPlaneStep;
+        			params[18] = outlineBufferPlaneStep;
+        			params[19] = inDDRPlaneStep;
+
+
 					//# Call Pool wrapper
 					PoolForward(
 							(SHORT_TYPE*)hwQueue[ImgId][whichPool].in_ptrs[0], (SHORT_TYPE*)hwQueue[ImgId][whichPool].out_ptrs[0],
