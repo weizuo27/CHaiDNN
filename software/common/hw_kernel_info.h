@@ -2,6 +2,7 @@
 #define HW_KERNEL_INFO
 
 #define IN_LINE_BUFFER_SIZE 1024
+#include <ap_int.h>
 typedef ap_uint<10> inLineBuffAddr_t;
 
 #define OUT_LINE_BUFFER_SIZE 512

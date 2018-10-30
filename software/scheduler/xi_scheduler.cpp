@@ -279,7 +279,7 @@ void xiExec(void *handle, vector<void *> input, vector<void *> output)
 				printf("param is null\n");
 			}
 			else{
-				string fileName = "args_"+to_string(whichConv);
+				string fileName = "args_"+to_string(whichConv) + "_group0";
 				FILE *f = fopen(fileName.c_str(), "w");
 				int tmpArg[128];
 				cout << "write " << whichConv << endl;
@@ -351,10 +351,14 @@ void xiExec(void *handle, vector<void *> input, vector<void *> output)
 #if LAYERWISE_PERFORMANCE
 				hwQueue[ImgId][whichPool].startclk = sds_clock_counter();
 #endif
+/*
 					int* params = (INT_TYPE*)hwQueue[ImgId][whichPool].params;
 					uRowIdx_t rowStep = 1;
+					short pwin_h = params[7];
+					short pwin_w = params[8];
+					short ps_h = params[5];
 					uRowIdx_t initialReadRows = pwin_h+(rowStep-1)*ps_h;
-    				uPixelIdx_t inlineBufferPlaneStep = (rowStep*ps_h+initialReadRows)*in_w;
+					uPixelIdx_t inlineBufferPlaneStep = (rowStep*ps_h+initialReadRows)*in_w;
    					uPixelIdx_t outlineBufferPlaneStep =out_w*2*rowStep;
     				ap_uint<32> inDDRPlaneStep= in_h*in_w;
     				ap_uint<32> outDDRPlaneStep= out_w*out_h;
@@ -364,6 +368,7 @@ void xiExec(void *handle, vector<void *> input, vector<void *> output)
         			params[17] = inlineBufferPlaneStep;
         			params[18] = outlineBufferPlaneStep;
         			params[19] = inDDRPlaneStep;
+					*/
 
 
 					//# Call Pool wrapper
@@ -757,7 +762,7 @@ void xiExec(void *handle, vector<void *> input, vector<void *> output)
 				printf("param is null\n");
 			}
 			else{
-				string fileName = "args_"+to_string(whichConv);
+				string fileName = "args_"+to_string(whichConv) + "_group1";
 				FILE *f = fopen(fileName.c_str(), "w");
 				int tmpArg[128];
 				cout << "write " << whichConv << endl;
@@ -827,8 +832,16 @@ void xiExec(void *handle, vector<void *> input, vector<void *> output)
 				for (int i = 0; i < 4; i++){
 					 string fileName = "weight_"+to_string(whichConv) + "_" + to_string(i);
 					 FILE *f = fopen(fileName.c_str(), "w");
-					 fwrite(hwQueue[convImgId][whichConv].wts_ptrs[i], sizeof(char), 76800 * sizeof(char), f);
+					 fwrite(hwQueue[convImgId][whichConv].wts_ptrs[i], sizeof(char), 221184 * sizeof(char), f);
 					 fclose(f);
+				} 
+
+				//Bias
+				printf("write bias\n");
+				string fileName = "bias_"+to_string(whichConv);
+				FILE *f = fopen(fileName.c_str(), "w");
+				fwrite(hwQueue[convImgId][whichConv].bias_ptr, sizeof(short),  3072 * sizeof(short), f);
+				fclose(f);
 				}
 
 				printf("write output\n");
@@ -836,16 +849,23 @@ void xiExec(void *handle, vector<void *> input, vector<void *> output)
 				for(int i = 0; i < 4; i++){
 					 string fileName = "output_"+to_string(whichConv) + "_" + to_string(i);
 					 FILE *f = fopen(fileName.c_str(), "w");
-					 fwrite(hwQueue[convImgId][whichConv].out_ptrs[i], sizeof(char), 76800 * sizeof(char), f);
+					 fwrite(hwQueue[convImgId][whichConv].out_ptrs[i], sizeof(char), 290400 * sizeof(char), f);
 					 fclose(f);
 				}
 
 				//Input
 				printf("write input\n");
-				for(int i = 0; i < 4; i++){
+				for(int i = 0; i < 5; i++){
 					 string fileName = "input_"+to_string(whichConv) + "_" + to_string(i);
 					 FILE *f = fopen(fileName.c_str(), "w");
-					 fwrite(hwQueue[convImgId][whichConv].in_ptrs[i], sizeof(char), 76800 * sizeof(char), f);
+					 fwrite(hwQueue[convImgId][whichConv].in_ptrs[i], sizeof(char), 290400 * sizeof(char), f);
+					 fclose(f);
+				}
+
+				for(int i = 0; i < 5; i++){
+					 string fileName = "input_"+to_string(whichConv) + "_" + to_string(i);
+					 FILE *f = fopen(fileName.c_str(), "w");
+					 fwrite(hwQueue[convImgId][whichConv].in_ptrs[i], sizeof(char), 290400 * sizeof(char), f);
 					 fclose(f);
 				}
 #endif

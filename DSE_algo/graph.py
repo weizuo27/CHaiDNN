@@ -5,6 +5,13 @@ import cvxpy as cvx
 class layer:
     """
     The class to discribe attributes relate to layers
+
+    self.name: The name of the layer
+    self.type: The type of the layer
+    self.params: The parameter list of the layers, according to different type, the list
+    has different interpretation.
+    self.input_params: The input dimension of the layer [batch, channel, height, width]
+    self.output_params: The output dimension of the layer[batch, channel, height, width]
     """
     def __init__(self, line):
         """

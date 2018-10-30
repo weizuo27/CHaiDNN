@@ -117,16 +117,16 @@ int main(int argc, char **argv)
 
 	//# start/end layer in the graph1
 	string start_layer_graph1 = "";
-	string end_layer_graph1   = "pool5";
+	string end_layer_graph1   = "";
 
 	//# start/end layer in the graph2
-	string start_layer_graph2 = "fc6";
-	string end_layer_graph2   = "";
+	//string start_layer_graph2 = "fc6";
+	//string end_layer_graph2   = "";
 
 	//# Flag indicate layer1 or not
 	//# 1 - if image data is the for first layer input otherwise 0
 	bool is_first_layer_g1 = 1;
-	bool is_first_layer_g2 = 0;
+	//bool is_first_layer_g2 = 0;
 
 	//# Number of images to process
 	//# Supported batch size is 2
@@ -134,7 +134,7 @@ int main(int argc, char **argv)
 
 	//# Struct which holds the input/output layer info
 	io_layer_info io_layer_info_ptr1;
-	io_layer_info io_layer_info_ptr2;
+	//io_layer_info io_layer_info_ptr2;
 
 	//####### Init call for graph1
 	void *chaihandle1 = xiInit(dirpath, prototxt, caffemodel, &io_layer_info_ptr1,
@@ -142,9 +142,9 @@ int main(int argc, char **argv)
 
 
 	//####### Init call for graph2
-	void *chaihandle2 = xiInit(dirpath, prototxt, caffemodel, &io_layer_info_ptr2,
-			numImg_to_process, is_first_layer_g2, start_layer_graph2, end_layer_graph2);
-
+//	void *chaihandle2 = xiInit(dirpath, prototxt, caffemodel, &io_layer_info_ptr2,
+//			numImg_to_process, is_first_layer_g2, start_layer_graph2, end_layer_graph2);
+//
 			
 	//# Mean and Variance values
 	float *mean_ptr = (float*)malloc(3*sizeof(float));
@@ -271,55 +271,55 @@ int main(int argc, char **argv)
 	}
 
 	// Allocate output Buffers for pingpong for graph2
-	vector<void *> output1;
-	vector<void *> output2;
+	//vector<void *> output1;
+	//vector<void *> output2;
 
 	//# Memory size required for output buffers
-	int graph2_out_size = io_layer_info_ptr2.outlayer_sizebytes;
-
-	for(int i = 0; i < io_layer_info_ptr2.num_out_bufs; i++)
-	{
-		if(io_layer_info_ptr2.outlayer_exectype.compare("hardware") == 0)
-		{
-#ifdef __SDSOC
-			ptr1 = sds_alloc_non_cacheable(size);
-			ptr2 = sds_alloc_non_cacheable(size);
-#else
-			ptr1 = malloc(size);
-			ptr2 = malloc(size);
-#endif
-		}
-		else
-		{
-			ptr1 = malloc(size);
-			ptr2 = malloc(size);
-		}
-
-		if((ptr1 == NULL) || (ptr2 == NULL))
-		{
-			fprintf(stderr, "Failed to create input memory\n");
-			return -1;
-		}
-		output1.push_back(ptr1);
-		output2.push_back(ptr2);
-	}
+//	int graph2_out_size = io_layer_info_ptr1.outlayer_sizebytes;
+//
+//	for(int i = 0; i < io_layer_info_ptr1.num_out_bufs; i++)
+//	{
+//		if(io_layer_info_ptr1.outlayer_exectype.compare("hardware") == 0)
+//		{
+//#ifdef __SDSOC
+//			ptr1 = sds_alloc_non_cacheable(size);
+//			ptr2 = sds_alloc_non_cacheable(size);
+//#else
+//			ptr1 = malloc(size);
+//			ptr2 = malloc(size);
+//#endif
+//		}
+//		else
+//		{
+//			ptr1 = malloc(size);
+//			ptr2 = malloc(size);
+//		}
+//
+//		if((ptr1 == NULL) || (ptr2 == NULL))
+//		{
+//			fprintf(stderr, "Failed to create input memory\n");
+//			return -1;
+//		}
+//		//output1.push_back(ptr1);
+//		//output2.push_back(ptr2);
+//	}
 
 	//# Setup the arguments to pass to thread routines.
 	// image 1 flow
 	execStruct queue1_args_ping = {chaihandle1, input, tmp_out1};
-	execStruct queue2_args_ping = {chaihandle2, tmp_out1, output1};
+	//execStruct queue2_args_ping = {chaihandle2, tmp_out1, output1};
 	// image 2 flow
 	execStruct queue1_args_pong = {chaihandle1, input, tmp_out2};
-	execStruct queue2_args_pong = {chaihandle2, tmp_out2, output2};
+	//execStruct queue2_args_pong = {chaihandle2, tmp_out2, output2};
 
 	execStruct queue1_Args[2] = {queue1_args_ping, queue1_args_pong};
-	execStruct queue2_Args[2] = {queue2_args_ping, queue2_args_pong};
+	//execStruct queue2_Args[2] = {queue2_args_ping, queue2_args_pong};
 
 	
 	//# EXEC STARTS
 	int loop_iter = 1;
 	int pingpong = 0;
-	pthread_t queue2_thread;
+	//pthread_t queue2_thread;
 
 #ifdef __SDSOC
 	TIME_STAMP_INIT
@@ -330,14 +330,14 @@ int main(int argc, char **argv)
 	//# Run the loop for loop_iter times, but average time is computed over last 'loop_iter' run
 	// to avoid the effect of first warm-up run
 	execRoutine((void*)(&queue1_Args[pingpong]));
-	for(int i = 0; i < loop_iter; i++)
-	{
-		pthread_create(&queue2_thread, NULL, execRoutine, (void *)(&queue2_Args[pingpong]));
-		pingpong = 1 - pingpong;
-		execRoutine((void*)(&queue1_Args[pingpong]));
-		pthread_join(queue2_thread, NULL);
-	}
-	execRoutine((void*)(&queue2_Args[pingpong]));
+	//for(int i = 0; i < loop_iter; i++)
+	//{
+	//	//pthread_create(&queue2_thread, NULL, execRoutine, (void *)(&queue2_Args[pingpong]));
+	//	pingpong = 1 - pingpong;
+	//	execRoutine((void*)(&queue1_Args[pingpong]));
+	//	//pthread_join(queue2_thread, NULL);
+	//}
+	//execRoutine((void*)(&queue2_Args[pingpong]));
 
 
 #ifdef __SDSOC
@@ -351,37 +351,37 @@ int main(int argc, char **argv)
 	fprintf(stderr, "\n\n");
 #endif
 
-	int unpack_out_size = io_layer_info_ptr2.outlayer_sizebytes;
+	int unpack_out_size = io_layer_info_ptr1.outlayer_sizebytes;
 
 	//# Create memory for unpack output data
 	vector<void *> unpack_output1;
-	vector<void *> unpack_output2;
+//	vector<void *> unpack_output2;
 
 	for(int batch_id = 0; batch_id < numImg_to_process; batch_id++)
 	{
 		void *ptr1 = malloc(unpack_out_size);
-		void *ptr2 = malloc(unpack_out_size);
+		//void *ptr2 = malloc(unpack_out_size);
 
 		unpack_output1.push_back(ptr1);
-		unpack_output2.push_back(ptr2);
+	//	unpack_output2.push_back(ptr2);
 	}
 
 	//# Loading required params for unpack function
-	kernel_type_e out_kerType = io_layer_info_ptr2.out_kerType;
-	int out_layer_size = io_layer_info_ptr2.out_size;
+	kernel_type_e out_kerType = io_layer_info_ptr1.out_kerType;
+	int out_layer_size = io_layer_info_ptr1.out_size;
 
 	cout << "[INFOx] Unapack output data" << endl;
 	//# unpacks the output data for ping and pong buffers
-	xiUnpackOutput(output1, unpack_output1, out_kerType, out_layer_size, numImg_to_process);
-	xiUnpackOutput(output2, unpack_output2, out_kerType, out_layer_size, numImg_to_process);
+	xiUnpackOutput(tmp_out1, unpack_output1, out_kerType, out_layer_size, numImg_to_process);
+	//xiUnpackOutput(output2, unpack_output2, out_kerType, out_layer_size, numImg_to_process);
 
 	//# Write the output data to txt file
-	outputWrite(dirpath, img_path1, unpack_output1, numImg_to_process, io_layer_info_ptr2, 0);
-	outputWrite(dirpath, img_path1, unpack_output2, numImg_to_process, io_layer_info_ptr2, 1);
+	outputWrite(dirpath, img_path1, unpack_output1, numImg_to_process, io_layer_info_ptr1, 0);
+	//outputWrite(dirpath, img_path1, unpack_output2, numImg_to_process, io_layer_info_ptr2, 1);
 
 	//# Call Release
 	xiRelease(chaihandle1); /* Release before exiting application */
-	xiRelease(chaihandle2); /* Release before exiting application */
+//	xiRelease(chaihandle2); /* Release before exiting application */
 
 	/* Release input/output */
 #ifdef __SDSOC
@@ -391,10 +391,10 @@ int main(int argc, char **argv)
 		sds_free(tmp_out1[i]);
 	for(int i = 0; i < tmp_out2.size(); i++)
 		sds_free(tmp_out2[i]);
-	for(int i = 0; i < output1.size(); i++)
-		sds_free(output1[i]);
-	for(int i = 0; i < output2.size(); i++)
-		sds_free(output2[i]);
+	//for(int i = 0; i < output1.size(); i++)
+		//sds_free(output1[i]);
+	//for(int i = 0; i < output2.size(); i++)
+		//sds_free(output2[i]);
 #else
 	for(int i = 0; i < input.size(); i++)
 		free(input[i]);
@@ -402,10 +402,10 @@ int main(int argc, char **argv)
 		free(tmp_out1[i]);
 	for(int i = 0; i < tmp_out2.size(); i++)
 		free(tmp_out2[i]);
-	for(int i = 0; i < output1.size(); i++)
-		free(output1[i]);
-	for(int i = 0; i < output2.size(); i++)
-		free(output2[i]);
+	//for(int i = 0; i < output1.size(); i++)
+		//free(output1[i]);
+	//for(int i = 0; i < output2.size(); i++)
+		//free(output2[i]);
 #endif
 
 	for(int batch_id = 0; batch_id < unpack_output1.size(); batch_id++)
@@ -413,10 +413,10 @@ int main(int argc, char **argv)
 		free(unpack_output1[batch_id]);
 	}
 
-	for(int batch_id = 0; batch_id < unpack_output2.size(); batch_id++)
-	{
-		free(unpack_output2[batch_id]);
-	}
+	//for(int batch_id = 0; batch_id < unpack_output2.size(); batch_id++)
+	//{
+		//free(unpack_output2[batch_id]);
+	//}
 
 	fprintf(stderr, "[INFOx] Memory Released\n");
 
