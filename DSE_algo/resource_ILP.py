@@ -40,6 +40,7 @@ BW_budget = 100
 ip1 = IP("conv",[10,10, 10, 10, 10], 20)
 ip2 = IP("conv", [15, 15, 15, 15, 15], 15)
 ip3 = IP("conv", [20, 20, 20, 20, 15], 10)
+
 n_ip1 = min(BRAM_budget / ip1.BRAM, DSP_budget / ip1.DSP, FF_budget/ip1.FF, LUT_budget/ip1.LUT)
 n_ip2 = min(BRAM_budget / ip2.BRAM, DSP_budget / ip2.DSP, FF_budget/ip2.FF, LUT_budget/ip2.LUT)
 n_ip3 = min(BRAM_budget / ip3.BRAM, DSP_budget / ip3.DSP, FF_budget/ip3.FF, LUT_budget/ip3.LUT)
