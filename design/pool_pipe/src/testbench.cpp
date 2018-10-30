@@ -78,7 +78,7 @@ int main()
 		in2[i]=par;
 	}
 //
-	PoolTop(in1,in2, out1, out2,
+	PoolTop_Gold(in1,in2, out1, out2,
 	#if !RESERVE
 	wts,
 	#endif
@@ -86,8 +86,8 @@ int main()
 
 
 
-	PooltopPipeline
-	(in1, in2, outtest1, outtest2, scala_pool_args);
+	PoolTop
+	(in1, in2, outtest1, outtest2, wts, scala_pool_args);
 
 
 	
