@@ -1,4 +1,4 @@
-#include "maxpool_config.h"
+#include "../include/maxpool_config.h"
 //* we actually don't need any weight in this point
 
 #include <ap_int.h>

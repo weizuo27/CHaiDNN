@@ -31,9 +31,9 @@ FILE *iFp = NULL, *oFp = NULL, *rFp = NULL, *mpFp = NULL;
 
 FILE * pFp = NULL, *wFp = NULL, *apFp = NULL;
 
-#include "maxpool_config.h"
-#include "pool_dp_2xio.hpp"
-#include "pool_layer.hpp"
+#include "../include/maxpool_config.h"
+#include "../include/pool_dp_2xio.hpp"
+#include "../include/pool_layer.hpp"
 
 #ifndef __SDSOC
 

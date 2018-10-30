@@ -50,9 +50,8 @@ void ReadInBuffer_Pooling(
         {
             #pragma HLS pipeline
             #pragma HLS dependence variable=lineBuffer1 intra false
-            #pragma HLS dependence variable=lineBuffer1 inter false
 			#pragma HLS dependence variable=lineBuffer2 intra false
-			#pragma HLS dependence variable=lineBuffer2 inter false
+
             GMEM_MAXPOOLTYPE temp1, temp2;
             temp1=input1.read( ddrAddress);
             temp2=input2.read( ddrAddress);
@@ -121,9 +120,7 @@ void WriteOutBuffer_Pooling(
         {
             #pragma HLS pipeline
             #pragma HLS dependence variable=lineBuffer1 intra false
-            #pragma HLS dependence variable=lineBuffer1 inter false
 			#pragma HLS dependence variable=lineBuffer2 intra false
-			#pragma HLS dependence variable=lineBuffer2 inter false
             GMEM_MAXPOOLTYPE temp1, temp2;
             for(int i=0;i<DPACK;i++)
             {
@@ -250,10 +247,16 @@ uPixelIdx_t outPlaneStep
         {
             #pragma HLS pipeline
             #pragma HLS dependence variable=inBuffer1 intra false
-            #pragma HLS dependence variable=inBuffer1 inter false
-            #pragma HLS dependence variable=outBuffer1 intra false
-            #pragma HLS dependence variable=outBuffer1 inter false
+			#pragma HLS dependence variable=inBuffer1 inter false
 
+			#pragma HLS dependence variable=inBuffer2 intra false
+			#pragma HLS dependence variable=inBuffer2 inter false
+
+            #pragma HLS dependence variable=outBuffer1 intra false
+			#pragma HLS dependence variable=outBuffer1 inter false
+
+			#pragma HLS dependence variable=outBuffer2 intra false
+			#pragma HLS dependence variable=outBuffer2 inter false
 
             sRowIdx_t inRowComputeIdx= inRowIdx+winRowIdx;
             sRowIdx_t inColComputeIdx= inColIdx+winColIdx;
@@ -394,19 +397,18 @@ void PoolingLayerLineBuffer
     ap_int<8> outBuffer2[DPACK][OUT_LINE_BUFFER_SIZE];
 
 #pragma HLS array_partition variable=outBuffer1 dim=1 complete
-#pragma HLS resource variable=ourBuffer1 core=RAM_S2P_BRAM
-
 #pragma HLS array_partition variable=outBuffer2 dim=1 complete
+
 #pragma HLS resource variable=ourBuffer1 core=RAM_S2P_BRAM
+#pragma HLS resource variable=ourBuffer2 core=RAM_S2P_BRAM
 
     ap_int<8> inBuffer1[DPACK][IN_LINE_BUFFER_SIZE];
     ap_int<8> inBuffer2[DPACK][IN_LINE_BUFFER_SIZE];
 
 #pragma HLS array_partition variable=inBuffer1 dim=1 complete
-#pragma HLS resource variable=inBuffer1 core=RAM_S2P_BRAM
-
 #pragma HLS array_partition variable=inBuffer2 dim=1 complete
 #pragma HLS resource variable=inBuffer1 core=RAM_S2P_BRAM
+#pragma HLS resource variable=inBuffer2 core=RAM_S2P_BRAM
     
 
 
@@ -456,7 +458,6 @@ void PoolingLayerLineBuffer
         inBuffer2
     );
     readStartRow+=initialReadRows;
-    puts("forstart Reading");
 
     sRowIdx_t writeStartRow=-rowStep;
 
