@@ -4,6 +4,7 @@ AUTOPILOT_ROOT := /opt/Xilinx/Vivado/2018.2
 
 
 IFLAG += -I "${AUTOPILOT_ROOT}/include"
+IFLAG += -I "include"
 
 IFLAG += -I "/usr/include/x86_64-linux-gnu"
 IFLAG += -D__SIM_FPO__
@@ -21,8 +22,8 @@ IFLAG += -g
 CC      = g++
 GCOV = #-fprofile-arcs -ftest-coverage
 
-csim.out: testbench.cpp pooling_layer_dp_2xio_top.cpp
-	$(CC) $(GOCV)  -fsanitize=address -o csim.out  testbench.cpp pooling_layer_dp_2xio_top.cpp -MMD $(IFLAG)
+csim.out: src/testbench.cpp src/pooling_layer_dp_2xio_top.cpp
+	$(CC) $(GOCV)  -fsanitize=address -o csim.out  src/testbench.cpp src/pooling_layer_dp_2xio_top.cpp -MMD $(IFLAG)
 
 clean:
 

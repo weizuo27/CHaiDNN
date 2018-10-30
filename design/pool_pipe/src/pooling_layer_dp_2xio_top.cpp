@@ -31,91 +31,91 @@ FILE *iFp = NULL, *oFp = NULL, *rFp = NULL, *mpFp = NULL;
 
 FILE * pFp = NULL, *wFp = NULL, *apFp = NULL;
 
-#include "maxpool_config.h"
-#include "pool_dp_2xio.hpp"
-#include "pool_layer.hpp"
+#include "../include/maxpool_config.h"
+#include "../include/pool_dp_2xio.hpp"
+#include "../include/pool_layer.hpp"
 
-//#ifndef __SDSOC
-//
-//int PoolTop(
-//	GMEM_MAXPOOLTYPE *in1, 
-//	GMEM_MAXPOOLTYPE *in2, 
-//	GMEM_MAXPOOLTYPE *out1, 
-//	GMEM_MAXPOOLTYPE *out2,
-//	
-//	#if !RESERVE
-//	GMEM_POOLTYPE_WTS * wts,
-//	#endif 
-//	int *scalar_pool_args)
-//#else
-//void PoolTop(
-//	GMEM_MAXPOOLTYPE *in1, 
-//	GMEM_MAXPOOLTYPE *in2, 
-//	GMEM_MAXPOOLTYPE *out1, 
-//	GMEM_MAXPOOLTYPE *out2, 
-//	GMEM_POOLTYPE_WTS * wts, 
-//	int *scalar_pool_args)
-//#endif
-//{
-//#ifndef __SDSOC
-//#pragma HLS interface m_axi port=in1       		offset=slave bundle=gmem0 depth=4096
-//#pragma HLS interface m_axi port=out1			offset=slave bundle=gmem1 depth=4096
-//#pragma HLS interface m_axi port=in2       		offset=slave bundle=gmem2 depth=4096
-//#pragma HLS interface m_axi port=out2			offset=slave bundle=gmem3 depth=4096
-//
-//#pragma HLS interface m_axi port=wts			offset=slave bundle=gmem4 depth=36
-//
-//#pragma HLS interface m_axi port=scalar_pool_args	offset=slave bundle=gmem5 depth=32
-//#pragma HLS interface s_axilite port=in1		bundle=control
-//#pragma HLS interface s_axilite port=out1 		bundle=control
-//#pragma HLS interface s_axilite port=in2		bundle=control
-//#pragma HLS interface s_axilite port=out2 		bundle=control
-//
-//#pragma HLS interface s_axilite port=wts 		bundle=control
-//
-//
-//
-//#pragma HLS interface s_axilite port=scalar_pool_args 	bundle=control
-//#pragma HLS interface s_axilite port=return 	bundle=control
-//#endif
-//
-//	short in_h        	= (short)scalar_pool_args[0];
-//	short in_w        	= (short)scalar_pool_args[1];
-//	short out_h       	= (short)scalar_pool_args[2];
-//	short out_w      	= (short)scalar_pool_args[3];
-//	short n_planes    	= (short)scalar_pool_args[4];
-//	short ps_h	  	    = (short)scalar_pool_args[5];
-//	short ps_w	  	    = (short)scalar_pool_args[6];
-//	short pwin_h	  	= (short)scalar_pool_args[7];
-//	short pwin_w	  	= (short)scalar_pool_args[8];
-//	unsigned char avg_pool	= (unsigned char)scalar_pool_args[9];
-//	unsigned char pad	    = (unsigned char)scalar_pool_args[10];
-//	unsigned char one_by_diviser	= (unsigned char)scalar_pool_args[11];
-//	unsigned char conv3ds	= (unsigned char)scalar_pool_args[12];
-//	unsigned char relu		= (unsigned char)scalar_pool_args[13];
-//	unsigned char outshift	= (unsigned char)scalar_pool_args[14];
-//
-//#if DEBUG
-//	fprintf(stderr, "pool-ker args : ");
-//	for(int i = 0; i < 12; i++)
-//	{
-//		fprintf(stderr, "%d ", scalar_pool_args[i]);
-//	}
-//	fprintf(stderr, "\n");
-//
-//	fprintf(stderr, "maxp-args : ");
-//	fprintf(stderr, "%d %d %d %d %d %d %d %d %d %d %d %d\n",  in_h,  in_w,  out_h,   out_w,   n_planes,
-//			ps_h,  ps_w,  pwin_h,  pwin_w, avg_pool,
-//			pad,  one_by_diviser);
-//#endif
-//
-//	//# Call Kernel
-//	poolKernel(in1, in2, out1, out2, wts, in_h, in_w, out_h, out_w, n_planes, ps_h, ps_w, pwin_h, pwin_w, avg_pool, pad, one_by_diviser,
-//			conv3ds, relu, outshift);
-//	#ifndef __SDSOC
-//	return 0;
-//	#endif
-//}
+#ifndef __SDSOC
+
+int PoolTop_Gold(
+	GMEM_MAXPOOLTYPE *in1, 
+	GMEM_MAXPOOLTYPE *in2, 
+	GMEM_MAXPOOLTYPE *out1, 
+	GMEM_MAXPOOLTYPE *out2,
+	
+	#if !RESERVE
+	GMEM_POOLTYPE_WTS * wts,
+	#endif 
+	int *scalar_pool_args)
+#else
+void PoolTop_Gold(
+	GMEM_MAXPOOLTYPE *in1, 
+	GMEM_MAXPOOLTYPE *in2, 
+	GMEM_MAXPOOLTYPE *out1, 
+	GMEM_MAXPOOLTYPE *out2, 
+	GMEM_POOLTYPE_WTS * wts, 
+	int *scalar_pool_args)
+#endif
+{
+#ifndef __SDSOC
+#pragma HLS interface m_axi port=in1       		offset=slave bundle=gmem0 depth=4096
+#pragma HLS interface m_axi port=out1			offset=slave bundle=gmem1 depth=4096
+#pragma HLS interface m_axi port=in2       		offset=slave bundle=gmem2 depth=4096
+#pragma HLS interface m_axi port=out2			offset=slave bundle=gmem3 depth=4096
+
+#pragma HLS interface m_axi port=wts			offset=slave bundle=gmem4 depth=36
+
+#pragma HLS interface m_axi port=scalar_pool_args	offset=slave bundle=gmem5 depth=32
+#pragma HLS interface s_axilite port=in1		bundle=control
+#pragma HLS interface s_axilite port=out1 		bundle=control
+#pragma HLS interface s_axilite port=in2		bundle=control
+#pragma HLS interface s_axilite port=out2 		bundle=control
+
+#pragma HLS interface s_axilite port=wts 		bundle=control
+
+
+
+#pragma HLS interface s_axilite port=scalar_pool_args 	bundle=control
+#pragma HLS interface s_axilite port=return 	bundle=control
+#endif
+
+	short in_h        	= (short)scalar_pool_args[0];
+	short in_w        	= (short)scalar_pool_args[1];
+	short out_h       	= (short)scalar_pool_args[2];
+	short out_w      	= (short)scalar_pool_args[3];
+	short n_planes    	= (short)scalar_pool_args[4];
+	short ps_h	  	    = (short)scalar_pool_args[5];
+	short ps_w	  	    = (short)scalar_pool_args[6];
+	short pwin_h	  	= (short)scalar_pool_args[7];
+	short pwin_w	  	= (short)scalar_pool_args[8];
+	unsigned char avg_pool	= (unsigned char)scalar_pool_args[9];
+	unsigned char pad	    = (unsigned char)scalar_pool_args[10];
+	unsigned char one_by_diviser	= (unsigned char)scalar_pool_args[11];
+	unsigned char conv3ds	= (unsigned char)scalar_pool_args[12];
+	unsigned char relu		= (unsigned char)scalar_pool_args[13];
+	unsigned char outshift	= (unsigned char)scalar_pool_args[14];
+
+#if DEBUG
+	fprintf(stderr, "pool-ker args : ");
+	for(int i = 0; i < 12; i++)
+	{
+		fprintf(stderr, "%d ", scalar_pool_args[i]);
+	}
+	fprintf(stderr, "\n");
+
+	fprintf(stderr, "maxp-args : ");
+	fprintf(stderr, "%d %d %d %d %d %d %d %d %d %d %d %d\n",  in_h,  in_w,  out_h,   out_w,   n_planes,
+			ps_h,  ps_w,  pwin_h,  pwin_w, avg_pool,
+			pad,  one_by_diviser);
+#endif
+
+	//# Call Kernel
+	poolKernel(in1, in2, out1, out2, wts, in_h, in_w, out_h, out_w, n_planes, ps_h, ps_w, pwin_h, pwin_w, avg_pool, pad, one_by_diviser,
+			conv3ds, relu, outshift);
+	#ifndef __SDSOC
+	return 0;
+	#endif
+}
 
 
 
