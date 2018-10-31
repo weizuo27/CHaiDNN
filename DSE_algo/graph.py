@@ -5,6 +5,14 @@ import cvxpy as cvx
 class layer:
     """
     The class to discribe attributes relate to layers
+
+    self.name: The name of the layer
+    self.type: The type of the layer
+    self.params: The parameter list of the layers, according to different type, the list
+    has different interpretation.
+    self.input_params: The input dimension of the layer [batch, channel, height, width]
+    self.output_params: The output dimension of the layer[batch, channel, height, width]
+
     """
     def __init__(self, line):
         """
@@ -30,6 +38,25 @@ class layer:
         The function sets the output parameters
         """
         self.output_params = map(int,line.split("x")) #[batch, channel, height, width]
+
+    #FIXME: Need to implement the following functions
+    def assign_IP(self, sol):
+        """
+        Assign the IP that is mapped to this layer
+        """
+        self.IP_id = None
+
+    def compute_Latency(self, IP):
+        """
+        Compute the latency of this layer using one IP.
+        """
+        self.latency = None
+
+    def get_pipeline_Latency(self, num_rows):
+        """
+        Compute the time that is needed to compute num_rows of rows.
+        This is used as starting time for the next layer
+        """
 
 class graph:
     """
@@ -95,6 +122,8 @@ class graph:
                 for bbb in bottom_table[bb]:
                     for ttt in top_table[bb]:
                         self.G.add_edge(bbb, ttt)
+
+    def add_edge(self, IP_reuse_table):
 
 def drawGraph(G):
     nx.draw(G, with_labels=True, font_weight='bold')

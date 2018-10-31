@@ -18,27 +18,11 @@ limitations under the License.
 #define _XI_CONV_CONFIG_H_
 
 #include <ap_int.h>
-#include <hls_stream.h>
 
 //#define XI_DIET_CHAI_Z 		0 //Enable this Macro to reduce the resource utilization of the design to fit to smaller devices
 //#define XI_DIET_CHAI_ZUPLUS	0 //Enable this Macro to reduce the resource utilization of the design to fit to smaller devices
 
-#define XI_SIDEEBUFF_DEPTH 	4096
-#define XI_LINEBUFF_DEPTH 2048
 
-#define STREAMIN 0
-// STREAMIN == 0 memory interface only
-// STREAMIN == 1 stream interface only
-// STREAMIN == others both memory and stream interface 
-#define STREAMOUT 0
-// STREAMOUT == 0 memory interface only
-// STREAMOUT == 1 stream interface only
-// STREAMOUT == others both memory and stream interface 
-
-
-#define DEPTHPACK 16
-typedef ap_uint<11> lineAddr_type;
-typedef ap_uint<12> side_addr_type;
 //**** URAM ENABLE FLAGS FOR THE BUFFERS
 #define XI_BIAS_URAM_EN 	0
 #define XI_WTS_URAM_EN 		0
@@ -78,7 +62,7 @@ typedef ap_uint<12> side_addr_type;
 #else
 #define XI_64BIT_PORT_EN    	0
 #define XI_POOL_PROC_8_PLN 		0
-#define XI_DISABLE_BN 			1
+#define XI_DISABLE_BN 			0
 #define XI_OSTG_BUFFER_SET 		8
 #define XI_SINGLE_IO_PORT_EN 	0
 #endif
@@ -271,49 +255,14 @@ void XiConvolutionTop(				gmem_weighttype *weights1,
 		gmem_weighttype *weights3,
 		gmem_weighttype *weights4,
 #endif
-		#if !XI_SINGLE_IO_PORT_EN
-			#if STREAMOUT == 0 
-				gmem_outputtype *output1,
-				gmem_outputtype *output2,			
-			#elif STREAMOUT ==1
-				hls::stream< gmem_inputtype_layerx > & outStream1,
-				hls::stream< gmem_inputtype_layerx > & outStream2,
-			#else
-				gmem_outputtype *output1,
-				gmem_outputtype *output2,
-				hls::stream< gmem_inputtype_layerx > & outStream1,
-				hls::stream< gmem_inputtype_layerx > & outStream2,
-			#endif
-			#if STREAMIN == 0 
-				gmem_inputtype_layerx *input_other1,
-				gmem_inputtype_layerx *input_other2,
-			#elif STREAMIN == 1
-				hls::stream< gmem_inputtype_layerx > & inStream1,
-    			hls::stream< gmem_inputtype_layerx > & inStream2,
-			#else
-				gmem_inputtype_layerx *input_other1,
-				gmem_inputtype_layerx *input_other2,
-				hls::stream< gmem_inputtype_layerx > & inStream1,
-    			hls::stream< gmem_inputtype_layerx > & inStream2,
-			#endif
-		#else
-			#if STREAMOUT == 0 
-				gmem_outputtype *output1,	
-			#elif STREAMOUT == 1
-				hls::stream< gmem_inputtype_layerx > & outStream1,
-			#else
-				gmem_outputtype *output1,
-				hls::stream< gmem_inputtype_layerx > & outStream1,
-			#endif
-			#if STREAMIN == 0 
-				gmem_inputtype_layerx *input_other1,
-			#elif STREAMIN == 1
-				hls::stream< gmem_inputtype_layerx > & inStream1,
-			#else
-				gmem_inputtype_layerx *input_other1,
-				hls::stream< gmem_inputtype_layerx > & inStream1,
-			#endif
-		#endif //* !XI_SINGLE_IO_PORT_EN
+		gmem_outputtype *output1,
+#if !XI_SINGLE_IO_PORT_EN
+		gmem_outputtype *output2,
+#endif
+		gmem_inputtype_layerx *input_other1,
+#if !XI_SINGLE_IO_PORT_EN
+		gmem_inputtype_layerx *input_other2,
+#endif
 		gmem_inputtype_layer1 *input_1st,
 		gmem_biastype *bias,
 #if !XI_DISABLE_BN
@@ -333,71 +282,6 @@ void XiConvolutionTop(				gmem_weighttype *weights1,
 	//TODO
 #endif
 
-
-
-// #ifndef __SDSOC
-// void XiConvolutionTop_pipe(
-// #else
-// void XiConvolutionTop_pipe(
-// #endif
-// 				gmem_weighttype *weights1A,
-// 				gmem_weighttype *weights2A,
-// #if (XI_KER_PROC==16 || (XI_WTS_PORT_64BIT_EN==1 && XI_KER_PROC==8))
-// 				gmem_weighttype *weights3A,
-// 				gmem_weighttype *weights4A,
-// #endif
-// 				gmem_weighttype *weights1B,
-// 				gmem_weighttype *weights2B,
-// #if (XI_KER_PROC==16 || (XI_WTS_PORT_64BIT_EN==1 && XI_KER_PROC==8))
-// 				gmem_weighttype *weights3B,
-// 				gmem_weighttype *weights4B,
-// #endif
-
-// 				gmem_outputtype *output1A,
-// #if !XI_SINGLE_IO_PORT_EN
-// 				gmem_outputtype *output2A,
-// #endif
-// 				gmem_outputtype *output1B,
-// #if !XI_SINGLE_IO_PORT_EN
-// 				gmem_outputtype *output2B,
-// #endif
-// 				hls::stream< gmem_inputtype_layerx > & outStream1,
-//     			hls::stream< gmem_inputtype_layerx > & outStream2,
-// 				gmem_inputtype_layerx *input_other1A,
-// #if !XI_SINGLE_IO_PORT_EN
-// 				gmem_inputtype_layerx *input_other2A,
-// #endif
-// 				gmem_inputtype_layerx *input_other1B,
-// #if !XI_SINGLE_IO_PORT_EN
-// 				gmem_inputtype_layerx *input_other2B,
-// #endif
-// 				hls::stream< gmem_inputtype_layerx > & inStream1,
-//     			hls::stream< gmem_inputtype_layerx > & inStream2,
-// 				gmem_inputtype_layer1 *input_1stA,
-// 				gmem_inputtype_layer1 *input_1stB,
-// 				gmem_biastype *biasA,
-// 				gmem_biastype *biasB,
-// #if !XI_DISABLE_BN
-// 				gmem_inputtype_layer1 *inp_norm_2,
-// 				gmem_inputtype_layer1 *inp_norm_3,
-// #endif
-// 				gmem_inputtype_layer1 *istg_out1A,
-// #if !XI_SINGLE_IO_PORT_EN
-// 				gmem_inputtype_layer1 *istg_out2A,
-// #endif
-// 				gmem_inputtype_layer1 *istg_out1B,
-// #if !XI_SINGLE_IO_PORT_EN
-// 				gmem_inputtype_layer1 *istg_out2B,
-// #endif
-// 				int *scalar_conv_argsA,
-// 				int *scalar_conv_argsB
-// #ifdef __SDSVHLS__
-// 				, bool ap_clk_div2A
-// 				, bool ap_clk_div2B
-// 				);
-// #endif
-
-
 #if 1
 #define XI_IN_H 227 //layer1
 #define XI_IN_W 227 //layer1
@@ -412,9 +296,5 @@ void XiConvolutionTop(				gmem_weighttype *weights1,
 #define XI_NKPF 8//4
 #define XI_PAD 0
 #endif
-
-
-#define DBG_INFO 0
-
 
 #endif//_XI_CONV_CONFIG_H_
