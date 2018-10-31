@@ -167,6 +167,10 @@ typedef struct conv_descriptor {
 	ap_uint<16> pool_ew;
 	int scale_offset;
 	bool offline_quant_en;
+	int line_buffer_plane_step; 
+	//*the pixels numbers requires to store in line buffer. Usually it equals min scores
+	bool stream_in;
+	bool stream_out;
 } conv_struct;
 
 typedef struct group_conv_descriptor {

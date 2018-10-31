@@ -844,23 +844,29 @@ void xiExec(void *handle, vector<void *> input, vector<void *> output)
 				fclose(f);
 				}
 
+				//Input
+				printf("write input\n");
+				for(int i = 0; i < 5; i++){
+					if(i < 2)
+						cout << "input " << i  << " " << hwQueue[convImgId][whichConv].in_ptrs[i] << endl;
+					string fileName = "input_"+to_string(whichConv) + "_" + to_string(i);
+					FILE *f = fopen(fileName.c_str(), "w");
+					fwrite(hwQueue[convImgId][whichConv].in_ptrs[i], sizeof(char), 290400 * sizeof(char), f);
+					fclose(f);
+				}
+				
 				printf("write output\n");
 				//Output
 				for(int i = 0; i < 4; i++){
+					if(i < 2)
+						cout << "output " << i  << " " << hwQueue[convImgId][whichConv].out_ptrs[i] << endl;
 					 string fileName = "output_"+to_string(whichConv) + "_" + to_string(i);
 					 FILE *f = fopen(fileName.c_str(), "w");
 					 fwrite(hwQueue[convImgId][whichConv].out_ptrs[i], sizeof(char), 290400 * sizeof(char), f);
 					 fclose(f);
 				}
 
-				//Input
-				printf("write input\n");
-				for(int i = 0; i < 5; i++){
-					 string fileName = "input_"+to_string(whichConv) + "_" + to_string(i);
-					 FILE *f = fopen(fileName.c_str(), "w");
-					 fwrite(hwQueue[convImgId][whichConv].in_ptrs[i], sizeof(char), 290400 * sizeof(char), f);
-					 fclose(f);
-				}
+
 
 				for(int i = 0; i < 5; i++){
 					 string fileName = "input_"+to_string(whichConv) + "_" + to_string(i);

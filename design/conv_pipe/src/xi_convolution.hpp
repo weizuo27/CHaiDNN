@@ -20,9 +20,21 @@ FILE *fp_input=fopen("/proj/sdxapps/users/maheshm/debug_t/input_compute.txt","w"
 FILE *fp_weight=fopen("/proj/sdxapps/users/maheshm/debug_t/weight_compute.txt","w");
 FILE *fp_wr=fopen("/proj/sdxapps/users/maheshm/debug_t/write_debug.txt","w");
 FILE *fptr= fopen("/proj/sdxapps/users/maheshm/debug_t/input_pix0.txt","w");
-
+#include "print_parameter.h"
 #endif
 
+
+#if DBG_INFO
+gmem_outputtype * outbase1;
+gmem_outputtype * outbase2;
+
+gmem_inputtype_layerx * inputbase1;
+gmem_inputtype_layerx * inputbase2;
+gmem_weighttype* weightbase1;
+gmem_weighttype* weightbase2;
+gmem_weighttype* weightbase3;
+gmem_weighttype* weightbase4;
+#endif 
 
 void LoadDesc_ffa(int *scalar_conv_args,
 		input_struct &input_desc,
@@ -143,6 +155,12 @@ void LoadDesc_ffa(int *scalar_conv_args,
 	int l_pool_ew                = scalar_args[101];
 	int l_scale_offset                 = scalar_args[102];
 	bool l_offline_quant_en   = scalar_args[103];
+
+	conv_desc.stream_in=scalar_args[126];
+	conv_desc.stream_out=scalar_args[127];
+	conv_desc.line_buffer_plane_step=scalar_args[125];
+
+
 	conv_desc.in_start_row = (ap_int<16>)l_instartRow;
 	conv_desc.in_end_row = (ap_int<16>)l_inendRow;
 	conv_desc.avg_pool_mul = (ap_uint<8>)l_avg_pool_mul;
@@ -824,7 +842,7 @@ void LoadKernels_fz(weight_struct weight_desc,
 	{
 #pragma HLS PIPELINE
 #pragma HLS LOOP_TRIPCOUNT min=128 max=128
-
+		// printf("weight addr:%d\n", gmem_weight1_fa0 + ddrpntr_fz0 - weightbase1);
 		ap_uint<512> weight_512bit_fz0;
 		weight_512bit_fz0.range(127,  0) = gmem_weight1_fa0[ddrpntr_fz0];
 		weight_512bit_fz0.range(255,128) = gmem_weight2_fa0[ddrpntr_fz0];
@@ -3054,21 +3072,21 @@ void LoadInputBuffLayerX_fm(input_struct input_desc,
 		conv_struct conv_desc,
 		output_struct output_desc,
 		weight_struct weight_desc,
-		ap_uint<64> istaging_buff0_fb0[8][XI_ISTAGEBUFF_DEPTH],
+		ap_uint<64> line_buffer[8][XI_LINEBUFF_DEPTH],
 		ap_uint<64> input_buff0_fc0[XI_PIX_PROC / 2][1024],
 		ap_uint<16> current_plane_by_4,
 		ap_int<16> in_row_num[XI_PIX_PROC],
 		ap_int<16> in_col_num[XI_PIX_PROC],
-		ap_int<16> in_row_num_istg[XI_PIX_PROC],
 		ap_uint<10> feeding_buff_off[16],
 		ap_uint<8> pxcnt_loopmax)
 {
-#pragma HLS ARRAY_PARTITION variable=istaging_buff0_fb0 complete dim=1
+#pragma HLS ARRAY_PARTITION variable=line_buffer complete dim=1
 #if XI_ISTG_URAM_EN==0
-#pragma HLS resource variable=istaging_buff0_fb0 core=RAM_T2P_BRAM latency=2
+#pragma HLS resource variable=line_buffer core=RAM_S2P_BRAM latency=2
 #else
-#pragma HLS RESOURCE variable=istaging_buff0_fb0 core=XPM_MEMORY uram
+#pragma HLS RESOURCE variable=line_buffer core=XPM_MEMORY uram
 #endif
+
 #pragma HLS ARRAY_PARTITION variable=input_buff0_fc0 complete dim=1
 #if XI_FEED_URAM_EN==0
 #pragma HLS resource variable=input_buff0_fc0 latency=4 core=RAM_T2P_BRAM
@@ -3086,7 +3104,7 @@ void LoadInputBuffLayerX_fm(input_struct input_desc,
 	ap_uint<9> ker_row_dilated = 0;
 	ap_uint<9> ker_col_dilated = 0;
 	ap_uint<12> patch_ele;
-
+	ap_uint<10>	lineBUfferPlaneStep=conv_desc.line_buffer_plane_step;
 	Int8_2x_loop:
 	for (ap_uint<2> int8_2x_cnt = 0;int8_2x_cnt < conv_desc.int8_2x_loopbound; int8_2x_cnt++)
 	{
@@ -3114,8 +3132,8 @@ void LoadInputBuffLayerX_fm(input_struct input_desc,
 #pragma HLS loop_flatten
 #pragma HLS DEPENDENCE variable=input_buff0_fc0 intra false
 #pragma HLS DEPENDENCE variable=input_buff0_fc0 inter false
-#pragma HLS DEPENDENCE variable=istaging_buff0_fb0 intra false
-#pragma HLS DEPENDENCE variable=istaging_buff0_fb0 inter false
+#pragma HLS DEPENDENCE variable=line_buffer intra false
+#pragma HLS DEPENDENCE variable=line_buffer inter false
 
 							ap_uint<8> pix_cnt = pix_cnt_by16 << 4;
 
@@ -3140,62 +3158,88 @@ void LoadInputBuffLayerX_fm(input_struct input_desc,
 
 							//*****************istg buff address genration******************//
 
-							ap_uint<14> istg_addr_off[16];
-#pragma HLS ARRAY_PARTITION variable=istg_addr_off complete dim=0
+							ap_uint<14> line_addr_off[16];
+#pragma HLS ARRAY_PARTITION variable=line_addr_off complete dim=0
 							bool pad_flags[16];
 #pragma HLS ARRAY_PARTITION variable=pad_flags complete dim=0
+
+							
+							
+						LOOP_ADDRESS_COMPUTATION:	
 							for (ap_uint<5> pix_w = 0; pix_w < 16; pix_w++)
 							{
 #pragma HLS unroll
-								ap_uint<16> istg_row_istg = (ap_uint<16>)in_row_num_istg[pix_w + pix_cnt] + (ap_uint<16>)ker_row_dilated;
 								ap_int<16> istg_row = in_row_num[pix_w + pix_cnt] + ker_row_dilated;
 								ap_int<16> istg_col = in_col_num[pix_w + pix_cnt] + ker_col_dilated;
 								ap_uint<16> istg_col_us = istg_col;
 								ap_uint<16> plane_add_by4 = plane_num.range(15, 2) + current_plane_by_4;
 								ap_uint<13> addr_off_istg = (plane_add_by4 / 8) * istgrow_x_width;
-								ap_uint<13> addr = istg_row_istg * input_desc.width + istg_col_us + addr_off_istg;
+
+
+
+
+								ap_uint<13> addr_off_line = (plane_add_by4 / 8) * lineBUfferPlaneStep;
+
+								ap_uint<13> addr_line = istg_row * input_desc.width + istg_col_us + addr_off_line;
 
 
 								ap_uint<4> pix_sum = pix_w + pix_update;
+
+
+
 								if (pix_sum[3] == 1)
-									istg_addr_off[pix_w] = addr + istgrow_x_width;
+									line_addr_off[pix_w] = addr_line + lineBUfferPlaneStep;
 								else
-									istg_addr_off[pix_w] = addr;
+									line_addr_off[pix_w] = addr_line;
 
 								if (istg_row[15] == 0 && istg_col[15] == 0 && istg_col < input_desc.width && istg_row < input_desc.height)
 									pad_flags[pix_w] = 0;
 								else
 									pad_flags[pix_w] = 1;
-							}                        //pix_w
+							}
+							// #if DBG_INFO
+							// 	printf("[");
+							// 	for (ap_uint<5> pix_w = 0; pix_w < 8; pix_w++)
+							// 	{
+							// 		printf("(%4d %4d %4d)", (int) istg_addr_off[pix_w], (int) line_addr_off[pix_w], (int) in_row_num[pix_w + pix_cnt]);
+							// 	}
+							// 	printf("]\n");
+							// #endif
+							
+							                        //pix_w
 
-							//*********************** data read from istg buff *************************//
-							ap_uint<14> istg_addr_off_reg[16];
-#pragma HLS ARRAY_PARTITION variable=istg_addr_off_reg complete dim=0
-							reg_addr_feedLayerX(istg_addr_off,istg_addr_off_reg);
 
 
-							ap_uint<14> istg_addr_1[8];
-#pragma HLS ARRAY_PARTITION variable=istg_addr_1 complete dim=0
 
-							ap_uint<14> istg_addr_2[8];
-#pragma HLS ARRAY_PARTITION variable=istg_addr_2 complete dim=0
 
-							ap_uint<14> istg_addr_reg_1[8];
-#pragma HLS ARRAY_PARTITION variable=istg_addr_reg_1 complete dim=0
 
-							ap_uint<14> istg_addr_reg_2[8];
-#pragma HLS ARRAY_PARTITION variable=istg_addr_reg_2 complete dim=0
-
+							//*********************** data read from line buff *************************//
+							ap_uint<14> line_addr_off_reg[16];
+#pragma HLS ARRAY_PARTITION variable=line_addr_off_reg complete dim=0
+							reg_addr_feedLayerX(line_addr_off,line_addr_off_reg);
+							ap_uint<14> line_addr_1[8];
+#pragma HLS ARRAY_PARTITION variable=line_addr_1 complete dim=0
+							ap_uint<14> line_addr_2[8];
+#pragma HLS ARRAY_PARTITION variable=line_addr_2 complete dim=0
+							ap_uint<14> line_addr_reg_1[8];
+#pragma HLS ARRAY_PARTITION variable=line_addr_reg_1 complete dim=0
+							ap_uint<14> line_addr_reg_2[8];
+#pragma HLS ARRAY_PARTITION variable=line_addr_reg_2 complete dim=0
 							for (ap_uint<5> pix_w1 = 0, pix_w2 = 8; pix_w1 < 8;pix_w1++, pix_w2++)
 							{
 #pragma HLS unroll
-								istg_addr_1[pix_w1]	= istg_addr_off_reg[pix16_2[pix_w1]];
-								istg_addr_2[pix_w1]	= istg_addr_off_reg[pix16_2[pix_w2]];
+								line_addr_1[pix_w1]	= line_addr_off_reg[pix16_2[pix_w1]];
+								line_addr_2[pix_w1]	= line_addr_off_reg[pix16_2[pix_w2]];
 
 							}
 
-							reg_addr_feedlrx_1(istg_addr_1, istg_addr_reg_1);
-							reg_addr_feedlrx_2(istg_addr_2, istg_addr_reg_2);
+
+
+							reg_addr_feedlrx_1(line_addr_1, line_addr_reg_1);
+							reg_addr_feedlrx_2(line_addr_2, line_addr_reg_2);
+
+
+		
 
 							short data_istg_reg[4][16];
 #pragma HLS ARRAY_PARTITION variable=data_istg_reg complete dim=0
@@ -3203,16 +3247,19 @@ void LoadInputBuffLayerX_fm(input_struct input_desc,
 #pragma HLS ARRAY_PARTITION variable=data_istg complete dim=0
 							for (ap_uint<5> pix_w1 = 0, pix_w2 = 8; pix_w1 < 8;pix_w1++, pix_w2++)
 							{
-#pragma HLS unroll
+#pragma HLS unroll				
 								for (ap_uint<10> pl = 0, bit=0; pl < 4; pl++, bit+=16)
 								{
-#pragma HLS unroll
-									istg_datatype buffer_index1 = istg_addr_reg_1[pix_w1];
-									istg_datatype buffer_index2 = istg_addr_reg_2[pix_w1];
-									data_istg_reg[pl.range(1,0)][pix_w1] = (short)istaging_buff0_fb0[pix_w1][buffer_index1].range(bit+15,bit);
-									data_istg_reg[pl.range(1,0)][pix_w2] = (short)istaging_buff0_fb0[pix_w1][buffer_index2].range(bit+15,bit);
+#pragma HLS unroll						
+									lineAddr_type  line_buffer_index1 = line_addr_reg_1[pix_w1];
+									lineAddr_type  line_buffer_index2 = line_addr_reg_2[pix_w1];
+									
+									data_istg_reg[pl.range(1,0)][pix_w1] = (short)line_buffer[pix_w1][line_buffer_index1].range(bit+15,bit);
+									data_istg_reg[pl.range(1,0)][pix_w2] = (short)line_buffer[pix_w1][line_buffer_index2].range(bit+15,bit);
 								}
 							}
+
+
 
 							reg_data_feedLayerX(data_istg_reg, data_istg);
 							//******************** data rearragement and zero padding **********************************//
@@ -3634,7 +3681,6 @@ void LoadInputBuffLayerX_fm(input_struct input_desc,
 			}//ker_row
 		}//plane_num
 	}//int8 loop
-
 }//LoadInputBuffLayerX_fm
 
 template<int CFILTER_SIZE, int CCONV_STRIDE, int CNUM_KERNELS, int INPUTP>
@@ -3643,7 +3689,8 @@ void LoadFeedingBuff_fl(input_struct input_desc,
 		output_struct output_desc,
 		weight_struct weight_desc,
 		out_pix_struct &out_pixels0_fc0,
-		ap_uint<64> istaging_buff0_fb0[8][XI_ISTAGEBUFF_DEPTH],
+//		ap_uint<64> istaging_buff0_fb0[8][XI_ISTAGEBUFF_DEPTH],
+		ap_uint<64> line_buffer[8][XI_LINEBUFF_DEPTH],
 		ap_uint<64> input_buff0_fc0[XI_PIX_PROC / 2][1024],
 		ap_uint<16> pc_fc0,
 		ap_uint<16> current_plane_fc0,
@@ -3664,13 +3711,31 @@ void LoadFeedingBuff_fl(input_struct input_desc,
 #pragma HLS RESOURCE variable=input_buff0_fc0 core=XPM_MEMORY uram
 #endif
 
-#pragma HLS ARRAY_PARTITION variable=istaging_buff0_fb0 complete dim=1
+#pragma HLS ARRAY_PARTITION variable=line_buffer complete dim=1
 #if XI_ISTG_URAM_EN==0
-#pragma HLS resource variable=istaging_buff0_fb0 core=RAM_T2P_BRAM latency=2
+#pragma HLS resource variable=line_buffer core=RAM_S2P_BRAM latency=2
 #else
-#pragma HLS RESOURCE variable=istaging_buff0_fb0 core=XPM_MEMORY uram
+#pragma HLS RESOURCE variable=line_buffer core=XPM_MEMORY uram
 #endif
 #pragma HLS inline off
+
+
+#if DBG_INFO
+puts("Calling load feeding buffer.");
+printf("current_plane_fc0: %d\n",(int) current_plane_fc0);
+printf("pc_fc0: %d\n",(int) pc_fc0);
+printf("out_row_offset_fb0: %d\n",(int) out_row_offset_fb0);
+printf("pad_row_fc0: %d\n",(int) pad_row_fc0);
+printf("pad_row_wo_fc0: %d\n",(int) pad_row_wo_fc0);
+printf("row_id_1st_32pix_fc0: %d\n",(int) row_id_1st_32pix_fc0);
+printf("col_id_1st_32pix_fc0: %d\n",(int) col_id_1st_32pix_fc0);
+printf("row_id_2nd_32pix_fc0: %d\n",(int) row_id_2nd_32pix_fc0);
+printf("col_id_2nd_32pix_fc0: %d\n",(int) col_id_2nd_32pix_fc0);
+printf("mac_fz0: %d\n",(int) mac_fz0);
+#endif
+
+
+
 
 	*pc_out = pc_fc0;
 
@@ -3723,15 +3788,18 @@ void LoadFeedingBuff_fl(input_struct input_desc,
 		var3 = 0;
 	}
 
-	ap_int<16> out_row_istg = pix_row_1st_wo_offset_fl0;
+	
 	ap_int<16> out_row = pix_row_1st_fl0;
 	ap_int<16> out_col = pix_col_1st_fl0;
 	ap_int<16> in_row_num[XI_PIX_PROC];
 	ap_int<16> in_col_num[XI_PIX_PROC];
-	ap_int<16> in_row_num_istg[XI_PIX_PROC];
+
 #pragma HLS ARRAY_PARTITION variable=in_row_num complete dim=0
 #pragma HLS ARRAY_PARTITION variable=in_col_num complete dim=0
-#pragma HLS ARRAY_PARTITION variable=in_row_num_istg complete dim=0
+
+#if DBG_INFO
+	printf("rowIDX:");
+#endif
 
 	for (ap_uint<8> pix = 0; pix < XI_PIX_PROC; pix++)
 	{
@@ -3740,18 +3808,24 @@ void LoadFeedingBuff_fl(input_struct input_desc,
 		{
 			out_col = 0;
 			out_row++;
-			out_row_istg++;
+			
 		}
-
+		
 		in_row_num[pix] = out_row * weight_desc.filter_stride - conv_desc.pad_num;
 		in_col_num[pix] = out_col * weight_desc.filter_stride - conv_desc.pad_num;
-		in_row_num_istg[pix] = out_row_istg * weight_desc.filter_stride + pad_row_wo_fc0;    //conv_desc.pad_num;
 
+		#if DBG_INFO
+			printf("[%d %d %d]",(int) in_row_num[pix], (int) in_col_num[pix],(int) in_row_num_istg[pix]);
+		#endif
 		out_pixels0_fc0.pix_rows[pix] = out_row;
 		out_pixels0_fc0.pix_cols[pix] = out_col;
 
 		out_col++;
 	}
+
+	#if DBG_INFO
+	printf("\n");
+#endif
 
 	ap_uint<10> feeding_buff_off[16];
 #pragma HLS ARRAY_PARTITION variable=feeding_buff_off complete dim=0
@@ -3767,21 +3841,21 @@ void LoadFeedingBuff_fl(input_struct input_desc,
 
 	if (conv_desc.l2_sos_enable == 1 || (conv_desc.sos_enable == 0 && conv_desc.layer_id != 0))
 	{
-
-		LoadInputBuffLayerX_fm(input_desc, conv_desc, output_desc, weight_desc,istaging_buff0_fb0, input_buff0_fc0,
-				/*..continue..*/current_plane_fc0, in_row_num, in_col_num,in_row_num_istg, feeding_buff_off, pxcnt_loopmax);
+printf("current_plane_fc0: %d\n",(int) current_plane_fc0);
+		LoadInputBuffLayerX_fm(input_desc, conv_desc, output_desc, weight_desc,line_buffer, input_buff0_fc0,
+				/*..continue..*/current_plane_fc0, in_row_num, in_col_num, feeding_buff_off, pxcnt_loopmax);
 
 	}
-	else
-	{
-		for (ap_uint<8> start_pix_per_ker, ker = 0; ker < ker_loop_cnt;start_pix_per_ker += conv_desc.pix_per_kp, ker++)
-		{
-
-			LoadInputBuff_non1x1_fn<CFILTER_SIZE, CCONV_STRIDE, CNUM_KERNELS,INPUTP>
-			(input_desc, conv_desc, output_desc, weight_desc,istaging_buff0_fb0, input_buff0_fc0, pix_row_1st_fl0,pix_col_1st_fl0,
-					/*..continue..*/pix_row_1st_wo_offset_fl0, var1, var2, var3,current_plane_fc0, pad_row_fc0, pad_row_wo_fc0, mac_fz0,start_pix_per_ker);
-		}
-	}
+//	else
+//	{
+//		for (ap_uint<8> start_pix_per_ker, ker = 0; ker < ker_loop_cnt;start_pix_per_ker += conv_desc.pix_per_kp, ker++)
+//		{
+//
+//			LoadInputBuff_non1x1_fn<CFILTER_SIZE, CCONV_STRIDE, CNUM_KERNELS,INPUTP>
+//			(input_desc, conv_desc, output_desc, weight_desc,istaging_buff0_fb0, input_buff0_fc0, pix_row_1st_fl0,pix_col_1st_fl0,
+//					/*..continue..*/pix_row_1st_wo_offset_fl0, var1, var2, var3,current_plane_fc0, pad_row_fc0, pad_row_wo_fc0, mac_fz0,start_pix_per_ker);
+//		}
+//	}
 
 	out_pixels0_fc0.current_plane_by4 = current_plane_fc0;
 #if XI_DP_ENABLE
@@ -3796,26 +3870,36 @@ void LoadFeedingBuff_fl(input_struct input_desc,
 	}
 #endif
 
+	// #if DBG_INFO
+	// 	for(int i=0;i<1024;i++)
+	// 	{
+	// 		printf("FEEDBUFF[%03d]:[",i);
+	// 		for(int cnt=0; cnt<XI_PIX_PROC/2; cnt++)
+	// 		{
+	// 			printf("%04d ",(int) input_buff0_fc0[cnt][i].range(31,0) );
+	// 		}
+	// 		printf("]\n");
+	// 	}
+	// #endif
+
 
 }
 
 ap_int<32> abs_32bit(ap_int<32> in)
-																														{
-
+{
 	if (in[31] == 0)
 		return in;
 	else
 		return -in;
-																														}
+}
 
 ap_int<24> abs_24bit(ap_int<24> in)
-																														{
-
+{
 	if (in[23] == 0)
 		return in;
 	else
 		return -in;
-																														}
+}
 
 void round_fun(ap_int<32> in, ap_int<32> rounding_value, ap_int<32> *out,ap_uint<5> inout_precision)
 {
@@ -3987,12 +4071,35 @@ void reg_scale_val(ap_uint<24> scale_value_batch2[4][4],ap_uint<24> scale_value_
 	}
 
 }
+
+
 template<int OUT_WW>
 void OutputWrite_fk(conv_struct conv_desc, ap_uint<16> pixbuff_planeoffset_fj0,
-		gmem_outputtype *gmem_output1_fa0,
-#if !XI_SINGLE_IO_PORT_EN
-		gmem_outputtype *gmem_output2_fa0,
-#endif
+		#if !XI_SINGLE_IO_PORT_EN
+			#if STREAMOUT == 0 
+				gmem_outputtype *gmem_output1_fa0,
+				gmem_outputtype *gmem_output2_fa0,			
+			#elif STREAMOUT ==1
+				hls::stream< gmem_inputtype_layerx > & outStream1,
+				hls::stream< gmem_inputtype_layerx > & outStream2,
+			#else
+				gmem_outputtype *gmem_output1_fa0,
+				gmem_outputtype *gmem_output2_fa0,	
+				hls::stream< gmem_inputtype_layerx > & outStream1,
+				hls::stream< gmem_inputtype_layerx > & outStream2,
+			#endif
+		#else
+			#if STREAMOUT == 0 
+				gmem_outputtype *gmem_output1_fa0,
+			#elif STREAMOUT == 1
+				hls::stream< gmem_inputtype_layerx > & outStream1,
+			#else
+				gmem_outputtype *gmem_output1_fa0,
+				hls::stream< gmem_inputtype_layerx > & outStream1,
+			#endif
+		#endif //* !XI_SINGLE_IO_PORT_EN
+
+
 		bool oStagBuf_dim2_bool_fj0,
 		ap_uint<72> ostaging_buff0_fb0[2][XI_OSTG_BUFFER_SET][XI_OSTAGEBUFF_DEPTH],
 		ap_uint<16> layerx_loop_cnt_fj0, output_struct output_desc,
@@ -4015,6 +4122,10 @@ void OutputWrite_fk(conv_struct conv_desc, ap_uint<16> pixbuff_planeoffset_fj0,
 	ap_uint<16> fc_bias_idx = *fc_pixel_count;
 
 
+#if DBG_INFO
+		printf("Output addr:%d %d\n", gmem_output1_fa0-outbase1,gmem_output1_fa0+layerx_loop_cnt_fj0-outbase1 );
+#endif
+
 	Write_Loop:
 #if !XI_IO_64bit_PORT_EN
 	for (ap_uint<16> ddr_pntr_fk0 = 0;    ddr_pntr_fk0 < layerx_loop_cnt_fj0; ddr_pntr_fk0++)
@@ -4024,8 +4135,7 @@ void OutputWrite_fk(conv_struct conv_desc, ap_uint<16> pixbuff_planeoffset_fj0,
 		{
 #pragma HLS PIPELINE
 #pragma HLS LOOP_TRIPCOUNT min=11*120 max=11*120
-
-
+			
 			ap_uint<16> ostg_addr_new = row_stage_offset + counter_ow_x_ostgrow_t + offset_all_featureMap;
 
 			ap_uint<16> ostg_addr_fk0 = ostg_addr_new;
@@ -4111,6 +4221,8 @@ void OutputWrite_fk(conv_struct conv_desc, ap_uint<16> pixbuff_planeoffset_fj0,
 							// bias conversion: from Q8.8 to Q8.18
 							bias_value_batch2[idx.range(1,0)][idx.range(3,2)] 	= ((ap_int<32>)bias_from_bram[idx])<<14;
 							scale_value_batch2[idx.range(1,0)][idx.range(3,2)] 	= scale_from_bram[idx];
+
+							
 						}
 						else
 						{
@@ -4128,6 +4240,11 @@ void OutputWrite_fk(conv_struct conv_desc, ap_uint<16> pixbuff_planeoffset_fj0,
 				{
 #pragma HLS LOOP_TRIPCOUNT min=4 max=4
 #pragma HLS UNROLL
+					// for(int cnt=0;cnt< XI_OSTG_BUFFER_SET;cnt++)
+					// {
+					// 	printf("[%8x][%d]: %lx %lx\n",(int) ostg_addr_fk0,cnt,  (long int) ostaging_buff0_fb0[0][cnt][ostg_addr_fk0].range(71,36),(long int) ostaging_buff0_fb0[0][cnt][ostg_addr_fk0].range(35,0));
+					// 	printf("[%8x][%d]: %lx %lx\n",(int) ostg_addr_fk0,cnt,  (long int) ostaging_buff0_fb0[1][cnt][ostg_addr_fk0].range(71,36),(long int) ostaging_buff0_fb0[1][cnt][ostg_addr_fk0].range(35,0));
+					// }
 
 					ap_int<18> ostg_word_fh0[2][4];
 #pragma HLS ARRAY_PARTITION variable=ostg_word_fh0 complete dim=0
@@ -4277,10 +4394,13 @@ void OutputWrite_fk(conv_struct conv_desc, ap_uint<16> pixbuff_planeoffset_fj0,
 						ostg_word_out_fh0[1][pl] = ostg_word_fh0[1][pl]	* scale_value_batch2_reg[planes_fh0][pl] + bias_value_batch2[planes_fh0][pl];
 					}
 #endif
-
+					// for(int cnt=0;cnt< OUT_PARTITION;cnt++)
+					// {
+					// 	printf("%x %x\n", (int) ostg_word_out_fh0[0][cnt],(int) ostg_word_out_fh0[1][cnt]);
+					// }
 					ap_int<16> word_relu_fh0[OUT_PARTITION];
 					saturation_round(ostg_word_out_fh0, word_relu_fh0,conv_desc.inout_precision, conv_desc.int6_en_out,conv_desc.relu_en, crelu_bit, rounding_value);
-
+					// printf("relu result: %x %x %x %x\n", (int) word_relu_fh0[0], (int) word_relu_fh0[1], (int) word_relu_fh0[2], (int) word_relu_fh0[3]);
 					word1_128bit_fk0.range(bit_fh0 + 15, bit_fh0) = word_relu_fh0[0];
 					word1_128bit_fk0.range(bit2_fh0 + 15, bit2_fh0) = word_relu_fh0[1];
 #if !XI_SINGLE_IO_PORT_EN && !XI_IO_64bit_PORT_EN
@@ -4353,7 +4473,20 @@ void OutputWrite_fk(conv_struct conv_desc, ap_uint<16> pixbuff_planeoffset_fj0,
 				write1 = word2_128bit_fk0;
 			}
 #if	!XI_IO_64bit_PORT_EN
-			gmem_output1_fa0[ddr_pntr_fk0] = write1;
+
+	// gmem_inputtype_layerx outputaddr=gmem_output1_fa0+ddr_pntr_fk0-outbase1;
+			#if STREAMOUT == 0 
+				gmem_output1_fa0[ddr_pntr_fk0] = write1;
+			#elif STREAMOUT ==1
+				outStream1<<write1;
+			#else
+				if(conv_desc.stream_out)
+				outStream1<<write1;
+				else
+				gmem_output1_fa0[ddr_pntr_fk0] = write1;
+			#endif
+
+			// printf("Output1 addr:%d, value: %x\t%x\n", gmem_output1_fa0+ ddr_pntr_fk0-outbase1,(int) write1.range(63,0), (int) write1.range(127,64) );
 #else
 			gmem_output1_fa0[ddr_pntr_fk0] = write1.range(63,0);
 #endif
@@ -4368,7 +4501,19 @@ void OutputWrite_fk(conv_struct conv_desc, ap_uint<16> pixbuff_planeoffset_fj0,
 			{
 				write2 = word1_128bit_fk0;
 			}
-			gmem_output2_fa0[ddr_pntr_fk0] = write2;
+
+		
+			#if STREAMOUT == 0 
+				gmem_output2_fa0[ddr_pntr_fk0] = write2;
+			#elif STREAMOUT ==1
+				outStream2<<write2;
+			#else
+				if(conv_desc.stream_out)
+				outStream2<<write2;
+				else
+				gmem_output2_fa0[ddr_pntr_fk0] = write2;
+			#endif
+			// printf("Output2 addr:%d, value: %x\t%x\n", gmem_output2_fa0+ ddr_pntr_fk0-outbase2,(int) write2.range(63,0), (int) write2.range(127,64) );
 #elif !XI_SINGLE_IO_PORT_EN && XI_IO_64bit_PORT_EN
 			gmem_output2_fa0[ddr_pntr_fk0] = write1.range(127,64);
 #endif
@@ -4424,10 +4569,31 @@ void OutputWrite_fk(conv_struct conv_desc, ap_uint<16> pixbuff_planeoffset_fj0,
 
 template<int CNUM_KERNELS, int OUT_WW>
 void StoreOStagingBuff_fj(output_struct output_desc, conv_struct conv_desc,
-		ap_uint<16> out_row_offset_fb0, gmem_outputtype * gmem_output1_fa0,
-#if !XI_SINGLE_IO_PORT_EN
-		gmem_outputtype * gmem_output2_fa0,
-#endif
+		ap_uint<16> out_row_offset_fb0, 
+		#if !XI_SINGLE_IO_PORT_EN
+			#if STREAMOUT == 0 
+				gmem_outputtype *gmem_output1_fa0,
+				gmem_outputtype *gmem_output2_fa0,			
+			#elif STREAMOUT ==1
+				hls::stream< gmem_inputtype_layerx > & outStream1,
+				hls::stream< gmem_inputtype_layerx > & outStream2,
+			#else
+				gmem_outputtype *gmem_output1_fa0,
+				gmem_outputtype *gmem_output2_fa0,	
+				hls::stream< gmem_inputtype_layerx > & outStream1,
+				hls::stream< gmem_inputtype_layerx > & outStream2,
+			#endif
+		#else
+			#if STREAMOUT == 0 
+				gmem_outputtype *gmem_output1_fa0,
+			#elif STREAMOUT == 1
+				hls::stream< gmem_inputtype_layerx > & outStream1,
+			#else
+				gmem_outputtype *gmem_output1_fa0,
+				hls::stream< gmem_inputtype_layerx > & outStream1,
+			#endif
+		#endif //* !XI_SINGLE_IO_PORT_EN
+
 		ap_uint<72> ostaging_buff0_fb0[2][XI_OSTG_BUFFER_SET][XI_OSTAGEBUFF_DEPTH],
 		ap_uint<16> ostg_row_x_width, bool write_en_fb0,
 		ap_int<16> bias_buff_fb0[8][XI_BIASMAXSIZE],
@@ -4541,24 +4707,44 @@ void StoreOStagingBuff_fj(output_struct output_desc, conv_struct conv_desc,
 				gmem_outputtype * gmem_output1_add,* gmem_output2_add;
 #pragma HLS resource variable=gmem_output1_add core=AddSubnS latency=2
 #pragma HLS resource variable=gmem_output2_add core=AddSubnS latency=2
+#if STREAMOUT != 1
 #if !XI_IO_64bit_PORT_EN
 				gmem_output1_add = gmem_output1_fa0 + offset_fj0;
 #else
 				gmem_output1_add = gmem_output1_fa0 + offset_fj0*2;
 #endif
+
 #if !XI_SINGLE_IO_PORT_EN
 #if !XI_IO_64bit_PORT_EN
 				gmem_output2_add = gmem_output2_fa0 + offset_fj2;
 #else
 				gmem_output2_add = gmem_output2_fa0 + offset_fj2*2;
 #endif//XI_IO_64bit_PORT_EN
+#endif
+
 #endif//XI_SINGLE_IO_PORT_EN
 
 				OutputWrite_fk<OUT_WW>
-				(conv_desc, pixbuff_planeoffset_fj0,gmem_output1_add,
-#if !XI_SINGLE_IO_PORT_EN
-						gmem_output2_add,
-#endif
+				(conv_desc, pixbuff_planeoffset_fj0,
+				#if !XI_SINGLE_IO_PORT_EN
+					#if STREAMOUT == 0
+						gmem_output1_add, gmem_output2_add,
+					#elif STREAMOUT == 1
+						outStream1,outStream2,
+					#else
+						gmem_output1_add, gmem_output2_add,
+						outStream1,outStream2,
+					#endif
+				#else
+					#if STREAMOUT == 0
+						gmem_output1_add, 
+					#elif STREAMOUT == 1
+						outStream1,
+					#else
+						gmem_output1_add,
+						outStream1,
+					#endif
+				#endif
 						oStagBuf_dim2_bool_fj0,
 						ostaging_buff0_fb0, layerx_loop_cnt_fj0, output_desc,crelu_bit, row_stage_offset, write_normal,bias_buff_fb0,scale_buff_fb0,outImg_fj0, fc_pixel_count,plane_mod2);
 
@@ -4609,10 +4795,31 @@ void StoreOStagingBuff_fj(output_struct output_desc, conv_struct conv_desc,
 }
 template<int CNUM_KERNELS, int OUT_WW>
 void StoreOStagingBuff_En_fj(output_struct output_desc, conv_struct conv_desc,
-		ap_uint<16> out_row_offset_fb0, gmem_outputtype * gmem_output1_fa0,
-#if !XI_SINGLE_IO_PORT_EN
-		gmem_outputtype * gmem_output2_fa0,
-#endif
+		ap_uint<16> out_row_offset_fb0, 
+		#if !XI_SINGLE_IO_PORT_EN
+			#if STREAMOUT == 0 
+				gmem_outputtype *gmem_output1_fa0,
+				gmem_outputtype *gmem_output2_fa0,			
+			#elif STREAMOUT ==1
+				hls::stream< gmem_inputtype_layerx > & outStream1,
+				hls::stream< gmem_inputtype_layerx > & outStream2,
+			#else
+				gmem_outputtype *gmem_output1_fa0,
+				gmem_outputtype *gmem_output2_fa0,	
+				hls::stream< gmem_inputtype_layerx > & outStream1,
+				hls::stream< gmem_inputtype_layerx > & outStream2,
+			#endif
+		#else
+			#if STREAMOUT == 0 
+				gmem_outputtype *gmem_output1_fa0,
+			#elif STREAMOUT == 1
+				hls::stream< gmem_inputtype_layerx > & outStream1,
+			#else
+				gmem_outputtype *gmem_output1_fa0,
+				hls::stream< gmem_inputtype_layerx > & outStream1,
+			#endif
+		#endif //* !XI_SINGLE_IO_PORT_EN
+
 		ap_uint<72> ostaging_buff0_fb0[2][XI_OSTG_BUFFER_SET][XI_OSTAGEBUFF_DEPTH],
 		bool write_en_fb0, bool last_itr_stage,
 		ap_int<16> bias_buff_fb0[8][XI_BIASMAXSIZE],
@@ -4655,10 +4862,26 @@ void StoreOStagingBuff_En_fj(output_struct output_desc, conv_struct conv_desc,
 	if (!(conv_desc.lrn_pns_enable || conv_desc.bn_snb_enable || conv_desc.elem_wise_add_en || conv_desc.bn_snb_c_relu_en || conv_desc.bn_en || conv_desc.bn_c_relu_en || conv_desc.scale_relu_en || conv_desc.max_pool_en|| conv_desc.avg_pool_en))
 	{
 		StoreOStagingBuff_fj<CNUM_KERNELS, OUT_WW>
-		(output_desc, conv_desc,out_row_offset_fb0, gmem_output1_fa0,
-#if !XI_SINGLE_IO_PORT_EN
-				gmem_output2_fa0,
-#endif
+		(output_desc, conv_desc,out_row_offset_fb0, 
+		#if !XI_SINGLE_IO_PORT_EN
+			#if STREAMOUT == 0
+				gmem_output1_fa0, gmem_output2_fa0,
+			#elif STREAMOUT == 1
+				outStream1,outStream2,
+			#else
+				gmem_output1_fa0, gmem_output2_fa0,
+				outStream1,outStream2,
+			#endif
+		#else
+			#if STREAMOUT == 0
+				gmem_output1_fa0, 
+			#elif STREAMOUT == 1
+				outStream1,
+			#else
+				gmem_output1_fa0,
+				outStream1,
+			#endif
+		#endif
 				ostaging_buff0_fb0, ostg_row_x_width, write_en_fb0,bias_buff_fb0,scale_buff_fb0, fc_pixel_count);
 	}
 }
@@ -4862,6 +5085,9 @@ void reg_16bit(ap_uint<16> in_reg, ap_uint<16> *out)
 	*out = in_reg;
 }
 
+
+
+
 void InputReadLayerOther_fh(conv_struct conv_desc,
 		ap_uint<16> layerx_loop_cnt_fg0,
 		input_struct input_desc,
@@ -4895,7 +5121,7 @@ void InputReadLayerOther_fh(conv_struct conv_desc,
 #pragma HLS DEPENDENCE variable=istaging_buff0_fb0 intra false
 #pragma HLS DEPENDENCE variable=istaging_buff0_fb0 inter false
 #pragma HLS LOOP_TRIPCOUNT min=51*479 max=51*479
-
+			// printf("inp_addr: %d\n",gmem_input_layer_other1_fa0+ddr_pntr_fh0-inputbase1);
 			inputtype2 read1_port_fh0, read2_port_fh0;
 			read1_port_fh0 = gmem_input_layer_other1_fa0[ddr_pntr_fh0];
 #if !XI_SINGLE_IO_PORT_EN
@@ -6160,6 +6386,159 @@ void Conv3dTop(conv_struct conv_desc,
 }
 
 
+
+// template<int IN_WW, int IN_HH, int IINPUT_PLANES>
+void LoadLineBuff(
+	input_struct input_desc,
+	ap_int<16> startRow,
+	ap_int<16> endRow,
+	ap_uint<16> lineBufferPlaneStep,
+#if !XI_SINGLE_IO_PORT_EN
+		#if STREAMIN == 0
+			gmem_inputtype_layerx *gmem_input_layer_other1_fa0,
+			gmem_inputtype_layerx *gmem_input_layer_other2_fa0,	
+		#elif STREAMIN == 1
+			hls::stream< gmem_inputtype_layerx > & inStream1,
+    		hls::stream< gmem_inputtype_layerx > & inStream2,
+		#else
+			gmem_inputtype_layerx *gmem_input_layer_other1_fa0,
+			gmem_inputtype_layerx *gmem_input_layer_other2_fa0,	
+			hls::stream< gmem_inputtype_layerx > & inStream1,
+    		hls::stream< gmem_inputtype_layerx > & inStream2,
+		#endif
+#else
+		#if STREAMIN == 0
+			gmem_inputtype_layerx *gmem_input_layer_other1_fa0,
+		#elif STREAMIN == 1
+			hls::stream< gmem_inputtype_layerx > & inStream1,
+		#else
+			gmem_inputtype_layerx *gmem_input_layer_other1_fa0,
+			hls::stream< gmem_inputtype_layerx > & inStream1,
+		#endif
+#endif
+
+	ap_uint<64> istaging_line_buff0_fb0[8][XI_LINEBUFF_DEPTH],
+	bool streamFlag,
+	bool opFlag
+	)
+{
+	ap_uint<16> startRowSaturate, endRowSaturate;
+
+	
+	if (startRow < 0)
+		startRowSaturate = 0;
+	else
+		startRowSaturate =(ap_uint<16>)startRow;
+
+	if(endRow<input_desc.height)	
+		endRowSaturate = (ap_uint<16>) endRow;
+	else
+	 	endRowSaturate = (ap_uint<16>) input_desc.height;
+
+
+	ap_uint<16> rowNum;
+
+	if(startRowSaturate<=endRowSaturate && opFlag==true)
+		rowNum=endRowSaturate-startRowSaturate;
+	else
+		rowNum=0;
+
+	ap_uint<32> startPixelIdx; 
+	//#pragma HLS RESOURCE variable=startPixelIdx core=MulnS latency=2
+	startPixelIdx = startRowSaturate*(input_desc.width);
+
+	ap_uint<32> pixelNumInOnePlane;
+	pixelNumInOnePlane= rowNum*(input_desc.width);
+
+	ap_uint<16> inputPlanes;
+	inputPlanes= input_desc.planes;
+
+
+	ap_uint<32> planeStartOffset = 0;
+	ap_uint<32> linePlaneStartOffset = 0;
+	ap_uint<1> switch4=0;
+
+	if( startRowSaturate < input_desc.height )
+	{
+		for (ap_uint<16> planePackIdx = 0; planePackIdx < inputPlanes; planePackIdx += DEPTHPACK)
+		{
+		
+			ap_uint<32> ddrAddress = planeStartOffset+startPixelIdx;
+			lineAddr_type lineBufferAddress = linePlaneStartOffset+startPixelIdx;
+			
+			for (ap_uint<16> pixelOffset = 0; pixelOffset < pixelNumInOnePlane; pixelOffset++,ddrAddress++,lineBufferAddress++)
+			{
+
+				
+				#pragma HLS PIPELINE
+				#pragma HLS DEPENDENCE variable=istaging_line_buff0_fb0 intra false
+				#pragma HLS DEPENDENCE variable=istaging_line_buff0_fb0 inter false
+
+				inputtype2 read1_port, read2_port;
+				#if STREAMIN == 0
+
+						read1_port = gmem_input_layer_other1_fa0[ddrAddress];
+					#if !XI_SINGLE_IO_PORT_EN
+						read2_port = gmem_input_layer_other2_fa0[ddrAddress];
+					#endif
+				#elif STREAMIN == 1
+						inStream1>>read1_port; 
+					#if !XI_SINGLE_IO_PORT_EN
+						inStream2>>read2_port;
+					#endif
+				#else
+					if(streamFlag){
+							inStream1>>read1_port; 
+						#if !XI_SINGLE_IO_PORT_EN
+							inStream2>>read2_port;
+						#endif
+					}
+					else{
+							
+							read1_port = gmem_input_layer_other1_fa0[ddrAddress];
+						#if !XI_SINGLE_IO_PORT_EN
+							read2_port = gmem_input_layer_other2_fa0[ddrAddress];
+						#endif
+					}
+				#endif
+
+
+				istaging_line_buff0_fb0[switch4*4+0][lineBufferAddress] = read1_port.range(63,0);
+				istaging_line_buff0_fb0[switch4*4+2][lineBufferAddress] = read2_port.range(63, 0);
+				istaging_line_buff0_fb0[switch4*4+1][lineBufferAddress] = read1_port.range(127, 64);
+				istaging_line_buff0_fb0[switch4*4+3][lineBufferAddress] = read2_port.range(127, 64);	
+			}
+			if(switch4==1)
+			{
+				switch4=0;
+				linePlaneStartOffset+=lineBufferPlaneStep;
+			}
+			else
+			{
+				switch4=1;
+
+			}
+			planeStartOffset+=input_desc.size;
+		}
+	}
+
+	#if DBG_INFO
+		for(int i=0;i<XI_LINEBUFF_DEPTH;i++)
+		{
+			printf("LINE BUFFER[%4d][",i);
+			for(int s=0;s<8;s++)
+			{
+				printf("%5d", (int) istaging_line_buff0_fb0[s][i]);
+			}
+			printf("]\n");
+		}
+	#endif
+}
+
+
+
+
+
 template<int IN_WW, int IN_HH, int IINPUT_PLANES>
 void LoadIStagingBuff_fg(input_struct input_desc,
 		conv_struct conv_desc,
@@ -6552,8 +6931,23 @@ void LoadIStagingBuff_fg(input_struct input_desc,
 
 		}
 	}
+		#if DBG_INFO
+
+		for(int i=0;i<1024;i++)
+		{
+			printf("ISTAGING BUFFER[%4d][",i);
+			for(int s=0;s<8;s++)
+			{
+				printf("%5d", (int) istaging_buff0_fb0[s][i]);
+			}
+			printf("]\n");
+		}
+	#endif
 
 }
+
+
+
 
 void LoadBiasBuffers_ff(
 		gmem_biastype *gmem_bias_fa0,
@@ -6917,7 +7311,8 @@ void ProcInputBuff_fc(input_struct input_desc,
 		conv_struct conv_desc,
 		output_struct output_desc,
 		weight_struct weight_desc,
-		ap_uint<64> istaging_buff0_fb0[8][XI_ISTAGEBUFF_DEPTH],
+//		ap_uint<64> istaging_buff0_fb0[8][XI_ISTAGEBUFF_DEPTH],
+		ap_uint<64> line_buffer[8][XI_LINEBUFF_DEPTH],
 		gmem_weighttype *gmem_weight1_fa0, gmem_weighttype *gmem_weight2_fa0,
 #if (XI_KER_PROC==16 || (XI_WTS_PORT_64BIT_EN==1 && XI_KER_PROC==8) )
 		gmem_weighttype *gmem_weight3_fa0,
@@ -6935,16 +7330,16 @@ void ProcInputBuff_fc(input_struct input_desc,
 #pragma HLS RESOURCE variable=ostaging_buff0_fb0 core=XPM_MEMORY uram
 #endif
 
-#pragma HLS ARRAY_PARTITION variable=istaging_buff0_fb0 complete dim=1
+#pragma HLS ARRAY_PARTITION variable=line_buffer complete dim=1
 #if XI_ISTG_URAM_EN==0
-#pragma HLS resource variable=istaging_buff0_fb0 core=RAM_T2P_BRAM latency=2
+#pragma HLS resource variable=line_buffer core=RAM_S2P_BRAM latency=2
 #else
-#pragma HLS RESOURCE variable=istaging_buff0_fb0 core=XPM_MEMORY uram
+#pragma HLS RESOURCE variable=line_buffer core=XPM_MEMORY uram
 #endif
 #pragma HLS INLINE OFF
 
 	
-	ap_uint<64> input_buff0_fc0[XI_PIX_PROC/2][1024],input_buff1_fc0[XI_PIX_PROC/2][1024];
+	ap_uint<64> input_buff0_fc0[XI_PIX_PROC/2][1024]={},input_buff1_fc0[XI_PIX_PROC/2][1024]={};
 #pragma HLS ARRAY_PARTITION variable=input_buff0_fc0 complete dim=1
 #pragma HLS ARRAY_PARTITION variable=input_buff1_fc0 complete dim=1
 #if XI_FEED_URAM_EN==0
@@ -6952,7 +7347,15 @@ void ProcInputBuff_fc(input_struct input_desc,
 #pragma HLS resource variable=input_buff1_fc0 latency=4 core=RAM_T2P_BRAM
 #else
 #pragma HLS RESOURCE variable=input_buff0_fc0 core=XPM_MEMORY uram
-#pragma HLS RESOURCE variable=input_buff1_fc0 core=XPM_MEMORY uram
+#pragma HLS RESOURCE variable=input_buff1_fc0 core=XPM_MEMORY uramProcInputBuff_fc
+#endif
+
+#if DBG_INFO
+	for(int i=0;i<XI_PIX_PROC/2;i++)
+	{
+		memset(input_buff0_fc0[i],0,sizeof(ap_uint<64>)*1024);
+		memset(input_buff1_fc0[i],0,sizeof(ap_uint<64>)*1024);
+	}
 #endif
 
 	out_pix_struct out_pixels0_fc0,out_pixels1_fc0;
@@ -6968,7 +7371,6 @@ void ProcInputBuff_fc(input_struct input_desc,
 		pad_row_fc0 = startrow_fb0;
 	else
 		pad_row_fc0 = -conv_desc.pad_num;
-
 
 	ap_int<16> pad_row_wo_fc0;
 	if (en_pad_fc0 == 1)
@@ -7004,10 +7406,18 @@ void ProcInputBuff_fc(input_struct input_desc,
 	ap_uint<16> pc_ping, pc_pong;
 
 
+	
+
+
 	LoadFeedingBuff_fl<CFILTER_SIZE,CCONV_STRIDE,CNUM_KERNELS,(IINPUT_PLANES>>2)>
-	(input_desc, conv_desc, output_desc,weight_desc,out_pixels0_fc0,istaging_buff0_fb0, input_buff0_fc0 ,0, current_plane_fc0, out_row_offset_fb0,
+	(input_desc, conv_desc, output_desc,weight_desc,out_pixels0_fc0,
+//			istaging_buff0_fb0,
+			line_buffer,input_buff0_fc0 ,0, current_plane_fc0, out_row_offset_fb0,
 			/*..continue..*/pad_row_fc0, pad_row_wo_fc0,row_id_1st_32pix_fc0, col_id_1st_32pix_fc0, row_id_2nd_32pix_fc0, col_id_2nd_32pix_fc0, mac_fz0, &pc_ping);
 
+
+	
+	
 	bool flag_fc0 = 0;
 	Pc_Loop:
 	for(ap_uint<16> pc_encoded_fc0=conv_desc.pix_per_kp, pc_fc0=0;pc_encoded_fc0<pc_loop_max_fc0;pc_encoded_fc0=pc_encoded_fc0+conv_desc.pix_per_kp)
@@ -7033,55 +7443,71 @@ void ProcInputBuff_fc(input_struct input_desc,
 			next_col_id_2nd_32pix_fc0=col_id_2nd_32pix_fc0+conv_desc.pix_mod_outwidth;
 		}
 
+
+		
+
+
 		if(!flag_fc0)
 		{
 			LoadFeedingBuff_fl<CFILTER_SIZE,CCONV_STRIDE,CNUM_KERNELS,(IINPUT_PLANES>>2)>
-			(input_desc, conv_desc, output_desc,weight_desc, out_pixels1_fc0,istaging_buff0_fb0, input_buff1_fc0, pc_fc0,current_plane_fc0,out_row_offset_fb0,
+			(input_desc, conv_desc, output_desc,weight_desc, out_pixels1_fc0,
+//					istaging_buff0_fb0,
+					line_buffer, input_buff1_fc0, pc_fc0,current_plane_fc0,out_row_offset_fb0,
 					/*..continue..*/pad_row_fc0, pad_row_wo_fc0,row_id_1st_32pix_fc0, col_id_1st_32pix_fc0, row_id_2nd_32pix_fc0, col_id_2nd_32pix_fc0, mac_fz0,&pc_pong);
-
+			#if !DBG_INFO
 			ProcWeightBuff_fd<IN_WW,IN_HH,OUT_WW,OUT_HH,CNUM_KERNELS,CFILTER_SIZE,CCONV_STRIDE,PPOOL_STRIDE,PPOOL_SIZE,IINPUT_PLANES,KERCNT,PNKPF>
 			(input_desc, conv_desc, weight_desc,output_desc,out_pixels0_fc0,input_buff0_fc0,ostaging_buff0_fb0,gmem_weight1_fa0,gmem_weight2_fa0,
 #if (XI_KER_PROC==16 || (XI_WTS_PORT_64BIT_EN==1 && XI_KER_PROC==8) )
 					gmem_weight3_fa0,gmem_weight4_fa0,
 #endif
 					ostgrow_x_width, out_row_offset_fb0, mac_fz0, pc_proc_wts,pc_ping,ap_clk_div2);
+			#endif
+
 
 			flag_fc0 = 1;
 		}
 		else
 		{
 			LoadFeedingBuff_fl<CFILTER_SIZE,CCONV_STRIDE,CNUM_KERNELS,(IINPUT_PLANES>>2)>
-			(input_desc, conv_desc,output_desc,weight_desc,out_pixels0_fc0,istaging_buff0_fb0, input_buff0_fc0, pc_fc0,current_plane_fc0,out_row_offset_fb0,
+			(input_desc, conv_desc,output_desc,weight_desc,out_pixels0_fc0,
+//					istaging_buff0_fb0,
+					line_buffer, input_buff0_fc0, pc_fc0,current_plane_fc0,out_row_offset_fb0,
 					/*..continue..*/pad_row_fc0, pad_row_wo_fc0,row_id_1st_32pix_fc0, col_id_1st_32pix_fc0, row_id_2nd_32pix_fc0, col_id_2nd_32pix_fc0, mac_fz0,&pc_ping);
-
+			#if !DBG_INFO
 			ProcWeightBuff_fd<IN_WW,IN_HH,OUT_WW,OUT_HH,CNUM_KERNELS,CFILTER_SIZE,CCONV_STRIDE,PPOOL_STRIDE,PPOOL_SIZE,IINPUT_PLANES,KERCNT,PNKPF>
 			(input_desc, conv_desc, weight_desc,output_desc,out_pixels1_fc0,input_buff1_fc0,ostaging_buff0_fb0,gmem_weight1_fa0,gmem_weight2_fa0,
 #if (XI_KER_PROC==16 || (XI_WTS_PORT_64BIT_EN==1 && XI_KER_PROC==8) )
 					gmem_weight3_fa0,gmem_weight4_fa0,
 #endif
 					ostgrow_x_width, out_row_offset_fb0, mac_fz0, pc_proc_wts,pc_pong,ap_clk_div2);
+			#endif
 			flag_fc0 = 0;
+
 		}
 		pc_proc_wts = pc_encoded_fc0;
 	}//Pc_Loop
 
 	if(flag_fc0 == 1)
 	{
+		#if !DBG_INFO
 		ProcWeightBuff_fd<IN_WW,IN_HH,OUT_WW,OUT_HH,CNUM_KERNELS,CFILTER_SIZE,CCONV_STRIDE,PPOOL_STRIDE,PPOOL_SIZE,IINPUT_PLANES,KERCNT,PNKPF>
 		(input_desc, conv_desc, weight_desc,output_desc,out_pixels1_fc0,input_buff1_fc0,ostaging_buff0_fb0,gmem_weight1_fa0,gmem_weight2_fa0,
 #if (XI_KER_PROC==16 || (XI_WTS_PORT_64BIT_EN==1 && XI_KER_PROC==8) )
 				gmem_weight3_fa0,gmem_weight4_fa0,
 #endif
 				ostgrow_x_width, out_row_offset_fb0, mac_fz0, pc_proc_wts,pc_pong,ap_clk_div2);
+		#endif
 	}
 	else
 	{
+		#if !DBG_INFO
 		ProcWeightBuff_fd<IN_WW,IN_HH,OUT_WW,OUT_HH,CNUM_KERNELS,CFILTER_SIZE,CCONV_STRIDE,PPOOL_STRIDE,PPOOL_SIZE,IINPUT_PLANES,KERCNT,PNKPF>
 		(input_desc, conv_desc, weight_desc,output_desc,out_pixels0_fc0,input_buff0_fc0,ostaging_buff0_fb0,gmem_weight1_fa0,gmem_weight2_fa0,
 #if (XI_KER_PROC==16 || (XI_WTS_PORT_64BIT_EN==1 && XI_KER_PROC==8) )
 				gmem_weight3_fa0,gmem_weight4_fa0,
 #endif
 				ostgrow_x_width, out_row_offset_fb0, mac_fz0, pc_proc_wts,pc_ping,ap_clk_div2);
+		#endif
 	}
 
 }
@@ -7091,7 +7517,8 @@ void ProcFeedingBuff_fz(input_struct input_desc,
 		conv_struct conv_desc,
 		output_struct output_desc,
 		weight_struct weight_desc,
-		ap_uint<64> istaging_buff0_fb0[8][XI_ISTAGEBUFF_DEPTH],
+//		ap_uint<64> istaging_buff0_fb0[8][XI_ISTAGEBUFF_DEPTH],
+		ap_uint<64> line_buffer[8][XI_LINEBUFF_DEPTH],
 		gmem_weighttype *gmem_weight1_fa0, gmem_weighttype *gmem_weight2_fa0,
 #if (XI_KER_PROC==16 || (XI_WTS_PORT_64BIT_EN==1 && XI_KER_PROC==8) )
 		gmem_weighttype *gmem_weight3_fa0,
@@ -7106,7 +7533,9 @@ void ProcFeedingBuff_fz(input_struct input_desc,
 	for(ap_uint<3> mac_fz0 = 0; mac_fz0 < conv_desc.mac_loop_count;mac_fz0++)
 	{
 		ProcInputBuff_fc<IN_WW,IN_HH,OUT_WW,OUT_HH,CNUM_KERNELS,CFILTER_SIZE,CCONV_STRIDE,PPOOL_STRIDE,PPOOL_SIZE,IINPUT_PLANES,(CNUM_KERNELS>>5),((OUT_WW*6)>>5),PNKPF>
-		(input_desc, conv_desc,output_desc,weight_desc,istaging_buff0_fb0,gmem_weight1_fa0,gmem_weight2_fa0,
+		(input_desc, conv_desc,output_desc,weight_desc,
+//				istaging_buff0_fb0,
+				line_buffer,gmem_weight1_fa0,gmem_weight2_fa0,
 #if (XI_KER_PROC==16 || (XI_WTS_PORT_64BIT_EN==1 && XI_KER_PROC==8) )
 				gmem_weight3_fa0,gmem_weight4_fa0,
 #endif
@@ -7176,7 +7605,8 @@ void ProcFeedingBuff_En_fz(input_struct input_desc,
 		conv_struct conv_desc,
 		output_struct output_desc,
 		weight_struct weight_desc,
-		ap_uint<64> istaging_buff0_fb0[8][XI_ISTAGEBUFF_DEPTH],
+//		ap_uint<64> istaging_buff0_fb0[8][XI_ISTAGEBUFF_DEPTH],
+		ap_uint<64> istaging_line_buff0_fb0[8][XI_LINEBUFF_DEPTH],
 		gmem_weighttype *gmem_weight1_fa0, gmem_weighttype *gmem_weight2_fa0,
 #if (XI_KER_PROC==16 || (XI_WTS_PORT_64BIT_EN==1 && XI_KER_PROC==8) )
 		gmem_weighttype *gmem_weight3_fa0,
@@ -7189,94 +7619,36 @@ void ProcFeedingBuff_En_fz(input_struct input_desc,
 		ap_uint<16> out_row_offset_fb0,
 		ap_uint<72> ostaging_buff0_fb0[2][XI_OSTG_BUFFER_SET][XI_OSTAGEBUFF_DEPTH],
 		ap_int<16> startrow_fb0,
-
-		gmem_inputtype_layer1 *gmem_istg_out_1_fa0,
-#if !XI_SINGLE_IO_PORT_EN
-		gmem_inputtype_layer1 *gmem_istg_out_2_fa0,
-#endif
-		ap_uint<16> conv3d_loop_bound,
-		gmem_inputtype_layer1 *gmem_input_layer1_fa0,
-		gmem_biastype *gmem_bias_fa0,
-		ap_int<12> conv3d_startrow_op,
-		ap_int<12> conv3d_endrow_op,
-		ap_int<12> conv3d_startrow_ip,
-		ap_uint<32> conv3d_bias_buf[8][512],
-		ap_uint<32> conv_3d_scale_buf[8][512],
 #if !XI_DISABLE_BN
 		ap_uint<32> conv3d_wts_buf[4][1024],
 #endif
 		bool last_itr_stage, bool ap_clk_div2) {
 #pragma HLS INLINE OFF
 
-	if (conv_desc.conv3d_intg_en || conv_desc.avg_pool_en
-			|| conv_desc.max_pool_en || conv_desc.pool_fuse_en) {
-		Conv3dTop(conv_desc, istaging_buff0_fb0, conv3d_loop_bound,
-				conv3d_startrow_ip, conv3d_bias_buf, conv_3d_scale_buf,
-#if !XI_DISABLE_BN
-				conv3d_wts_buf,
-#endif
-				conv3d_startrow_op);
 
-
-	}
-
-	ap_uint<16> startrow_fg0,endrow_fg0;
-
-
-	if(conv3d_startrow_op<0)
-		startrow_fg0 = 0;
-	else
-		startrow_fg0 = conv3d_startrow_op;
-
-
-
-
-	if(conv3d_endrow_op<conv_desc.conv3d_op_h)
-		endrow_fg0 = conv3d_endrow_op;
-	else
-		endrow_fg0 = conv_desc.conv3d_op_h-1;
-	ap_uint<16> num_rows_fg0 = endrow_fg0-startrow_fg0 +1;
-
-	ap_uint<16> layerx_loop_cnt_fg0;
-	layerx_loop_cnt_fg0 = num_rows_fg0 * conv_desc.conv3d_op_w;
-
-
-	ap_uint<32> start_off_A_fg0;
-
-	start_off_A_fg0 = startrow_fg0*conv_desc.conv3d_op_w;
-
-
-	if(!(conv_desc.lrn_pns_enable || conv_desc.bn_snb_enable || conv_desc.elem_wise_add_en || conv_desc.bn_snb_c_relu_en || conv_desc.bn_en || conv_desc.bn_c_relu_en || conv_desc.scale_relu_en || conv_desc.max_pool_en || conv_desc.avg_pool_en))
-	{
 		ProcFeedingBuff_fz<IN_WW,IN_HH,OUT_WW,OUT_HH,CNUM_KERNELS,CFILTER_SIZE,CCONV_STRIDE,PPOOL_STRIDE,PPOOL_SIZE,IINPUT_PLANES,(CNUM_KERNELS>>5),((OUT_WW*6)>>5),PNKPF>
-		(input_desc, conv_desc,output_desc,weight_desc,istaging_buff0_fb0,gmem_weight1_fa0,gmem_weight2_fa0,
+		(input_desc, conv_desc,output_desc,weight_desc,
+//				istaging_buff0_fb0,
+				istaging_line_buff0_fb0, gmem_weight1_fa0,gmem_weight2_fa0,
 #if (XI_KER_PROC==16 || (XI_WTS_PORT_64BIT_EN==1 && XI_KER_PROC==8) )
 				gmem_weight3_fa0,gmem_weight4_fa0,
 #endif
 				out_row_offset_fb0, ostaging_buff0_fb0, startrow_fb0,last_itr_stage,ap_clk_div2);
-	}
 
-	else
-	{
-
-		StoreNormData(conv_desc,
-				layerx_loop_cnt_fg0,
-				input_desc ,
-				gmem_istg_out_1_fa0,
-#if !XI_SINGLE_IO_PORT_EN
-				gmem_istg_out_2_fa0,
-#endif
-				istaging_buff0_fb0, startrow_fg0, endrow_fg0, start_off_A_fg0);
-	}
 
 }
 
 ap_uint<16> get_conv3d_loop_bound(conv_struct conv_desc,ap_uint<10> conv3d_op_row_rem)
-        																																																																																						{
+{
 #pragma HLS INLINE OFF
 
 
-	return (ap_uint<16>)(((conv3d_op_row_rem<conv_desc.conv3d_op_rows)?(ap_uint<16>)conv3d_op_row_rem :(ap_uint<16>)conv_desc.conv3d_op_rows)*(ap_uint<16>)conv_desc.conv3d_op_w*(ap_uint<16>)conv_desc.conv3d_fsz2);  																																																		}
+	return (ap_uint<16>)(((conv3d_op_row_rem<conv_desc.conv3d_op_rows)?(ap_uint<16>)conv3d_op_row_rem :(ap_uint<16>)conv_desc.conv3d_op_rows)*(ap_uint<16>)conv_desc.conv3d_op_w*(ap_uint<16>)conv_desc.conv3d_fsz2); 
+}
+
+
+
+
 
 template<int IN_WW,int IN_HH,int OUT_WW,int OUT_HH,int CNUM_KERNELS,int CFILTER_SIZE,int CCONV_STRIDE,int PPOOL_STRIDE,int PPOOL_SIZE,int IINPUT_PLANES,int PNKPF>
 void ProcIStagingBuff_fb(input_struct input_desc,
@@ -7284,15 +7656,55 @@ void ProcIStagingBuff_fb(input_struct input_desc,
 		output_struct output_desc,
 		weight_struct weight_desc,
 		gmem_inputtype_layer1 *gmem_input_layer1_fa0,
-		gmem_inputtype_layerx *gmem_input_layer_other1_fa0,
-#if !XI_SINGLE_IO_PORT_EN
-		gmem_inputtype_layerx *gmem_input_layer_other2_fa0,
-#endif
-		gmem_outputtype *gmem_output1_fa0,
-#if !XI_SINGLE_IO_PORT_EN
-		gmem_outputtype *gmem_output2_fa0,
-#endif
-		gmem_weighttype *gmem_weight1_fa0, gmem_weighttype *gmem_weight2_fa0,
+		#if !XI_SINGLE_IO_PORT_EN
+			#if STREAMIN == 0
+				gmem_inputtype_layerx *gmem_input_layer_other1_fa0,
+				gmem_inputtype_layerx *gmem_input_layer_other2_fa0,	
+			#elif STREAMIN == 1
+				hls::stream< gmem_inputtype_layerx > & inStream1,
+				hls::stream< gmem_inputtype_layerx > & inStream2,
+			#else
+				gmem_inputtype_layerx *gmem_input_layer_other1_fa0,
+				gmem_inputtype_layerx *gmem_input_layer_other2_fa0,	
+				hls::stream< gmem_inputtype_layerx > & inStream1,
+				hls::stream< gmem_inputtype_layerx > & inStream2,
+			#endif
+		#else
+			#if STREAMIN == 0
+				gmem_inputtype_layerx *gmem_input_layer_other1_fa0,
+			#elif STREAMIN == 1
+				hls::stream< gmem_inputtype_layerx > & inStream1,
+			#else
+				gmem_inputtype_layerx *gmem_input_layer_other1_fa0,
+				hls::stream< gmem_inputtype_layerx > & inStream1,
+			#endif
+		#endif
+
+		#if !XI_SINGLE_IO_PORT_EN
+			#if STREAMOUT == 0 
+				gmem_outputtype *gmem_output1_fa0,
+				gmem_outputtype *gmem_output2_fa0,			
+			#elif STREAMOUT ==1
+				hls::stream< gmem_inputtype_layerx > & outStream1,
+				hls::stream< gmem_inputtype_layerx > & outStream2,
+			#else
+				gmem_outputtype *gmem_output1_fa0,
+				gmem_outputtype *gmem_output2_fa0,	
+				hls::stream< gmem_inputtype_layerx > & outStream1,
+				hls::stream< gmem_inputtype_layerx > & outStream2,
+			#endif
+		#else
+			#if STREAMOUT == 0 
+				gmem_outputtype *gmem_output1_fa0,
+			#elif STREAMOUT == 1
+				hls::stream< gmem_inputtype_layerx > & outStream1,
+			#else
+				gmem_outputtype *gmem_output1_fa0,
+				hls::stream< gmem_inputtype_layerx > & outStream1,
+			#endif
+		#endif //* !XI_SINGLE_IO_PORT_EN
+		gmem_weighttype *gmem_weight1_fa0, 
+		gmem_weighttype *gmem_weight2_fa0,
 #if (XI_KER_PROC==16 || (XI_WTS_PORT_64BIT_EN==1 && XI_KER_PROC==8) )
 		gmem_weighttype *gmem_weight3_fa0,
 		gmem_weighttype *gmem_weight4_fa0,
@@ -7309,20 +7721,20 @@ void ProcIStagingBuff_fb(input_struct input_desc,
 		bool ap_clk_div2) {
 #pragma HLS INLINE OFF
 
-	ap_uint<64> istaging_buff0_fb0[8][XI_ISTAGEBUFF_DEPTH],istaging_buff1_fb0[8][XI_ISTAGEBUFF_DEPTH];
 
-#pragma HLS ARRAY_PARTITION variable=istaging_buff0_fb0 complete dim=1
-#pragma HLS ARRAY_PARTITION variable=istaging_buff1_fb0 complete dim=1
+	ap_uint<64> istaging_line_buff0_fb0[8][XI_LINEBUFF_DEPTH];
+#pragma HLS ARRAY_PARTITION variable=istaging_line_buff0_fb0 complete dim=1
 #if XI_ISTG_URAM_EN==0
-#pragma HLS resource variable=istaging_buff0_fb0 core=RAM_T2P_BRAM latency=2
-#pragma HLS resource variable=istaging_buff1_fb0 core=RAM_T2P_BRAM latency=2
+#pragma HLS resource variable=istaging_line_buff0_fb0 core=RAM_S2P_BRAM latency=2
 #else
-#pragma HLS RESOURCE variable=istaging_buff0_fb0 core=XPM_MEMORY uram
-#pragma HLS RESOURCE variable=istaging_buff1_fb0 core=XPM_MEMORY uram
+#pragma HLS RESOURCE variable=istaging_line_buff0_fb0 core=XPM_MEMORY uram
+#pragma HLS RESOURCE variable=istaging_line_buff0_fb0 core=XPM_MEMORY uram
 #endif
 
-	ap_uint<72> ostaging_buff0_fb0[2][XI_OSTG_BUFFER_SET][XI_OSTAGEBUFF_DEPTH],
-	ostaging_buff1_fb0[2][XI_OSTG_BUFFER_SET][XI_OSTAGEBUFF_DEPTH];
+
+
+	ap_uint<72> ostaging_buff0_fb0[2][XI_OSTG_BUFFER_SET][XI_OSTAGEBUFF_DEPTH]={0};
+	ap_uint<72> ostaging_buff1_fb0[2][XI_OSTG_BUFFER_SET][XI_OSTAGEBUFF_DEPTH]={0};
 #pragma HLS ARRAY_PARTITION variable=ostaging_buff0_fb0 complete dim=1
 #pragma HLS ARRAY_PARTITION variable=ostaging_buff0_fb0 complete dim=2
 #pragma HLS ARRAY_PARTITION variable=ostaging_buff1_fb0 complete dim=1
@@ -7402,6 +7814,7 @@ void ProcIStagingBuff_fb(input_struct input_desc,
 		bias_size = output_desc.planes;
 
 
+
 	if(!(conv_desc.max_pool_en || conv_desc.avg_pool_en))
 	{
 		LoadBiasBuffers_ff(gmem_bias_fa0,bias_buff_fb0,bias_size);//output_desc.planes);
@@ -7437,31 +7850,81 @@ void ProcIStagingBuff_fb(input_struct input_desc,
 
 	conv3d_op_row_rem -= conv_desc.conv3d_op_rows;
 
+	side_addr_type sideAddr=0;
+	
+	bool streamInFlag= conv_desc.stream_in;
+	bool streamOutFlag= conv_desc.stream_out;
+
+	side_addr_type widthXrowStep= conv_desc.ostg_row_count*conv_desc.conv3d_ip_w;
+	ap_int<16>  lineBufferStartRow=0;
+	
+	int streamCnt=0;
+	ap_uint<16> lineBufferPlaneStep=conv_desc.line_buffer_plane_step;
+
+	
 	if(conv_desc.read_from_ddr == 1)
 	{
-#if XI_DISABLE_BN
-		LoadIStagingBuff_fg<IN_WW,IN_HH,IINPUT_PLANES>
-		(input_desc, conv_desc, gmem_input_layer1_fa0, gmem_input_layer_other1_fa0,
-#if !XI_SINGLE_IO_PORT_EN
+
+		LoadLineBuff(input_desc,
+		lineBufferStartRow,
+		lineBufferStartRow+rows_to_process_fb0,
+		lineBufferPlaneStep,
+
+		#if !XI_SINGLE_IO_PORT_EN
+			#if STREAMIN== 0
+				gmem_input_layer_other1_fa0,
 				gmem_input_layer_other2_fa0,
-#endif
-				gmem_bias_fa0,gmem_istg_out_1_fa0,
-#if !XI_SINGLE_IO_PORT_EN
-				gmem_istg_out_2_fa0,
-#endif
-				istaging_buff0_fb0, startrow_fb0, endrow_fb0,norm_startrow_fb0,norm_endrow_fb0,conv3d_loop_bound);
-#else
-		LoadIStagingBuff_fg<IN_WW, IN_HH, IINPUT_PLANES>(input_desc, conv_desc,
-				gmem_input_layer1_fa0, gmem_input_layer_other1_fa0,
-#if !XI_SINGLE_IO_PORT_EN
+			#elif STREAMIN == 1
+				inStream1, inStream2,
+			#else
+				gmem_input_layer_other1_fa0,
 				gmem_input_layer_other2_fa0,
-#endif
-				gmem_bias_fa0, gmem_inp_norm_2_fa0,
-				gmem_inp_norm_3_fa0, gmem_istg_out_1_fa0, gmem_istg_out_2_fa0,
-				istaging_buff0_fb0, startrow_fb0, endrow_fb0, norm_startrow_fb0,
-				norm_endrow_fb0, mean_buff, variance_buff, beta_buff,
-				conv3d_loop_bound);
-#endif	
+				inStream1, inStream2,
+			#endif
+		#else
+			#if STREAMIN == 0
+				gmem_input_layer_other1_fa0,
+			#elif STREAMIN == 1
+				inStream1, 
+			#else
+				gmem_input_layer_other1_fa0,
+				inStream1, 
+			#endif
+		#endif
+		istaging_line_buff0_fb0,
+		0,
+		1);
+		lineBufferStartRow+=rows_to_process_fb0;
+
+		LoadLineBuff(input_desc,
+		lineBufferStartRow,
+		lineBufferStartRow+rows_to_process_fb0,
+		lineBufferPlaneStep,
+		#if !XI_SINGLE_IO_PORT_EN
+			#if STREAMIN== 0
+				gmem_input_layer_other1_fa0,
+				gmem_input_layer_other2_fa0,
+			#elif STREAMIN == 1
+				inStream1, inStream2,
+			#else
+				gmem_input_layer_other1_fa0,
+				gmem_input_layer_other2_fa0,
+				inStream1, inStream2,
+			#endif
+		#else
+			#if STREAMIN == 0
+				gmem_input_layer_other1_fa0,
+			#elif STREAMIN == 1
+				inStream1, 
+			#else
+				gmem_input_layer_other1_fa0,
+				inStream1, 
+			#endif
+		#endif
+		istaging_line_buff0_fb0,
+		0,
+		1);
+		lineBufferStartRow+=rows_to_process_fb0;
 	}
 	startrow_process_fb0 = -conv_desc.pad_num;
 
@@ -7472,82 +7935,109 @@ void ProcIStagingBuff_fb(input_struct input_desc,
 	bool write_en_fb0 = 0;
 	bool pingpong_flag_fb0 = 0;
 
+
 	ProciStg_Loop:
 	for (ap_uint<16> output_row_fb0 = conv_desc.ostg_row_count,output_row_next_fb0 = conv_desc.ostg_row_count * 2;output_row_fb0 < output_desc.height;
 			/*..continue..*/output_row_fb0 += conv_desc.ostg_row_count, output_row_next_fb0 += conv_desc.ostg_row_count)
 	{
 #pragma HLS LOOP_TRIPCOUNT min=59 max=59
+   #pragma HLS dependence variable=istaging_line_buff0_fb0 intra false
 
 		if (!pingpong_flag_fb0)
 		{
 
+
+
 			ProcFeedingBuff_En_fz<IN_WW, IN_HH, OUT_WW, OUT_HH, CNUM_KERNELS,CFILTER_SIZE, CCONV_STRIDE, PPOOL_STRIDE, PPOOL_SIZE,IINPUT_PLANES, (CNUM_KERNELS >> 5), ((OUT_WW * 6) >> 5),PNKPF>
 			(input_desc, conv_desc, output_desc, weight_desc,
-					istaging_buff0_fb0, gmem_weight1_fa0, gmem_weight2_fa0,
+//					istaging_buff0_fb0,
+					istaging_line_buff0_fb0,
+					gmem_weight1_fa0, gmem_weight2_fa0,
 #if (XI_KER_PROC==16 || (XI_WTS_PORT_64BIT_EN==1 && XI_KER_PROC==8) )
 					gmem_weight3_fa0, gmem_weight4_fa0,
 #endif
 #if !XI_DISABLE_BN
 					gmem_inp_norm_2_fa0, gmem_inp_norm_3_fa0,
 #endif
-					out_row_offset_fb0, ostaging_buff0_fb0,
+					out_row_offset_fb0, 
+					ostaging_buff0_fb0,
 					startrow_process_fb0,
-
-					gmem_istg_out_1_fa0,
-#if !XI_SINGLE_IO_PORT_EN
-					gmem_istg_out_2_fa0,
-#endif
-					conv3d_loop_bound, gmem_input_layer1_fa0, gmem_bias_fa0,
-					conv3d_startrow_op, conv3d_endrow_op, startrow_fb0,
-					conv_3d_bias_buf, conv_3d_scale_buf,
 #if !XI_DISABLE_BN
 					conv_3d_wts_buf,
 #endif
 					0, ap_clk_div2);
 
 			StoreOStagingBuff_En_fj<CNUM_KERNELS, OUT_WW>(output_desc,
-					conv_desc, out_row_offset_wr_fb0, gmem_output1_fa0,
-#if !XI_SINGLE_IO_PORT_EN
-					gmem_output2_fa0,
-#endif
+					conv_desc, out_row_offset_wr_fb0, 
+					#if !XI_SINGLE_IO_PORT_EN
+						#if STREAMOUT == 0
+							gmem_output1_fa0, gmem_output2_fa0,
+						#elif STREAMOUT == 1
+							outStream1,outStream2,
+						#else
+							gmem_output1_fa0, gmem_output2_fa0,
+							outStream1,outStream2,
+						#endif
+					#else
+						#if STREAMOUT == 0
+							gmem_output1_fa0, 
+						#elif STREAMOUT == 1
+							outStream1,
+						#else
+							gmem_output1_fa0,
+							outStream1,
+						#endif
+					#endif
 					ostaging_buff1_fb0, write_en_fb0, 0,
 					bias_buff_fb0, scale_buff_fb0, &fc_pixel_count);
 #pragma HLS resource variable=startrow_fb0 core=AddSubnS
 			startrow_fb0 += startrow_inc_fb0;
 			endrow_fb0 += startrow_inc_fb0;
 
-#if XI_DISABLE_BN
-			LoadIStagingBuff_fg<IN_WW,IN_HH,IINPUT_PLANES>
-			(input_desc, conv_desc, gmem_input_layer1_fa0, gmem_input_layer_other1_fa0,
-#if !XI_SINGLE_IO_PORT_EN
-					gmem_input_layer_other2_fa0,
-#endif
-					gmem_bias_fa0,gmem_istg_out_1_fa0,
-#if !XI_SINGLE_IO_PORT_EN
-					gmem_istg_out_2_fa0,
-#endif
-					istaging_buff1_fb0, startrow_fb0, endrow_fb0,norm_startrow_fb0,norm_endrow_fb0,conv3d_loop_bound);
-#else
-			LoadIStagingBuff_fg<IN_WW, IN_HH, IINPUT_PLANES>(input_desc,
-					conv_desc, gmem_input_layer1_fa0,
-					gmem_input_layer_other1_fa0,
-#if !XI_SINGLE_IO_PORT_EN
-					gmem_input_layer_other2_fa0,
-#endif
-					gmem_bias_fa0, gmem_inp_norm_2_fa0, gmem_inp_norm_3_fa0,
-					gmem_istg_out_1_fa0, gmem_istg_out_2_fa0,
-					istaging_buff1_fb0, startrow_fb0, endrow_fb0,
-					norm_startrow_fb0, norm_endrow_fb0, mean_buff,
-					variance_buff, beta_buff, conv3d_loop_bound);
-#endif
 
+
+			LoadLineBuff(input_desc,
+			lineBufferStartRow,
+			lineBufferStartRow+rows_to_process_fb0,
+			lineBufferPlaneStep,
+		#if !XI_SINGLE_IO_PORT_EN
+			#if STREAMIN== 0
+				gmem_input_layer_other1_fa0,
+				gmem_input_layer_other2_fa0,
+			#elif STREAMIN == 1
+				inStream1, inStream2,
+			#else
+				gmem_input_layer_other1_fa0,
+				gmem_input_layer_other2_fa0,
+				inStream1, inStream2,
+			#endif
+		#else
+			#if STREAMIN == 0
+				gmem_input_layer_other1_fa0,
+			#elif STREAMIN == 1
+				inStream1, 
+			#else
+				gmem_input_layer_other1_fa0,
+				inStream1, 
+			#endif
+		#endif
+			istaging_line_buff0_fb0,
+			0,
+			1);
+			lineBufferStartRow+=rows_to_process_fb0;
 			pingpong_flag_fb0 = 1;
 		} else {
+
+
+
+
 			ProcFeedingBuff_En_fz<IN_WW, IN_HH, OUT_WW, OUT_HH, CNUM_KERNELS,
 			CFILTER_SIZE, CCONV_STRIDE, PPOOL_STRIDE, PPOOL_SIZE,
 			IINPUT_PLANES, (CNUM_KERNELS >> 5), ((OUT_WW * 6) >> 5),
 			PNKPF>(input_desc, conv_desc, output_desc, weight_desc,
-					istaging_buff1_fb0, gmem_weight1_fa0, gmem_weight2_fa0,
+//					istaging_buff1_fb0,
+					istaging_line_buff0_fb0,
+					gmem_weight1_fa0, gmem_weight2_fa0,
 #if (XI_KER_PROC==16 || (XI_WTS_PORT_64BIT_EN==1 && XI_KER_PROC==8) )
 					gmem_weight3_fa0,gmem_weight4_fa0,
 #endif
@@ -7556,23 +8046,32 @@ void ProcIStagingBuff_fb(input_struct input_desc,
 #endif
 					out_row_offset_fb0, ostaging_buff1_fb0,
 					startrow_process_fb0,
-					gmem_istg_out_1_fa0,
-#if !XI_SINGLE_IO_PORT_EN
-					gmem_istg_out_2_fa0,
-#endif
-					conv3d_loop_bound, gmem_input_layer1_fa0, gmem_bias_fa0,
-					conv3d_startrow_op, conv3d_endrow_op, startrow_fb0,
-					conv_3d_bias_buf, conv_3d_scale_buf,
 #if !XI_DISABLE_BN
 					conv_3d_wts_buf,
 #endif
 					0, ap_clk_div2);
 
 			StoreOStagingBuff_En_fj<CNUM_KERNELS, OUT_WW>(output_desc,
-					conv_desc, out_row_offset_wr_fb0, gmem_output1_fa0,
-#if !XI_SINGLE_IO_PORT_EN
-					gmem_output2_fa0,
-#endif
+					conv_desc, out_row_offset_wr_fb0, 
+					#if !XI_SINGLE_IO_PORT_EN
+						#if STREAMOUT == 0
+							gmem_output1_fa0, gmem_output2_fa0,
+						#elif STREAMOUT == 1
+							outStream1,outStream2,
+						#else
+							gmem_output1_fa0, gmem_output2_fa0,
+							outStream1,outStream2,
+						#endif
+					#else
+						#if STREAMOUT == 0
+							gmem_output1_fa0, 
+						#elif STREAMOUT == 1
+							outStream1,
+						#else
+							gmem_output1_fa0,
+							outStream1,
+						#endif
+					#endif
 					ostaging_buff0_fb0, write_en_fb0, 0,
 					bias_buff_fb0, scale_buff_fb0, &fc_pixel_count);
 
@@ -7580,36 +8079,41 @@ void ProcIStagingBuff_fb(input_struct input_desc,
 			startrow_fb0 += startrow_inc_fb0;
 			endrow_fb0 += startrow_inc_fb0;
 
-#if XI_DISABLE_BN
-			LoadIStagingBuff_fg<IN_WW,IN_HH,IINPUT_PLANES>
-			(input_desc, conv_desc, gmem_input_layer1_fa0, gmem_input_layer_other1_fa0,
-#if !XI_SINGLE_IO_PORT_EN
-					gmem_input_layer_other2_fa0,
-#endif
-					gmem_bias_fa0,gmem_istg_out_1_fa0,
-#if !XI_SINGLE_IO_PORT_EN
-					gmem_istg_out_2_fa0,
-#endif
-					istaging_buff0_fb0, startrow_fb0, endrow_fb0,norm_startrow_fb0,norm_endrow_fb0,conv3d_loop_bound);
-#else
-			LoadIStagingBuff_fg<IN_WW, IN_HH, IINPUT_PLANES>(input_desc,
-					conv_desc, gmem_input_layer1_fa0,
-#if !XI_SINGLE_IO_PORT_EN
-					gmem_input_layer_other1_fa0,
-#endif
-					gmem_input_layer_other2_fa0,
-					gmem_bias_fa0, gmem_inp_norm_2_fa0, gmem_inp_norm_3_fa0,
-					gmem_istg_out_1_fa0, gmem_istg_out_2_fa0,
-					istaging_buff0_fb0, startrow_fb0, endrow_fb0,
-					norm_startrow_fb0, norm_endrow_fb0, mean_buff,
-					variance_buff, beta_buff, conv3d_loop_bound);
-#endif
+			LoadLineBuff(input_desc,
+			lineBufferStartRow,
+			lineBufferStartRow+rows_to_process_fb0,
+			lineBufferPlaneStep,
+		#if !XI_SINGLE_IO_PORT_EN
+			#if STREAMIN== 0
+				gmem_input_layer_other1_fa0,
+				gmem_input_layer_other2_fa0,
+			#elif STREAMIN == 1
+				inStream1, inStream2,
+			#else
+				gmem_input_layer_other1_fa0,
+				gmem_input_layer_other2_fa0,
+				inStream1, inStream2,
+			#endif
+		#else
+			#if STREAMIN == 0
+				gmem_input_layer_other1_fa0,
+			#elif STREAMIN == 1
+				inStream1, 
+			#else
+				gmem_input_layer_other1_fa0,
+				inStream1, 
+			#endif
+		#endif
+			istaging_line_buff0_fb0,
+			0,
+			1);
+			lineBufferStartRow+=rows_to_process_fb0;
 			pingpong_flag_fb0 = 0;
 		}
-		conv3d_loop_bound = get_conv3d_loop_bound(conv_desc,conv3d_op_row_rem);
-		conv3d_op_row_rem -= conv_desc.conv3d_op_rows;
-		conv3d_startrow_op = conv3d_endrow_op +1;
-		conv3d_endrow_op += conv_desc.conv3d_op_rows;
+		// conv3d_loop_bound = get_conv3d_loop_bound(conv_desc,conv3d_op_row_rem);
+		// conv3d_op_row_rem -= conv_desc.conv3d_op_rows;
+		// conv3d_startrow_op = conv3d_endrow_op +1;
+		// conv3d_endrow_op += conv_desc.conv3d_op_rows;
 		startrow_process_fb0 += startrow_inc_fb0;
 
 
@@ -7627,7 +8131,10 @@ void ProcIStagingBuff_fb(input_struct input_desc,
 		CFILTER_SIZE, CCONV_STRIDE, PPOOL_STRIDE,
 		/*..continue..*/PPOOL_SIZE, IINPUT_PLANES, (CNUM_KERNELS >> 5),
 		((OUT_WW * 6) >> 5), PNKPF>(input_desc, conv_desc, output_desc,
-				weight_desc, istaging_buff1_fb0, gmem_weight1_fa0,
+				weight_desc,
+//				istaging_buff1_fb0,
+				istaging_line_buff0_fb0,
+				gmem_weight1_fa0,
 				gmem_weight2_fa0,
 #if (XI_KER_PROC==16 || (XI_WTS_PORT_64BIT_EN==1 && XI_KER_PROC==8) )
 				gmem_weight3_fa0,gmem_weight4_fa0,
@@ -7637,30 +8144,55 @@ void ProcIStagingBuff_fb(input_struct input_desc,
 #endif
 				out_row_offset_fb0,
 				/*..continue..*/ostaging_buff1_fb0, startrow_process_fb0,
-				gmem_istg_out_1_fa0,
-#if !XI_SINGLE_IO_PORT_EN
-				gmem_istg_out_2_fa0,
-#endif
-				conv3d_loop_bound, gmem_input_layer1_fa0, gmem_bias_fa0,
-				conv3d_startrow_op, conv3d_endrow_op, startrow_fb0,
-				conv_3d_bias_buf, conv_3d_scale_buf,
 #if !XI_DISABLE_BN
 				conv_3d_wts_buf,
 #endif
 				1, ap_clk_div2);
 
 		StoreOStagingBuff_En_fj<CNUM_KERNELS, OUT_WW>
-		(output_desc, conv_desc,out_row_offset_wr_fb0, gmem_output1_fa0,
-#if !XI_SINGLE_IO_PORT_EN
-				gmem_output2_fa0,
-#endif
+		(output_desc, conv_desc,out_row_offset_wr_fb0, 
+		#if !XI_SINGLE_IO_PORT_EN
+			#if STREAMOUT == 0
+				gmem_output1_fa0, gmem_output2_fa0,
+			#elif STREAMOUT == 1
+				outStream1,outStream2,
+			#else
+				gmem_output1_fa0, gmem_output2_fa0,
+				outStream1,outStream2,
+			#endif
+		#else
+			#if STREAMOUT == 0
+				gmem_output1_fa0, 
+			#elif STREAMOUT == 1
+				outStream1,
+			#else
+				gmem_output1_fa0,
+				outStream1,
+			#endif
+		#endif
 				ostaging_buff0_fb0, write_en_fb0, 0,bias_buff_fb0,scale_buff_fb0, &fc_pixel_count);
 
 		StoreOStagingBuff_En_fj<CNUM_KERNELS, OUT_WW>
-		(output_desc, conv_desc,out_row_offset_fb0, gmem_output1_fa0,
-#if !XI_SINGLE_IO_PORT_EN
-				gmem_output2_fa0,
-#endif
+		(output_desc, conv_desc,out_row_offset_fb0, 
+		#if !XI_SINGLE_IO_PORT_EN
+			#if STREAMOUT == 0
+				gmem_output1_fa0, gmem_output2_fa0,
+			#elif STREAMOUT == 1
+				outStream1,outStream2,
+			#else
+				gmem_output1_fa0, gmem_output2_fa0,
+				outStream1,outStream2,
+			#endif
+		#else
+			#if STREAMOUT == 0
+				gmem_output1_fa0, 
+			#elif STREAMOUT == 1
+				outStream1,
+			#else
+				gmem_output1_fa0,
+				outStream1,
+			#endif
+		#endif
 				ostaging_buff1_fb0, 1, 1,bias_buff_fb0,scale_buff_fb0, &fc_pixel_count);
 
 	} else {
@@ -7668,7 +8200,10 @@ void ProcIStagingBuff_fb(input_struct input_desc,
 		CFILTER_SIZE, CCONV_STRIDE, PPOOL_STRIDE,
 		/*..continue..*/PPOOL_SIZE, IINPUT_PLANES, (CNUM_KERNELS >> 5),
 		((OUT_WW * 6) >> 5), PNKPF>(input_desc, conv_desc, output_desc,
-				weight_desc, istaging_buff0_fb0, gmem_weight1_fa0,
+				weight_desc,
+//				istaging_buff0_fb0,
+				istaging_line_buff0_fb0,
+				gmem_weight1_fa0,
 				gmem_weight2_fa0,
 #if (XI_KER_PROC==16 || (XI_WTS_PORT_64BIT_EN==1 && XI_KER_PROC==8) )
 				gmem_weight3_fa0,gmem_weight4_fa0,
@@ -7678,31 +8213,63 @@ void ProcIStagingBuff_fb(input_struct input_desc,
 #endif
 				out_row_offset_fb0,
 				/*..continue..*/ostaging_buff0_fb0, startrow_process_fb0,
-				gmem_istg_out_1_fa0,
-#if !XI_SINGLE_IO_PORT_EN
-				gmem_istg_out_2_fa0,
-#endif
-				conv3d_loop_bound, gmem_input_layer1_fa0, gmem_bias_fa0,
-				conv3d_startrow_op, conv3d_endrow_op, startrow_fb0,
-				conv_3d_bias_buf, conv_3d_scale_buf,
+// 				gmem_istg_out_1_fa0,
+// #if !XI_SINGLE_IO_PORT_EN
+// 				gmem_istg_out_2_fa0,
+// #endif
+// 				conv3d_loop_bound, gmem_input_layer1_fa0, gmem_bias_fa0,
+// 				conv3d_startrow_op, conv3d_endrow_op, startrow_fb0,
+// 				conv_3d_bias_buf, conv_3d_scale_buf,
 #if !XI_DISABLE_BN
 				conv_3d_wts_buf,
 #endif
 				1, ap_clk_div2);
 
 		StoreOStagingBuff_En_fj<CNUM_KERNELS, OUT_WW>
-		(output_desc, conv_desc, out_row_offset_wr_fb0, gmem_output1_fa0,
-#if !XI_SINGLE_IO_PORT_EN
-				gmem_output2_fa0,
-#endif
-				ostaging_buff1_fb0, write_en_fb0, 0,bias_buff_fb0,scale_buff_fb0, &fc_pixel_count);
+		(output_desc, conv_desc, out_row_offset_wr_fb0,
+		#if !XI_SINGLE_IO_PORT_EN
+			#if STREAMOUT == 0
+				gmem_output1_fa0, gmem_output2_fa0,
+			#elif STREAMOUT == 1
+				outStream1,outStream2,
+			#else
+				gmem_output1_fa0, gmem_output2_fa0,
+				outStream1,outStream2,
+			#endif
+		#else
+			#if STREAMOUT == 0
+				gmem_output1_fa0, 
+			#elif STREAMOUT == 1
+				outStream1,
+			#else
+				gmem_output1_fa0,
+				outStream1,
+			#endif
+		#endif
+		ostaging_buff1_fb0, write_en_fb0, 0,bias_buff_fb0,scale_buff_fb0, &fc_pixel_count);
 
 		StoreOStagingBuff_En_fj<CNUM_KERNELS, OUT_WW>
-		(output_desc, conv_desc,out_row_offset_fb0, gmem_output1_fa0,
-#if !XI_SINGLE_IO_PORT_EN
-				gmem_output2_fa0,
-#endif
-				ostaging_buff0_fb0, 1, 1,bias_buff_fb0,scale_buff_fb0, &fc_pixel_count);
+		(output_desc, conv_desc,out_row_offset_fb0, 
+		#if !XI_SINGLE_IO_PORT_EN
+			#if STREAMOUT == 0
+				gmem_output1_fa0, gmem_output2_fa0,
+			#elif STREAMOUT == 1
+				outStream1,outStream2,
+			#else
+				gmem_output1_fa0, gmem_output2_fa0,
+				outStream1,outStream2,
+			#endif
+		#else
+			#if STREAMOUT == 0
+				gmem_output1_fa0, 
+			#elif STREAMOUT == 1
+				outStream1,
+			#else
+				gmem_output1_fa0,
+				outStream1,
+			#endif
+		#endif
+		ostaging_buff0_fb0, 1, 1,bias_buff_fb0,scale_buff_fb0, &fc_pixel_count);
 	}
 #if XI_ODBC_EN
 	if (conv_desc.write_to_ddr == 0)
@@ -7724,15 +8291,56 @@ void ConvLayer_fa(input_struct input_desc,
 		gmem_weighttype *weights3,
 		gmem_weighttype *weights4,
 #endif
-		gmem_inputtype_layer1 *input_1st, gmem_inputtype_layerx *input_other1,
+		gmem_inputtype_layer1 *input_1st, 
 #if !XI_SINGLE_IO_PORT_EN
-		gmem_inputtype_layerx *input_other2,
+		#if STREAMIN == 0
+			gmem_inputtype_layerx *input_other1,
+			gmem_inputtype_layerx *input_other2,	
+		#elif STREAMIN == 1
+			hls::stream< gmem_inputtype_layerx > & inStream1,
+    		hls::stream< gmem_inputtype_layerx > & inStream2,
+		#else
+			gmem_inputtype_layerx *input_other1,
+			gmem_inputtype_layerx *input_other2,
+			hls::stream< gmem_inputtype_layerx > & inStream1,
+    		hls::stream< gmem_inputtype_layerx > & inStream2,
+		#endif
+#else
+		#if STREAMIN == 0
+			gmem_inputtype_layerx *input_other1,	
+		#elif STREAMIN == 1
+			hls::stream< gmem_inputtype_layerx > & inStream1,
+		#else
+			gmem_inputtype_layerx *input_other1,
+			hls::stream< gmem_inputtype_layerx > & inStream1,
+		#endif
 #endif
 		gmem_biastype *bias,
-		gmem_outputtype *output1,
-#if !XI_SINGLE_IO_PORT_EN
-		gmem_outputtype *output2,
-#endif
+
+	#if !XI_SINGLE_IO_PORT_EN
+		#if STREAMOUT == 0 
+			gmem_outputtype *output1,
+			gmem_outputtype *output2,			
+		#elif STREAMOUT ==1
+			hls::stream< gmem_inputtype_layerx > & outStream1,
+			hls::stream< gmem_inputtype_layerx > & outStream2,
+		#else
+			gmem_outputtype *output1,
+			gmem_outputtype *output2,		
+			hls::stream< gmem_inputtype_layerx > & outStream1,
+			hls::stream< gmem_inputtype_layerx > & outStream2,
+		#endif
+	#else
+		#if STREAMOUT == 0 
+			gmem_outputtype *output1,
+		#elif STREAMOUT == 1
+			hls::stream< gmem_inputtype_layerx > & outStream1,
+		#else
+			gmem_outputtype *output1,
+			hls::stream< gmem_inputtype_layerx > & outStream1,
+		#endif
+	#endif //* !XI_SINGLE_IO_PORT_EN
+
 #if !XI_DISABLE_BN
 		gmem_inputtype_layer1 *inp_norm_2, gmem_inputtype_layer1 *inp_norm_3,
 #endif
@@ -7766,10 +8374,15 @@ void ConvLayer_fa(input_struct input_desc,
 
 
 	gmem_inputtype_layer1 *gmem_input_layer1_fa0 = input_1st + input_group_offset_1st_fa0;
+
+#if STREAMIN!=1
 	gmem_inputtype_layerx *gmem_input_layer_other1_fa0 = input_other1 + input_group_offset_other_fa0;
 #if !XI_SINGLE_IO_PORT_EN
 	gmem_inputtype_layerx *gmem_input_layer_other2_fa0 = input_other2 + input_group_offset_other_fa0;
 #endif
+#endif
+
+
 	gmem_weighttype *gmem_weight1_fa0 = weights1 + weights_group_offset_fa0;
 	gmem_weighttype *gmem_weight2_fa0 = weights2 + weights_group_offset_fa0;
 #if (XI_KER_PROC==16 || (XI_WTS_PORT_64BIT_EN==1 && XI_KER_PROC==8) )
@@ -7777,10 +8390,14 @@ void ConvLayer_fa(input_struct input_desc,
 	gmem_weighttype *gmem_weight4_fa0 = weights4 + weights_group_offset_fa0;
 #endif
 	gmem_biastype *gmem_bias_fa0 = bias + bias_group_offset_fa0;
+
+#if STREAMOUT!=1
 	gmem_outputtype *gmem_output1_fa0 = output1 + output_group_offset_fa0;
 #if !XI_SINGLE_IO_PORT_EN
 	gmem_outputtype *gmem_output2_fa0 = output2 + output_group_offset_fa0;
 #endif
+#endif
+
 #if !XI_DISABLE_BN
 	gmem_inputtype_layer1 *gmem_inp_norm_2_fa0 = inp_norm_2;
 	gmem_inputtype_layer1 *gmem_inp_norm_3_fa0 = inp_norm_3;
@@ -7790,17 +8407,67 @@ void ConvLayer_fa(input_struct input_desc,
 	gmem_inputtype_layer1 *gmem_istg_out_2_fa0 = istg_out2;
 #endif
 
+#if DBG_INFO
+	inputbase1= gmem_input_layer_other1_fa0;
+	inputbase2= gmem_input_layer_other2_fa0;
+
+	outbase1=gmem_output1_fa0;
+	outbase2=gmem_output2_fa0;
+
+
+	weightbase1=gmem_weight1_fa0;
+	weightbase2=gmem_weight2_fa0;
+	weightbase3=gmem_weight3_fa0;
+	weightbase4=gmem_weight4_fa0;
+#endif 
+
 	ProcIStagingBuff_fb<IN_WW, IN_HH, OUT_WW, OUT_HH, CNUM_KERNELS,CFILTER_SIZE, CCONV_STRIDE, PPOOL_STRIDE, PPOOL_SIZE, IINPUT_PLANES,PNKPF>
 	(input_desc, conv_desc, output_desc, weight_desc,
-			gmem_input_layer1_fa0, gmem_input_layer_other1_fa0,
+			gmem_input_layer1_fa0, 
 #if !XI_SINGLE_IO_PORT_EN
-			gmem_input_layer_other2_fa0,
-#endif
-			gmem_output1_fa0,
-#if !XI_SINGLE_IO_PORT_EN
-			gmem_output2_fa0,
-#endif
-			gmem_weight1_fa0, gmem_weight2_fa0,
+			#if STREAMIN== 0
+				gmem_input_layer_other1_fa0, 
+				gmem_input_layer_other2_fa0,
+			#elif STREAMIN == 1
+				inStream1, inStream2,
+			#else
+				gmem_input_layer_other1_fa0, 
+				gmem_input_layer_other2_fa0,
+				inStream1, inStream2,
+			#endif
+		#else
+			#if STREAMIN == 0
+				gmem_input_layer_other1_fa0, 
+			#elif STREAMIN == 1
+				inStream1, 
+			#else
+				gmem_input_layer_other1_fa0, 
+				inStream1, 
+			#endif
+		#endif
+
+
+		#if !XI_SINGLE_IO_PORT_EN
+			#if STREAMOUT == 0
+				gmem_output1_fa0, gmem_output2_fa0,
+			#elif STREAMOUT == 1
+				outStream1,outStream2,
+			#else
+				gmem_output1_fa0, gmem_output2_fa0,
+				outStream1,outStream2,
+			#endif
+		#else
+			#if STREAMOUT == 0
+				gmem_output1_fa0, 
+			#elif STREAMOUT == 1
+				outStream1,
+			#else
+				gmem_output1_fa0,
+				outStream1,
+			#endif
+		#endif
+			gmem_weight1_fa0, 
+			gmem_weight2_fa0,
 #if (XI_KER_PROC==16 || (XI_WTS_PORT_64BIT_EN==1 && XI_KER_PROC==8) )
 			gmem_weight3_fa0,gmem_weight4_fa0,
 #endif
@@ -7823,14 +8490,54 @@ void Convolution(gmem_weighttype *weights1, gmem_weighttype *weights2,
 		gmem_weighttype *weights3,
 		gmem_weighttype *weights4,
 #endif
-		gmem_outputtype *output1,
 #if !XI_SINGLE_IO_PORT_EN
-		gmem_outputtype *output2,
-#endif
-		gmem_inputtype_layerx *input_other1,
+			#if STREAMOUT == 0 
+				gmem_outputtype *output1,
+				gmem_outputtype *output2,			
+			#elif STREAMOUT ==1
+				hls::stream< gmem_inputtype_layerx > & outStream1,
+				hls::stream< gmem_inputtype_layerx > & outStream2,
+			#else
+				gmem_outputtype *output1,
+				gmem_outputtype *output2,	
+				hls::stream< gmem_inputtype_layerx > & outStream1,
+				hls::stream< gmem_inputtype_layerx > & outStream2,
+			#endif
+		#else
+			#if STREAMOUT == 0 
+				gmem_outputtype *gmem_output1_fa0,
+			#elif STREAMOUT == 1
+				hls::stream< gmem_inputtype_layerx > & outStream1,
+			#else
+				gmem_outputtype *gmem_output1_fa0,
+				hls::stream< gmem_inputtype_layerx > & outStream1,
+			#endif
+#endif //* !XI_SINGLE_IO_PORT_EN
 #if !XI_SINGLE_IO_PORT_EN
-		gmem_inputtype_layerx *input_other2,
+		#if STREAMIN == 0
+			gmem_inputtype_layerx *input_other1,
+			gmem_inputtype_layerx *input_other2,	
+		#elif STREAMIN == 1
+			hls::stream< gmem_inputtype_layerx > & inStream1,
+    		hls::stream< gmem_inputtype_layerx > & inStream2,
+		#else
+			gmem_inputtype_layerx *input_other1,
+			gmem_inputtype_layerx *input_other2,
+			hls::stream< gmem_inputtype_layerx > & inStream1,
+    		hls::stream< gmem_inputtype_layerx > & inStream2,
+		#endif
+#else
+		#if STREAMIN == 0
+			gmem_inputtype_layerx *input_other1,	
+		#elif STREAMIN == 1
+			hls::stream< gmem_inputtype_layerx > & inStream1,
+		#else
+			gmem_inputtype_layerx *input_other1,
+			hls::stream< gmem_inputtype_layerx > & inStream1,
+		#endif
 #endif
+
+
 		gmem_inputtype_layer1 *input_1st,
 		gmem_biastype *bias,
 #if !XI_DISABLE_BN
@@ -7850,6 +8557,10 @@ void Convolution(gmem_weighttype *weights1, gmem_weighttype *weights2,
 	group_conv_struct group_desc;
 	LoadDesc_ffa(scalar_conv_args, input_desc, output_desc, weight_desc,conv_desc, group_desc);
 
+#if DBG_INFO
+	printDesc(conv_desc,input_desc, output_desc, weight_desc,stdout);
+#endif
+
 	ConvLayer_fa<IN_WW, IN_HH, OUT_WW, OUT_HH, CNUM_KERNELS, CFILTER_SIZE,
 	CCONV_STRIDE, PPOOL_STRIDE, PPOOL_SIZE, IINPUT_PLANES, PNKPF>(
 			input_desc, weight_desc, output_desc, conv_desc, group_desc,
@@ -7860,15 +8571,48 @@ void Convolution(gmem_weighttype *weights1, gmem_weighttype *weights2,
 #if (XI_KER_PROC==16 || (XI_WTS_PORT_64BIT_EN==1 && XI_KER_PROC==8) )
 			weights3 + weight_desc.weight_offset,weights4 + weight_desc.weight_offset,
 #endif
-			input_1st, input_other1,
-#if !XI_SINGLE_IO_PORT_EN
-			input_other2,
-#endif
+			input_1st, 
+		#if !XI_SINGLE_IO_PORT_EN
+			#if STREAMIN== 0
+				input_other1, input_other2,
+			#elif STREAMIN == 1
+				inStream1, inStream2,
+			#else
+				input_other1, input_other2,
+				inStream1, inStream2,
+			#endif
+		#else
+			#if STREAMIN == 0
+				input_other1,
+			#elif STREAMIN == 1
+				inStream1, 
+			#else
+				input_other1,
+				inStream1, 
+			#endif
+		#endif
 			/*..continue..*/bias + output_desc.bias_offset,
-			output1 + output_desc.out_offset,
-#if !XI_SINGLE_IO_PORT_EN
-			output2 + output_desc.out_offset,
-#endif
+		#if !XI_SINGLE_IO_PORT_EN
+			#if STREAMOUT == 0
+				output1 + output_desc.out_offset, 
+				output2 + output_desc.out_offset,
+			#elif STREAMOUT == 1
+				outStream1,outStream2,
+			#else
+				output1 + output_desc.out_offset, 
+				output2 + output_desc.out_offset,
+				outStream1,outStream2,
+			#endif
+		#else
+			#if STREAMOUT == 0
+				output1 + output_desc.out_offset, 
+			#elif STREAMOUT == 1
+				outStream1,
+			#else
+				output1 + output_desc.out_offset, 
+				outStream1,
+			#endif
+		#endif
 			/*..continue..*/
 #if !XI_DISABLE_BN
 			inp_norm_2, inp_norm_3,

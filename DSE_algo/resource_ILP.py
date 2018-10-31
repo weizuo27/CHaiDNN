@@ -47,6 +47,8 @@ n_ip3 = min(BRAM_budget / ip3.BRAM, DSP_budget / ip3.DSP, FF_budget/ip3.FF, LUT_
 
 IP_table["conv"] = [ip1] * n_ip1 + [ip2] * n_ip2 + [ip3] * n_ip3
 
+
+
 class resourceILPBuilder():
     def __init__(self, BRAM_budget, DSP_budget, FF_budget, LUT_budget, BW_budget):
         #The set of resource budgets
@@ -61,11 +63,11 @@ class resourceILPBuilder():
         self.constraints = []
         self.resourceVariables = []
 
-    def createVs(self, IP_table, conv_queue):
+    def createVs(self, IP_table, queue):
         #1. create the mapping B_ij: i-th layer maps to j-th IP
-        for i in conv_queue:
+        for i in queue:
             row = []
-            for j in IP_table["conv"]:
+            for j in IP_table[i.type]:
                 row.append(cvx.Variable(boolean = True))
             self.mappingVariables.append(row)
         #2. create resource varible R_j: j-th IP is used in the implementation
@@ -80,7 +82,7 @@ class resourceILPBuilder():
         #2. resource constraints, resourceVariable[j]: how many times
         for j in range(len(IP_table["conv"])):
             exp = self.mappingVariables[0][j]
-            for i in range(1, len(conv_queue)):
+            for i in range(1, len(queue)):
                 exp += self.mappingVariables[i][j]
             #print exp, self.resourceVariables
             self.constraints.append(self.resourceVariables[j]<=exp)
