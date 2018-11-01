@@ -95,7 +95,7 @@ void *xiInit(char *dirpath,  char* prototxt,  char* caffemodel,
 	//# Call buffer management block
 	xiBuffCreate(xlayer_seq, chaihandle_info->JobQueue, chaihandle_info->ptrsList);
 
-	//bufMgmt_print(xlayer_seq, chaihandle_info->JobQueue);
+	bufMgmt_print(xlayer_seq, chaihandle_info->JobQueue);
 
 	std::cout << "\n[INFOx] Memory created" << std::endl;
 

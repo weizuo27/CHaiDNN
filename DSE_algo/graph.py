@@ -61,11 +61,19 @@ class layer:
 class graph:
     """
     The class that contains the graph
+    Atrributes:
+            G: The graph
+            mapping: A dictionary between the nodes in the graph and a name. This is for drawing the pictures.
+            layerQueue: The dictionary. key: The layer type. Value: The list of layers that fall into that category
+    Methods:
+            construct: to construct the graph from a file that is dumped from CHaiDnn
+
     """
     def __init__(self, filename):
         self.G = nx.DiGraph()
         self.mapping = dict()
         self.construct(filename)
+        self.layerQueue = dict()
 
     def construct(self, filename):
         """
@@ -103,6 +111,7 @@ class graph:
                         top_table[top_str] = [layer_tmp]
 
                     self.G.add_node(layer_tmp)
+                    self.layerQueue[layer_tmp.type] = [layer_tmp] if layer_tmp.type not in self.layerQueue else self.layerQueue[layer_tmp.type] + [layer_tmp]
                     self.mapping[layer_tmp] = layer_tmp.name
 
             if l.find("--Blobs--") >= 0 :
@@ -122,8 +131,6 @@ class graph:
                 for bbb in bottom_table[bb]:
                     for ttt in top_table[bb]:
                         self.G.add_edge(bbb, ttt)
-
-    def add_edge(self, IP_reuse_table):
 
 def drawGraph(G):
     nx.draw(G, with_labels=True, font_weight='bold')
