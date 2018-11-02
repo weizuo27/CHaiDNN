@@ -49,7 +49,7 @@ class resourceILPBuilder():
                 for i in queue: #Traverse the queue to add the varible
                     row = []
                     for j in IPs:
-                        row.append(cvx.Variable(boolean=True))
+                        row.append(cvx.Variable(boolean=True, name=i.name + "_" + j.name))
                     mapping_vars.append(row)
                 self.mappingVariables[layer_type] = mapping_vars
 
@@ -82,7 +82,7 @@ class resourceILPBuilder():
                 self.constraints.append(self.resourceVariables[layer_type][j]>= self.mappingVariables[layer_type][0][j])
                 for i in range(1, len(queue)):
                     exp += self.mappingVariables[layer_type][i][j] 
-                    print self.mappingVariables[layer_type][i][j]
+                    #print self.mappingVariables[layer_type][i][j]
                     self.constraints.append(self.resourceVariables[layer_type][j]>= self.mappingVariables[layer_type][i][j])
 
                 #FIXME: Currently only has reousrceVariable[layer_type][j] <= sum(mappVariable[layer_type][i][j];
@@ -105,7 +105,7 @@ class resourceILPBuilder():
                 exp_LUT += IP_queue[j].LUT* self.resourceVariables[layer_type][j]
                 exp_BW += IP_queue[j].BW * self.resourceVariables[layer_type][j]
 
-        print exp_BRAM
+        #print exp_BRAM
 
         self.constraints.append(exp_BRAM <= self.BRAM_budget)
         self.constraints.append(exp_DSP <= self.DSP_budget)
@@ -126,7 +126,7 @@ class resourceILPBuilder():
         obj_vars = []
         for layer_type in self.resourceVariables:
             obj_vars += self.resourceVariables[layer_type]
-        print "obj_vars ", obj_vars
+        #print "obj_vars ", obj_vars
         self.obj = cvx.Maximize(sum(obj_vars)) #Only check the feasibility
         self.prob = cvx.Problem(self.obj, self.constraints)
 
