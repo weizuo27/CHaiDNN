@@ -12,23 +12,6 @@ class pipelineNode():
         assert (latency < 0), "The latency of pipelineNode should be negative!"
         self.latency = latency
 
-#The class of IP
-class IP():
-    """
-    The class that describes the IP 
-    Attrs:
-        type: The type of the IP
-        BRAM, DSP, FF, LUT: The number of resources consumed by this IP
-    """
-    def __init__(self, type, resource_list, latency):
-        self.type = type
-        self.BRAM, self.DSP, self.FF, self.LUT, self.BW= resource_list
-
-    #This actually needs to be overide by different IP types
-    #This function should give latency of the using the IP with a 
-    #sepcified application dimensions
-    def calLatency(self):
-        None
 
 #IP_tables, this is just a dummy example, later will be converted 
 #to function to read in the characterization file
@@ -39,24 +22,6 @@ IP3 = IP("conv", [20, 20, 20, 20, 15], 10)
 
 IP4 = IP("pool",[10,10, 10, 10, 10], 20)
 IP5 = IP("pool", [15, 15, 15, 15, 15], 15)
-IP6 = IP("pool", [20, 20, 20, 20, 15], 10)
+IP6 = IP("pool", [20, 20, 20, 20, 20], 10)
 
 IPs = [IP1, IP2, IP3, IP4, IP5, IP6]
-
-def constructIPTable(IPs):
-    '''
-    To construnct the IP_table.
-    Args: 
-        IPs: The list of IPs which are available to choose from
-    return: 
-        IP_table: The dictionary. Key is the IP_type. Value is a list of IP * (number of IPs that can fit into the FPGA)
-    '''
-    IP_table = dict()
-
-    for IP in IPs:
-        IP_num = min(BRAM_budget/IP.BRAM, DSP_budget/IP.DSP, FF_budget/IP.FF, LUT_budget/IP.LUT, BW_budget/IP.BW)
-        IP_type = IP.type
-        IP_table[IP_type] = [IP] * IP_num if IP_type not in IP_table else IP_table[IP_type] + [IP] * IP_num
-
-    return IP_table
-

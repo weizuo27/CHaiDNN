@@ -52,14 +52,15 @@ class layer:
         """
         self.IP_id = None
 
-    def compute_Latency(self, n_row, IP=self.mappedIP):
+    def compute_Latency(self, n_row, IP):
         """
         Compute the latency of this layer using one IP.
         Args:
             n_rows: the number of rows to compute
             IP: the specific IP to compute this layer
         """
-            return IP.latency()
+        None
+        #return IP.latency()
         
 
     def get_pipeline_Latency(self, num_rows):
@@ -89,8 +90,8 @@ class graph:
     def __init__(self, filename):
         self.G = nx.DiGraph()
         self.mapping = dict()
-        self.construct(filename)
         self.layerQueue = dict()
+        self.construct(filename)
 
     def construct(self, filename):
         """
@@ -149,12 +150,6 @@ class graph:
                     for ttt in top_table[bb]:
                         self.G.add_edge(bbb, ttt)
         
-
-def drawGraph(G):
-    nx.draw(G, with_labels=True, font_weight='bold')
-    plt.show()
-
-g = graph("./log")
-h = nx.relabel_nodes(g.G, g.mapping)
-drawGraph(h)
-
+        def drawGraph(self):
+            h = nx.relabel_nodes(self.G, g.mapping)
+            nx.draw(h, with_labels=True, font_weight = 'bold')
