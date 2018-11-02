@@ -132,6 +132,7 @@ class resourceILPBuilder():
 
     def solveProblem(self):
         self.prob.solve(solver = "GUROBI")
+    def printSolution(self):
         print("status:", self.prob.status)
         print("optimal value", self.prob.value)
         for layer_type in self.mappingVariables:

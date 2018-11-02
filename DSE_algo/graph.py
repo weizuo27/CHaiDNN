@@ -16,7 +16,7 @@ class layer:
     Methods:
         set_input_params: Set input dimentions
         set_output_params: set output related parameters, e.g., dimensions
-        set_IP: set the mapped IP for this Layer
+        set_IP: set the mapped IP for this layer
     """
     def __init__(self, line):
         """
@@ -33,6 +33,14 @@ class layer:
             self.params = line.split(":")[2]
         else:
             self.params = line.split(":")[1].split(";")
+
+    def set_IP(self, IP):
+        """
+        set the mapped IP for this layer
+        Args:
+            IP: The object IP. The IP this layer is mapped to.
+        """
+        self.mappedIP = IP
 
     def set_input_params(self):
         """
@@ -154,7 +162,8 @@ class graph:
         for layer_type in self.layerQueue:
             Str = layer_type + ": "
             for layer_inst in self.layerQueue[layer_type]:
-                Str += (layer_inst.name+"\t")
+                mappedIPName = layer_inst.mappedIP.name if layer_inst.mappedIP is not None else "SW"
+                Str += (layer_inst.name+" assigned IP: "+ mappedIPName + " ")
             retStr += (Str+"\n")
         return retStr
     
