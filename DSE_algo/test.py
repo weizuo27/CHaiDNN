@@ -6,15 +6,29 @@ LUT_budget = 30
 
 BW_budget = 100 
 
+#The class of pipeline node
+class pipelineNode():
+    __init__(self, latency):
+        assert (latency < 0), "The latency of pipelineNode should be negative!"
+        self.latency = latency
+
 #The class of IP
 class IP():
+    """
+    The class that describes the IP 
+    Attrs:
+        type: The type of the IP
+        BRAM, DSP, FF, LUT: The number of resources consumed by this IP
+    """
     def __init__(self, type, resource_list, latency):
         self.type = type
         self.BRAM, self.DSP, self.FF, self.LUT, self.BW= resource_list
-        '''
-        Latency parameters need to be added in later
-        '''
 
+    #This actually needs to be overide by different IP types
+    #This function should give latency of the using the IP with a 
+    #sepcified application dimensions
+    def calLatency(self):
+        None
 
 #IP_tables, this is just a dummy example, later will be converted 
 #to function to read in the characterization file
@@ -29,7 +43,6 @@ IP6 = IP("pool", [20, 20, 20, 20, 15], 10)
 
 IPs = [IP1, IP2, IP3, IP4, IP5, IP6]
 
-#
 def constructIPTable(IPs):
     '''
     To construnct the IP_table.

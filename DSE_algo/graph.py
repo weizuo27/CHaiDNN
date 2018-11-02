@@ -5,14 +5,18 @@ import cvxpy as cvx
 class layer:
     """
     The class to discribe attributes relate to layers
-
-    self.name: The name of the layer
-    self.type: The type of the layer
-    self.params: The parameter list of the layers, according to different type, the list
-    has different interpretation.
-    self.input_params: The input dimension of the layer [batch, channel, height, width]
-    self.output_params: The output dimension of the layer[batch, channel, height, width]
-
+    Attrs:
+        name: The name of the layer
+        type: The type of the layer
+        params: The parameter list of the layers, according to different type, the list
+        has different interpretation.
+        input_params: The input dimension of the layer [batch, channel, height, width]
+        output_params: The output dimension of the layer[batch, channel, height, width]
+        mappedIP: The mapped ip of this layer
+    Methods:
+        set_input_params: Set input dimentions
+        set_output_params: set output related parameters, e.g., dimensions
+        set_IP: set the mapped IP for this Layer
     """
     def __init__(self, line):
         """
@@ -22,6 +26,8 @@ class layer:
         """
         n_t = line.split(":")[0]
         self.name, self.type = n_t.split("-")
+        #FIXME: The following are currently left blank, whether this is the best?
+        self.mappedIP = None
 
         if(self.type == "XPack Layer"):
             self.params = line.split(":")[2]
@@ -46,17 +52,28 @@ class layer:
         """
         self.IP_id = None
 
-    def compute_Latency(self, IP):
+    def compute_Latency(self, n_row, IP=self.mappedIP):
         """
         Compute the latency of this layer using one IP.
+        Args:
+            n_rows: the number of rows to compute
+            IP: the specific IP to compute this layer
         """
-        self.latency = None
+            return IP.latency()
+        
 
     def get_pipeline_Latency(self, num_rows):
         """
         Compute the time that is needed to compute num_rows of rows.
         This is used as starting time for the next layer
         """
+        None
+    def generateOneOutrow(self):
+        """
+        The number of rows need to complete to generate one output row
+        #FIXME: Maybe can directly return the latency once it is 
+        """
+
 
 class graph:
     """
@@ -125,12 +142,13 @@ class graph:
                         top_table[blobname].set_output_params(dims)
         f.close()
 
-        #Build Edge
+        #Build Edges
         for bb in bottom_table:
             if bb in top_table:
                 for bbb in bottom_table[bb]:
                     for ttt in top_table[bb]:
                         self.G.add_edge(bbb, ttt)
+        
 
 def drawGraph(G):
     nx.draw(G, with_labels=True, font_weight='bold')

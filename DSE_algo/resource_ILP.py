@@ -12,7 +12,7 @@ class resourceILPBuilder():
         FF_budget: The budget of FF
         BW_budget: The budget of Bandwidth
         mappingVariables: Dictionary. Key: layer type. Values: 2-dim array B_ij: i-th layer mapps to j-th IP
-        constraints: FIXME
+        constraints: The list of constraints that should satisfy
         resourceVariables: Dictionary. key: layer type. Valus: 1-dim array R_j: j-th IP is used 
     """
 
@@ -130,8 +130,8 @@ class resourceILPBuilder():
             for j, res in enumerate(self.resourceVariables):
                 print "resource", j, res.value
 
-rb = resourceILPBuilder(BRAM_budget, DSP_budget, FF_budget, LUT_budget, BW_budget)
-rb.createVs(IP_table, conv_queue)
-rb.createConstraints()
-rb.createProblem()
-rb.solveProblem()
+#rb = resourceILPBuilder(BRAM_budget, DSP_budget, FF_budget, LUT_budget, BW_budget)
+#rb.createVs(IP_table, conv_queue)
+#rb.createConstraints()
+#rb.createProblem()
+#rb.solveProblem()
