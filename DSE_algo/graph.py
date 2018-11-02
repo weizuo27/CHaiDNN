@@ -149,7 +149,15 @@ class graph:
                 for bbb in bottom_table[bb]:
                     for ttt in top_table[bb]:
                         self.G.add_edge(bbb, ttt)
-        
-        def drawGraph(self):
-            h = nx.relabel_nodes(self.G, g.mapping)
-            nx.draw(h, with_labels=True, font_weight = 'bold')
+    def __str__(self):
+        retStr = ""
+        for layer_type in self.layerQueue:
+            Str = layer_type + ": "
+            for layer_inst in self.layerQueue[layer_type]:
+                Str += (layer_inst.name+"\t")
+            retStr += (Str+"\n")
+        return retStr
+    
+    def drawGraph(self):
+        h = nx.relabel_nodes(self.G, g.mapping)
+        nx.draw(h, with_labels=True, font_weight = 'bold')
