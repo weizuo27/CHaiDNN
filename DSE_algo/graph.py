@@ -6,6 +6,7 @@ class pipeNode:
     idx = 0
     def __init__(self, neg_latency):
         self.name = "pipeNode" + str(pipeNode.idx)
+        self.mappedIP = None
         pipeNode.idx+=1
         self.latency = neg_latency
         self.pipelinedLatency = neg_latency
@@ -235,3 +236,6 @@ class graph:
     def add_node(self, node):
         self.G.add_node(node)
         self.mapping[node] = node.name
+
+    def topological_sort(self):
+        return nx.topological_sort(self.G)

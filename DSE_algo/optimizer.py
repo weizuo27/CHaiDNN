@@ -2,6 +2,7 @@ from resourceILPBuilder import resourceILPBuilder
 from graph import graph
 from graph import pipeNode
 from utils import *
+import itertools
 
 #FIXME: I am not sure where to insert this yet. But if the scheduling found a conflict pair, then all the identical IPs of one of the pair, should also be eliminated
 class optimizer:
@@ -16,7 +17,7 @@ class optimizer:
             FF_budget: The budget of FF
             BW_budget: The budget of Bandwidth
 
-            hw_layers: The dictionary of the layers that are supported by hardware
+            hw_layers:. The dictionary of the layers that are supported by hardware
             app_fileName: The graph description file from CHaiDNN
             IP_fileName: the file contains the IP candidates and charicterization data
             IP_table: The dictionary that stores the list of candidate IPs
@@ -49,14 +50,12 @@ class optimizer:
         #FIXME: 
         self.addPipelineNodes()
         self.g.printNodeLatency()
-        self.g.drawGraph()
-        """ 
         #fill-in the IPReuseTable:
         nodes_list = self.g.topological_sort()
         self.constructIPReuseTable(nodes_list)
         #add the the edges to factor in the IP reuse
         self.addReuseEdges()
-        """
+        self.g.drawGraph()
         
     def constructIPReuseTable(self, node_list):
         """
@@ -67,8 +66,10 @@ class optimizer:
             node_list: The list of all nodes in the graph in topological sorting order
         """
         for node in node_list:
+            if node.mappedIP is None or node.mappedIP == "Software":
+                 continue
             if node.mappedIP not in self.IPReuseTable:
-                self.IPReuseTable[node.mappedIP] = []
+               self.IPReuseTable[node.mappedIP] = []
             self.IPReuseTable[node.mappedIP].append(node)
         
     def addReuseEdges(self):
@@ -77,8 +78,9 @@ class optimizer:
         """
         #Iterate through each pair that reuse one IP, then add edge
         for IP in self.IPReuseTable:
-            for (s, t) in itertools.combinations(IPReuseTable[IP], 2):
-                self.g.add_edge(s,t)
+            for (s, t) in itertools.combinations(self.IPReuseTable[IP], 2):
+                print s.name, t.name
+                self.g.G.add_edge(s,t)
 
     def addPipelineNodes(self):
         """
