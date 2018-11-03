@@ -2,6 +2,14 @@ import matplotlib.pyplot as plt
 import networkx as nx
 import cvxpy as cvx
 
+class pipeNode:
+    idx = 0
+    def __init__(self, neg_latency):
+        self.name = "pipeNode" + str(pipeNode.idx)
+        pipeNode.idx+=1
+        self.latency = neg_latency
+        self.pipelinedLatency = neg_latency
+
 class layer:
     """
     The class to discribe attributes relate to layers
@@ -79,8 +87,6 @@ class layer:
 
         in_height, in_width = map(int, self.input_params[2:4])
         out_height, out_width = map(int, self.output_params[2:4])
-
-
 
         if self.type == "Convolution":
             cout, cin, kw, kh = map(int, (self.params[0].split("=")[1]).split("x"))
@@ -193,7 +199,7 @@ class graph:
             if bb in top_table:
                 for bbb in bottom_table[bb]:
                     for ttt in top_table[bb]:
-                        self.G.add_edge(bbb, ttt)
+                        self.G.add_edge(ttt, bbb)
     def __str__(self):
         retStr = " "
         for layer_type in self.layerQueue:
@@ -207,6 +213,7 @@ class graph:
     def drawGraph(self):
         h = nx.relabel_nodes(self.G, self.mapping)
         nx.draw(h, with_labels=True, font_weight = 'bold')
+        plt.show()
 
     def computeLatency(self):
         """
@@ -225,3 +232,6 @@ class graph:
     def printNodeLatency(self):
         for n in self.G.nodes:
             print n.name, " ", n.latency, " ", n.pipelinedLatency
+    def add_node(self, node):
+        self.G.add_node(node)
+        self.mapping[node] = node.name

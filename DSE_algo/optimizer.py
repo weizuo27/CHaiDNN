@@ -1,5 +1,6 @@
 from resourceILPBuilder import resourceILPBuilder
 from graph import graph
+from graph import pipeNode
 from utils import *
 
 #FIXME: I am not sure where to insert this yet. But if the scheduling found a conflict pair, then all the identical IPs of one of the pair, should also be eliminated
@@ -38,16 +39,16 @@ class optimizer:
         self.rb.createConstraints(self.IP_table, self.g.layerQueue)
         self.rb.createProblem()
         self.rb.solveProblem()
-        #self.rb.printSolution()
+        self.rb.printSolution()
         #assign the mapping result
         self.assignMappingResult()
         #Now update the latency since the IPs are assigned
         print(self.g)
         self.g.computeLatency()
-        self.g.printNodeLatency()
         #add nodes to factor in pipeline
         #FIXME: 
         self.addPipelineNodes()
+        self.g.printNodeLatency()
         self.g.drawGraph()
         """ 
         #fill-in the IPReuseTable:
@@ -86,19 +87,22 @@ class optimizer:
         The pipelined effect can be factored in.
         """
         #cannot directly iterate on original edges, since need to modify the graph
-        edge_list = self.g.G.edges() 
-        for (s_node, t_node) in edge_list:
+        pipeNode_list = []
+        for (s_node, t_node) in self.g.G.edges():
             if s_node.mappedIP != t_node.mappedIP: #Two layers are pipelinable
                 #The neg_latency is the difference between the source node finishes the whole layer
                 # and when it generates one layer output (which is the input of next layer)
                 #print s_node.name, s_node.latency, s_node.pipelinedLatency
                 neg_latency = -s_node.latency + s_node.pipelinedLatency
                 if(neg_latency < 0):
-                    self.g.remove_edge(s_node, t_node)
                     node = pipeNode(neg_latency)
-                    self.g.add_node(node)
-                    self.g.add_edge(s_node, node)
-                    self.g.add_edge(node, t_node)
+                    pipeNode_list.append([node, s_node, t_node])
+
+        for node, s_node, t_node in pipeNode_list:
+            self.g.G.remove_edge(s_node, t_node)
+            self.g.add_node(node)
+            self.g.G.add_edge(s_node, node)
+            self.g.G.add_edge(node, t_node)
 
     def assignMappingResult(self):
         """
