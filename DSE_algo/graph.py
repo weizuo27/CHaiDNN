@@ -26,8 +26,10 @@ class layer:
         input_params: The input dimension of the layer [batch, channel, height, width]
         output_params: The output dimension of the layer[batch, channel, height, width]
         mappedIP: The mapped ip of this layer
+        
         latency: The latency of finishing this layer using a specific IP
         pipelinedLatency: The pipelined latency of finishing enough rows to compute one row of output
+        start_time: The time stamp that the layer start execution
     Methods:
         set_input_params: Set input dimentions
         set_output_params: set output related parameters, e.g., dimensions
@@ -115,6 +117,14 @@ class layer:
                     [N,K,S,P], in_width, K)
             return
         assert 0, "This layer has unsupported type"
+
+    def set_start_time(self, timeStamp):
+        """
+        Set the start time of this layer
+        Args:
+            timeStamp: FP data. The starting time
+        """
+        self.start_time = timeStamp
 
 class graph:
     """

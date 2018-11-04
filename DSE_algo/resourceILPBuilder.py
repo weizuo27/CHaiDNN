@@ -113,6 +113,23 @@ class resourceILPBuilder():
         self.constraints.append(exp_LUT <= self.LUT_budget)
         self.constraints.append(exp_BW <= self.BW_budget)
 
+    def addViolationPaths(self, violation_path, layerQueue, IP_queue):
+        """
+        Violation means that the current mapping cannot be held for all 
+        nodes in the path at the same time. So the constraints should be
+        the sum of the mapping of the violation path should be less the the 
+        length of the path
+
+        Also, all the IPs share the original name should be included
+        """
+        exp = 0
+        for node in violation_path:
+            i_idx = layerQueue[node.type].index(node)
+            for j_idx, ip in enumerate(IP_table[node.type]):
+                if ip.orig_name == node.mappedIP.orig_name:
+                    exp+= self.mappingVariables[node.type][i_idx][j_idx]
+        self.constraints.append(exp < len(violation_path))
+
     def createProblem(self):
         """
         Formulate the problem, only check the feasibility
