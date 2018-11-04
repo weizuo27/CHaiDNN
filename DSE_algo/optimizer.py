@@ -116,9 +116,10 @@ class optimizer:
         for (s_node, t_node) in self.g.G.edges():
             if s_node.mappedIP != t_node.mappedIP: #Two layers are pipelinable
                 #The neg_latency is the difference between the source node finishes the whole layer
-                # and when it generates one layer output (which is the input of next layer)
+                #and when it generates enough data to compute one layer output of the target node 
+                #,(which is the pipeline starting point of the target node)
                 #print s_node.name, s_node.latency, s_node.pipelinedLatency
-                neg_latency = -s_node.latency + s_node.pipelinedLatency
+                neg_latency = -s_node.latency + t_node.lat_one_row
                 if(neg_latency < 0):
                     node = pipeNode(neg_latency)
                     pipeNode_list.append([node, s_node, t_node])

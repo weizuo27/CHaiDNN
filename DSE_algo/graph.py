@@ -26,9 +26,8 @@ class layer:
         input_params: The input dimension of the layer [batch, channel, height, width]
         output_params: The output dimension of the layer[batch, channel, height, width]
         mappedIP: The mapped ip of this layer
-        
-        latency: The latency of finishing this layer using a specific IP
-        pipelinedLatency: The pipelined latency of finishing enough rows to compute one row of output
+        lat_one_row: The latency to compute one output row
+        latency: The total latency to compute this layer
         start_time: The time stamp that the layer start execution
     Methods:
         set_input_params: Set input dimentions
@@ -43,6 +42,7 @@ class layer:
         """
         n_t = line.split(":")[0]
         self.name, self.type = n_t.split("-")
+        self.lat_one_row = None
         #FIXME: The following are currently left blank, whether this is the best?
         self.mappedIP = None
 
@@ -77,46 +77,80 @@ class layer:
         """
         self.IP_id = None
 
-    def computeLatency(self):
+    def computeLatencyOneRow(self, prevLayer==None, pipelined):
         """
-        Compute the full latency of this layer using one IP and, 
-        compute the pipelined latency, which is the time to compute one output row
+        The latency to compute one row
+        Args:
+            prevLayer: one previous layer
+            pipelined: Bool. Whether the previous layer and current layer are pipelined
         """
-        assert (self.mappedIP is not None), self.name + " mapped IP is not decided, so no way to compute the latency"
-
+        assert (self.mappedIP is not None), self.name + " mapped IP is not decided,\
+            so no way to compute the latency"
+        #FIXME: If it is mapped to software, it should not be pipelined?
+        # So there is not point of computing one row
         if self.mappedIP == "Software":
-            print self.name, self.latency, self.pipelinedLatency
             return
 
         in_height, in_width = map(int, self.input_params[2:4])
         out_height, out_width = map(int, self.output_params[2:4])
 
-        if self.type == "Convolution":
+        elif self.type == "Convolution":
             cout, cin, kw, kh = map(int, (self.params[0].split("=")[1]).split("x"))
             #FIXME: what is the best way to pass in the parameters
-            self.latency = self.mappedIP.computeLatency(
+            IP_latency = self.mappedIP.computeLatency(
                     [cout, cin, kw, kh],
                     in_width,
-                    in_height
+                    kh
                     ) 
-            self.pipelinedLatency = self.mappedIP.computeLatency(
-                    [cout, cin, kw, kh],
-                    in_width,
-                    kh #FIXME: Is is always the k_h rows needed to compute one row)
-                    ) 
-            return 
-        if self.type == "Pooling":
+        elif self.type == "Pooling":
             PoolType = self.params[0].split("=")[1]
             N = int(self.params[1].split("=")[1])
-            K = int(self.params[2].split("=")[1])
+            kw = kh = int(self.params[2].split("=")[1])
             S = int(self.params[3].split("=")[1])
             P = int(self.params[4].split("=")[1])
-            self.latency = self.mappedIP.computeLatency(
-                    [N,K,S,P], in_width, in_height)
-            self.pipelinedLatency = self.mappedIP.computeLatency(
-                    [N,K,S,P], in_width, K)
+            IP_latency = self.mappedIP.computeLatency(
+                    [N,kh,S,P], in_width, K)
+        else:
+            assert 0, "This layer has unsupported type"
+
+        if(prevLayer == None) or (not pipelined):
+            self.lat_one_row = IP_latency
+        else:
+            if self.lat_one_row = None:
+                self.lat_one_row = max(IP_latency, pred.computeNRows(kh))
+            else:
+                self.lat_one_row = max(self.lat_one_row, pred.computeNRows(kh))
+
+    def computeNRows(self, n):
+        """
+        return the latency of the compute n rows
+        Args:
+            n: int. The number of rows to compute
+        return:
+            the latency to compute n rows
+        """
+
+        assert (self.mappedIP is not None), self.name + " mapped IP is not decided,\
+            so no way to compute the latency of n rows"
+        if self.mappedIP = "Software":
             return
-        assert 0, "This layer has unsupported type"
+        assert (self.lat_one_row != None), "The lat_one_row is not computed, cannot compute \
+        n rows"
+        return self.lat_one_row * n
+
+    def computeLatency(self, previouslayer):
+        """
+        Compute the full latency of this layer using one IP
+        """
+        assert (self.mappedIP is not None), self.name + " mapped IP is not decided, \
+        so no way to compute the latency"
+
+        #The software latency is directly computed from the log file
+        if self.mappedIP == "Software":
+            return
+        out_height, out_width = map(int, self.output_params[2:4])
+
+        self.latency = self.computeNRows(out_height)
 
     def set_start_time(self, timeStamp):
         """
@@ -232,13 +266,20 @@ class graph:
         For each node in the graph, compute the latency and pipelined latency
         """
         print self.SWMapping
-        for n in self.G.nodes:
+        node_list = self.topological_sort()
+        for n in node_list:
             #If a layer is mapped to software
             if n.name in self.SWMapping: 
                 n.set_IP("Software")
                 n.latency = int(self.SWMapping[n.name])
-                n.pipelinedLatency = int(self.SWMapping[n.name])
+                n.lat_one_row = int(self.SWMapping[n.name]) #FIXME: False name 
             else:
+                predList = self.G.predecessors(n)
+                if len(list(predList)) == 0:
+                    n.computeLatencyOneRow(None, False)
+                else:
+                    for pred in predList:
+                        n.computeLatencyOneRow(pred, (pred.mappedIP != n.mappedIP))
                 n.computeLatency()
             
     def printNodeLatency(self):
