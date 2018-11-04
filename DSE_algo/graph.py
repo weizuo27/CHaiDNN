@@ -143,6 +143,7 @@ class graph:
         self.SWMapping = dict()
         self.layerQueue = dict()
         self.construct(filename)
+        self.original = deepCopy(self.G)
 
     def construct(self, filename):
         """
@@ -249,3 +250,6 @@ class graph:
 
     def topological_sort(self):
         return nx.topological_sort(self.G)
+
+    def retriveOriginalGraph(self):
+        self.G = self.original

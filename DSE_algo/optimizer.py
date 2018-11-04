@@ -5,7 +5,7 @@ from utils import *
 import itertools
 
 class optimizer:
-    def __init__(self, BRAM_budget, DSP_budget, FF_budget, LUT_budget, BW_budget, 
+    def __init__(self, BRAM_budget, DSP_budget, FF_budget, LUT_budget, BW_budget, latency_Budget,
             app_fileName, IP_fileName):
         """
         The top function of the optimizer
@@ -15,6 +15,7 @@ class optimizer:
             LUT_budget: The budget of LUT
             FF_budget: The budget of FF
             BW_budget: The budget of Bandwidth
+            latency_Budget: the latency budget
 
             hw_layers:. The dictionary of the layers that are supported by hardware
             app_fileName: The graph description file from CHaiDNN
@@ -32,42 +33,60 @@ class optimizer:
         self.g = graph(app_fileName) #generate the graph from CHaiDNN output
         IPs = generateIPs(IP_fileName)
         self.IP_table = constructIPTable(IPs, BRAM_budget, DSP_budget, LUT_budget, FF_budget, BW_budget)
-        self.IPReuseTable = dict()
         self.rb = resourceILPBuilder(BRAM_budget, DSP_budget, FF_budget, LUT_budget, BW_budget) #Builder resource solver
         #solve the problem
         self.rb.createVs(self.IP_table, self.g.layerQueue, self.hw_layers)
         self.rb.createConstraints(self.IP_table, self.g.layerQueue)
-        self.rb.createProblem()
-        self.rb.solveProblem()
-        self.rb.printSolution()
-        #assign the mapping result
-        self.assignMappingResult()
-        #Now update the latency since the IPs are assigned
-        print(self.g)
-        self.g.computeLatency()
-        #add nodes to factor in pipeline
-        self.addPipelineNodes()
-        self.g.printNodeLatency()
-        #fill-in the IPReuseTable:
-        nodes_list = self.g.topological_sort()
-        self.constructIPReuseTable(nodes_list)
-        #add the the edges to factor in the IP reuse
-        self.addReuseEdges()
-        self.g.drawGraph()
 
-        #now update the violation path related ILP, resolve the ILP
-        self.updateResourceILPBuilder(violation_path)
-        self.rb.createProblem()
-        self.rb.solveProblem()
+        # Now starting the loop
+        #1. Initalize the variables
+        self.latency_lb = 0
+        self.latency_ub = latency_Budget
+        self.new_latency_target = latency_Budget
+        self.latency_achieved = None
+        #2. Loop body
+        firstIter = True
+        while(self.latency_lb < self.latency_ub):
+            self.rb.createProblem()
+            optimal = self.rb.solveProblem()
+            if(not optimal):
+                assert (not firstIter), "The resource budget is too tight, no feasible mapping solution."
+                firstIter = False
+                self.latency_lb = self.new_latency_target
+                #FIXME: The latency should be integer or floating point?
+                self.new_latency_target = (self.latency_lb + self.latency_ub)/2 
+                continue
+            #self.rb.printSolution()
+            #assign the mapping result
+            self.assignMappingResult()
+            #Now update the latency since the IPs are assigned
+            print(self.g)
+            self.g.computeLatency()
+            #add nodes to factor in pipeline
+            self.addPipelineNodes()
+            self.g.printNodeLatency()
+            #fill-in the IPReuseTable:
+            self.IPReuseTable = dict()
+            self.constructIPReuseTable()
+            #add the the edges to factor in the IP reuse
+            self.addReuseEdges()
+            #self.g.drawGraph()
+            #now update the violation path related ILP, resolve the ILP
+            status, ret = self.scheduling()
+            if(status == "success"):
+                self.latency_ub = ret
+                self.new_latency_target = (self.latency_ub + self.latency_lb)/2
+            else: #Failed
+                self.updateResourceILPBuilder(violation_path)
+                self.g.retriveOriginalGraph()
         
-    def constructIPReuseTable(self, node_list):
+    def constructIPReuseTable(self):
         """
         build the table(dictionary)
             key: The IP
             value: The number of layers that mapped to the IP
-        Arg:
-            node_list: The list of all nodes in the graph in topological sorting order
         """
+        nodes_list = self.g.topological_sort()
         for node in node_list:
             if node.mappedIP is None or node.mappedIP == "Software":
                  continue
@@ -136,6 +155,8 @@ class optimizer:
         Args:
             latency_Budget: FP data, the latency budget 
         Return:
+            1. status: The string to indicate a legal schedule can be found or not
+            2.
             if fail, return the shortest violation path 
             if succeed, return the shortest latency
         """
@@ -163,14 +184,14 @@ class optimizer:
             if startingTime[n] + n.latency > latency_Budget:
                 violation_path = [n]
                 if n.latency > latency_Budget:
-                return violation_path
+                return "failed", violation_path
                 for m in path[n][::-1]:
                     if endtime - startingTime[m] > latency_Budget:
                         violation_path += [m]
-                        return violation_path
+                        return "failed", violation_path
 
         #if succeed, return the optimal latency
-        return startingTime[n] + n.latency
+        return "success", startingTime[n] + n.latency
 
     def updateResourceILPBuilder(self, violation_path):
         """

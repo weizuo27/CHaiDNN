@@ -148,7 +148,11 @@ class resourceILPBuilder():
         self.prob = cvx.Problem(self.obj, self.constraints)
 
     def solveProblem(self):
+        """
+            return: True if the optimal solution can be found. False otherwise
+        """
         self.prob.solve(solver = "GUROBI")
+        return self.prob.status == "optimal"
     def printSolution(self):
         print("status:", self.prob.status)
         print("optimal value", self.prob.value)

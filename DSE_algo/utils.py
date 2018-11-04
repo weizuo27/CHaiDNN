@@ -44,9 +44,3 @@ def generateIPs(fileName):
         IPs.append(IP_inst)
     f.close()
     return IPs
-
-def hw_supported_layer(layer_type, ):
-    """
-    Test whether a layer is supported by hardware
-    """
-    return la
