@@ -42,7 +42,7 @@ using namespace std;
 
 //Enable Pipeline Pool
 #include "ap_int.h"
-#include "../common/hw_kernel_info.h"
+//#include "../common/hw_kernel_info.h"
 
 //# Layers required
 #define NEEDED_CONV		1
