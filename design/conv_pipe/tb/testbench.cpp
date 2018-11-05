@@ -52,7 +52,7 @@ int main()
     clock_t startTime = clock();
     int scala_args[128]={};
 
-    int layerId=6;
+    int layerId=4;
 
     puts("loadDesc");
     load_data(layerId, weights1,weights2, weights3, weights4, 
@@ -63,8 +63,8 @@ int main()
     output1_sol,output2_sol,
     istg_out1,istg_out2);
 
-    // int depth=96;
-    // int Pixel=27*27;
+    // int depth=4;
+    // int Pixel=227*227;
     // for(int j=0;j<depth/4;j++)
     // for(int i=0;i<Pixel;i++)
     // {
@@ -77,9 +77,13 @@ int main()
     //         case 2: input_other2[addr].range(63,0)=Val;break;
     //         default: input_other2[addr].range(127,64)=Val;break;
     //     }
-  
-        
+    // }
 
+    // int depth=4;
+    // int Pixel=227*227;
+    // for(int i=0;i<Pixel;i++)
+    // {
+    //     input_layer1[i]=i;    
     // }
 
 
@@ -118,7 +122,8 @@ int main()
     );
 
     
-
+if(layerId!=4 && layerId!=0 )
+{
 
     load_args_conv(layerId,1,scala_args);
     printf("%d\n", scala_args[110]);
@@ -136,6 +141,7 @@ int main()
     ,0
     #endif
     );
+}
 
 #if DBG_INFO
     for(int i=0;i<OUTPUT_DEPTH;i++)
@@ -164,8 +170,9 @@ int main()
     save_answer("/home/xliu79/Research/2018Fall/CHaiPipeline/hls_project/src/gold_model/dbg_sol_layer0_1",output1,output2);
     // save_answer("/home/xliu79/Research/2018Fall/CHaiPipeline/hls_project/src/gold_model/sol_layer1",output3,output4);
 #else
-
- load_answer("/home/xliu79/Research/2018Fall/debugData/dbg_sol_layer6",output1_sol,output2_sol);
+    char answerpath[200];
+    sprintf(answerpath,"/home/xliu79/Research/2018Fall/debugData/dbg_sol_layer%d", layerId);
+    load_answer(answerpath,output1_sol,output2_sol);
 
 
 
