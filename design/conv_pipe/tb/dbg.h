@@ -4,7 +4,7 @@
 #include "../include/xi_conv_config.h"
 #include "../include/xi_conv_desc.h"
 #include <stdio.h>
-#define DBG_INFO 1
+
 
 
 

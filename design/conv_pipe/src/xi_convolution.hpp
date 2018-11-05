@@ -2469,9 +2469,12 @@ void RowPixFunction_fo(input_struct input_desc,
 		conv_struct conv_desc,
 		output_struct output_desc,
 		weight_struct weight_desc,
+		#if !LINEBUFFER_PORT		
 		ap_uint<64> istaging_buff0_fb0[8][XI_ISTAGEBUFF_DEPTH],
+		#else
 		ap_uint<64> lineBuffer[8][XI_ISTAGEBUFF_DEPTH*2],
 		bool pingpong,
+		#endif
 		ap_uint<64> input_buff0_fc0[XI_PIX_PROC / 2][1024],
 		ap_uint<16> opix_row_fl0, ap_uint<16> opix_col_fl0,
 		ap_uint<16> opix_row_wo_offset_fl0, ap_uint<16> current_plane_fc0,
@@ -2481,9 +2484,13 @@ void RowPixFunction_fo(input_struct input_desc,
 		ap_uint<2> mac_fz0)
 {
 #pragma HLS inline off
+
+#if LINEBUFFER_PORT
 	uLineBuffAddr_t pingpongOffset;
 	if(pingpong) pingpongOffset=XI_ISTAGEBUFF_DEPTH;
 	else pingpongOffset=0;
+#endif 
+
 	ap_uint<8> fsz_fst_div_fo0 = conv_desc.fsz_by_stride;
 	ap_uint<8> fsz_fst_mod_fo0 = conv_desc.fsz_mod_stride;
 
@@ -2703,12 +2710,14 @@ void RowPixFunction_fo(input_struct input_desc,
 #pragma HLS ARRAY_PARTITION variable=istg_value_fo0 complete dim=0
 				short istg_value_lrn_inter;
 				//istg_datatype buff_index = istg_dim3_fo0_reg;
-				// ap_uint<64> read_istg = istaging_buff0_fb0[istg_dim2_fo0_reg][istg_dim3_fo0_reg];
+				
+				#if LINEBUFFER_PORT
 				ap_uint<64> read_istg= lineBuffer[istg_dim2_fo0_reg][istg_dim3_fo0_reg+pingpongOffset];
-				// if(istaging_buff0_fb0[istg_dim2_fo0_reg][istg_dim3_fo0_reg] != lineBuffer[istg_dim2_fo0_reg][istg_dim3_fo0_reg+pingpongOffset] )
-				// printf( "Fault equal: [%d][%d %d][%d %d]", (int) istg_dim2_fo0_reg, (int) istg_dim3_fo0_reg, (int) pingpongOffset,
-				// (int) istaging_buff0_fb0[istg_dim2_fo0_reg][istg_dim3_fo0_reg],
-				// (int) lineBuffer[istg_dim2_fo0_reg][istg_dim3_fo0_reg+pingpongOffset]);
+				#else
+				ap_uint<64> read_istg = istaging_buff0_fb0[istg_dim2_fo0_reg][istg_dim3_fo0_reg];
+				#endif
+				
+
 
 				Plane_fo0_Loop:
 				for (ap_uint<10> plane_fo0 = 0, bit=0; plane_fo0 < 4;plane_fo0++, bit+=16)
@@ -2903,9 +2912,12 @@ void LoadInputBuff32Pix_fn(input_struct input_desc,
 		conv_struct conv_desc,
 		output_struct output_desc,
 		weight_struct weight_desc,
+		#if !LINEBUFFER_PORT
 		ap_uint<64> istaging_buff0_fb0[8][XI_ISTAGEBUFF_DEPTH],
+		#else
 		ap_uint<64> lineBuffer[8][XI_ISTAGEBUFF_DEPTH*2],
 		bool pingpong,
+		#endif
 		ap_uint<64> input_buff0_fc0[XI_PIX_PROC / 2][1024],
 		ap_uint<16> opix_row_fl0,
 		ap_uint<16> opix_col_fl0,
@@ -2989,9 +3001,13 @@ void LoadInputBuff32Pix_fn(input_struct input_desc,
 		}
 
 		RowPixFunction_fo<CFILTER_SIZE, CCONV_STRIDE, CNUM_KERNELS, INPUTP>
-		(input_desc, conv_desc, output_desc, weight_desc,istaging_buff0_fb0, 
+		(input_desc, conv_desc, output_desc, weight_desc,
+		#if !LINEBUFFER_PORT
+		istaging_buff0_fb0, 
+		#else
 		lineBuffer,
 		pingpong,
+		#endif
 		input_buff0_fc0, opix_row_fl0, opix_col_fl0,
 				/*..continue..*/opix_row_wo_offset_fl0, current_plane_fc0,inputBuff_bram_offset_fl0, pad_row_fc0, pad_row_wo_fc0,pxcnt_fn0,
 				/*..continue..*/pixel_tobe_process_fn0, iteration_fn0, mac_fz0);
@@ -3006,9 +3022,12 @@ void LoadInputBuff_non1x1_fn(input_struct input_desc,
 		conv_struct conv_desc,
 		output_struct output_desc,
 		weight_struct weight_desc,
+		#if !LINEBUFFER_PORT
 		ap_uint<64> istaging_buff0_fb0[8][XI_ISTAGEBUFF_DEPTH],
+		#else
 		ap_uint<64> lineBuffer[8][XI_ISTAGEBUFF_DEPTH*2],
 		bool pingpong,
+		#endif
 		ap_uint<64> input_buff0_fc0[XI_PIX_PROC / 2][1024],
 		ap_uint<16> pix_row_1st_fl0,
 		ap_uint<16> pix_col_1st_fl0,
@@ -3088,18 +3107,26 @@ void LoadInputBuff_non1x1_fn(input_struct input_desc,
 	}
 
 	LoadInputBuff32Pix_fn<CFILTER_SIZE, CCONV_STRIDE, CNUM_KERNELS, INPUTP>
-	(input_desc, conv_desc, output_desc, weight_desc, istaging_buff0_fb0,
+	(input_desc, conv_desc, output_desc, weight_desc, 
+	#if !LINEBUFFER_PORT
+	istaging_buff0_fb0,
+	#else
 	lineBuffer,
 	pingpong,
+	#endif
 	input_buff0_fc0, pix_row_1st_fl0, pix_col_1st_fl0,
 			/*..continue..*/pix_row_1st_wo_offset_fl0, current_plane_fc0,pad_row_fc0, pad_row_wo_fc0, mac_fz0, start_pix_count_1st_half_fn0,pix_count_1st_half, 0);
 
 	if (conv_desc.int6_en_in == 1)
 	{
 		LoadInputBuff32Pix_fn<CFILTER_SIZE, CCONV_STRIDE, CNUM_KERNELS, INPUTP>
-		(input_desc, conv_desc, output_desc, weight_desc,istaging_buff0_fb0, 
+		(input_desc, conv_desc, output_desc, weight_desc,
+		#if !LINEBUFFER_PORT
+		istaging_buff0_fb0, 
+		#else
 		lineBuffer,
 		pingpong,
+		#endif
 		input_buff0_fc0, pix_row_2nd_fl0,pix_col_2nd_fl0,
 				/*..continue..*/pix_row_2nd_wo_offset_fl0, current_plane_fc0,pad_row_fc0, pad_row_wo_fc0, mac_fz0,start_pix_count_2nd_half_fn0, pix_count_2nd_half, 512);
 	}
@@ -3210,7 +3237,7 @@ void LoadInputBuffLayerX_fm(input_struct input_desc,
 {
 #pragma HLS ARRAY_PARTITION variable=lineBuffer complete dim=1
 #if XI_ISTG_URAM_EN==0
-#pragma HLS resource variable=lineBuffer core=RAM_S2P_BRAM latency=2
+//#pragma HLS resource variable=lineBuffer core=RAM_S2P_BRAM latency=2
 #else
 #pragma HLS RESOURCE variable=lineBuffer core=XPM_MEMORY uram
 #endif
@@ -3262,8 +3289,9 @@ void LoadInputBuffLayerX_fm(input_struct input_desc,
 #pragma HLS loop_flatten
 #pragma HLS DEPENDENCE variable=input_buff0_fc0 intra false
 #pragma HLS DEPENDENCE variable=input_buff0_fc0 inter false
-#pragma HLS DEPENDENCE variable=istaging_buff0_fb0 intra false
-#pragma HLS DEPENDENCE variable=istaging_buff0_fb0 inter false
+
+#pragma HLS DEPENDENCE variable=lineBuffer intra false
+#pragma HLS DEPENDENCE variable=lineBuffer inter false
 
 							ap_uint<8> pix_cnt = pix_cnt_by16 << 4;
 
@@ -3289,7 +3317,7 @@ void LoadInputBuffLayerX_fm(input_struct input_desc,
 							//*****************istg buff address genration******************//
 							ap_uint<14> lineBufferAddr[16];
 
-#pragma HLS ARRAY_PARTITION variable=istg_addr_off complete dim=0
+#pragma HLS ARRAY_PARTITION variable=lineBufferAddr complete dim=0
 							bool pad_flags[16];
 #pragma HLS ARRAY_PARTITION variable=pad_flags complete dim=0
 							for (ap_uint<5> pix_w = 0; pix_w < 16; pix_w++)
@@ -3800,9 +3828,14 @@ void LoadFeedingBuff_fl(input_struct input_desc,
 		output_struct output_desc,
 		weight_struct weight_desc,
 		out_pix_struct &out_pixels0_fc0,
+		#if !LINEBUFFER_PORT
 		ap_uint<64> istaging_buff0_fb0[8][XI_ISTAGEBUFF_DEPTH],
+		#else
 		ap_uint<64> lineBuffer[8][XI_ISTAGEBUFF_DEPTH*2],
+		#if LAYER1INCLUDED
 		bool pingpong,
+		#endif
+		#endif
 		ap_uint<64> input_buff0_fc0[XI_PIX_PROC / 2][1024],
 		ap_uint<16> pc_fc0,
 		ap_uint<16> current_plane_fc0,
@@ -3816,26 +3849,30 @@ void LoadFeedingBuff_fl(input_struct input_desc,
 		ap_uint<2> mac_fz0,
 		ap_uint<16> *pc_out)
 {
-// #pragma HLS ARRAY_PARTITION variable=input_buff0_fc0 complete dim=1
-// #if XI_FEED_URAM_EN==0
-// #pragma HLS resource variable=input_buff0_fc0 latency=4 core=RAM_T2P_BRAM
-// #else
-// #pragma HLS RESOURCE variable=input_buff0_fc0 core=XPM_MEMORY uram
-// #endif
+#pragma HLS ARRAY_PARTITION variable=input_buff0_fc0 complete dim=1
+#if XI_FEED_URAM_EN==0
+#pragma HLS resource variable=input_buff0_fc0 latency=4 core=RAM_T2P_BRAM
+#else
+#pragma HLS RESOURCE variable=input_buff0_fc0 core=XPM_MEMORY uram
+#endif
 
-
+#if LINEBUFFER_PORT
 #pragma HLS ARRAY_PARTITION variable=lineBuffer complete dim=1
 #if XI_FEED_URAM_EN==0
-#pragma HLS resource variable=lineBuffer latency=4 core=RAM_S2P_BRAM
+//#pragma HLS resource variable=lineBuffer latency=4 core=RAM_S2P_BRAM
 #else
 #pragma HLS RESOURCE variable=lineBuffer core=XPM_MEMORY uram
 #endif
+
+#else
 
 #pragma HLS ARRAY_PARTITION variable=istaging_buff0_fb0 complete dim=1
 #if XI_ISTG_URAM_EN==0
 #pragma HLS resource variable=istaging_buff0_fb0 core=RAM_T2P_BRAM latency=2
 #else
 #pragma HLS RESOURCE variable=istaging_buff0_fb0 core=XPM_MEMORY uram
+#endif
+
 #endif
 #pragma HLS inline off
 
@@ -3932,26 +3969,37 @@ void LoadFeedingBuff_fl(input_struct input_desc,
 	bool inc1 = (conv_desc.pix_per_kp.range(3, 0) != 0);
 	ap_uint<8> pxcnt_loopmax = conv_desc.pix_per_kp.range(7, 4) + inc1;
 
+	// 
+
+	
 	if (conv_desc.l2_sos_enable == 1 || (conv_desc.sos_enable == 0 && conv_desc.layer_id != 0))
 	{
-
-		LoadInputBuffLayerX_fm(input_desc, conv_desc, output_desc, weight_desc, lineBuffer, input_buff0_fc0, current_plane_fc0, in_row_num, in_col_num, feeding_buff_off, pxcnt_loopmax);
+		#if LINEBUFFER_PORT
+		LoadInputBuffLayerX_fm(input_desc, conv_desc, output_desc, weight_desc, 
+		lineBuffer, 
+		input_buff0_fc0, current_plane_fc0, in_row_num, in_col_num, feeding_buff_off, pxcnt_loopmax);
+		#endif
 
 	}
 	else
 	{
+		#if LAYER1INCLUDED
 		for (ap_uint<8> start_pix_per_ker, ker = 0; ker < ker_loop_cnt;start_pix_per_ker += conv_desc.pix_per_kp, ker++)
 		{
-
 			LoadInputBuff_non1x1_fn<CFILTER_SIZE, CCONV_STRIDE, CNUM_KERNELS,INPUTP>
 			(input_desc, conv_desc, output_desc, weight_desc,
+			#if !LINEBUFFER_PORT
 			istaging_buff0_fb0, 
+			#else
 			lineBuffer,
 			pingpong,
+			#endif
 			input_buff0_fc0, pix_row_1st_fl0,pix_col_1st_fl0,
 					/*..continue..*/pix_row_1st_wo_offset_fl0, var1, var2, var3,current_plane_fc0, pad_row_fc0, pad_row_wo_fc0, mac_fz0,start_pix_per_ker);
 		}
+		#endif
 	}
+	
 
 	out_pixels0_fc0.current_plane_by4 = current_plane_fc0;
 #if XI_DP_ENABLE
@@ -3959,10 +4007,8 @@ void LoadFeedingBuff_fl(input_struct input_desc,
 	for(ap_uint<7> pix =0;pix<XI_PIX_PROC/2;pix++)
 	{
 #pragma HLS UNROLL
-
 		input_buff0_fc0[pix][dim3] = 0;
 		input_buff0_fc0[pix][dim3+512] = 0;
-
 	}
 #endif
 
@@ -5792,7 +5838,6 @@ void ReadNormData(conv_struct conv_desc,
 				istaging_buff0_fb0[t_dim2][dim3] = val_reg_packed[0];
 			else if (t_dim2 == dim2_plus_2)
 				istaging_buff0_fb0[t_dim2][dim3] = val_reg_packed[1];
-
 		}
 
 	}
@@ -6062,7 +6107,6 @@ void Conv3dTop(conv_struct conv_desc,
 
 
 			short row=0,col=0;
-			
 			char w_row=0,w_col=0;
 			wts_off = (pln/32)*2*fsz2;
 			oid = (pln/32)*conv_desc.conv3d_op_rows*conv_desc.conv3d_op_w;
@@ -7195,9 +7239,14 @@ void ProcInputBuff_fc(input_struct input_desc,
 		conv_struct conv_desc,
 		output_struct output_desc,
 		weight_struct weight_desc,
+		#if LINEBUFFER_PORT==0
 		ap_uint<64> istaging_buff0_fb0[8][XI_ISTAGEBUFF_DEPTH],
+		#else
 		ap_uint<64> lineBuffer[8][XI_ISTAGEBUFF_DEPTH*2],
+		#if LAYER1INCLUDED
 		bool pingpong,
+		#endif
+		#endif
 		gmem_weighttype *gmem_weight1_fa0, gmem_weighttype *gmem_weight2_fa0,
 #if (XI_KER_PROC==16 || (XI_WTS_PORT_64BIT_EN==1 && XI_KER_PROC==8) )
 		gmem_weighttype *gmem_weight3_fa0,
@@ -7215,6 +7264,16 @@ void ProcInputBuff_fc(input_struct input_desc,
 #pragma HLS RESOURCE variable=ostaging_buff0_fb0 core=XPM_MEMORY uram
 #endif
 
+#if LINEBUFFER_PORT
+#pragma HLS ARRAY_PARTITION variable=lineBuffer complete dim=1
+#if XI_ISTG_URAM_EN==0
+//#pragma HLS resource variable=lineBuffer core=RAM_S2P_BRAM latency=2
+#else
+#pragma HLS RESOURCE variable=lineBuffer core=XPM_MEMORY uram
+#endif
+
+#else 
+
 #pragma HLS ARRAY_PARTITION variable=istaging_buff0_fb0 complete dim=1
 #if XI_ISTG_URAM_EN==0
 #pragma HLS resource variable=istaging_buff0_fb0 core=RAM_T2P_BRAM latency=2
@@ -7222,12 +7281,9 @@ void ProcInputBuff_fc(input_struct input_desc,
 #pragma HLS RESOURCE variable=istaging_buff0_fb0 core=XPM_MEMORY uram
 #endif
 
-#pragma HLS ARRAY_PARTITION variable=lineBuffer complete dim=1
-#if XI_ISTG_URAM_EN==0
-#pragma HLS resource variable=lineBuffer core=RAM_S2P_BRAM latency=2
-#else
-#pragma HLS RESOURCE variable=lineBuffer core=XPM_MEMORY uram
 #endif
+
+
 
 
 #pragma HLS INLINE OFF
@@ -7297,9 +7353,14 @@ void ProcInputBuff_fc(input_struct input_desc,
 
 	LoadFeedingBuff_fl<CFILTER_SIZE,CCONV_STRIDE,CNUM_KERNELS,(IINPUT_PLANES>>2)>
 	(input_desc, conv_desc, output_desc,weight_desc,out_pixels0_fc0,
+	#if !LINEBUFFER_PORT
 	istaging_buff0_fb0, 
+	#else
 	lineBuffer,
+	#if LAYER1INCLUDED
 	pingpong,
+	#endif
+	#endif
 	input_buff0_fc0 ,0, current_plane_fc0, out_row_offset_fb0,
 			/*..continue..*/pad_row_fc0, pad_row_wo_fc0,row_id_1st_32pix_fc0, col_id_1st_32pix_fc0, row_id_2nd_32pix_fc0, col_id_2nd_32pix_fc0, mac_fz0, &pc_ping);
 
@@ -7332,9 +7393,14 @@ void ProcInputBuff_fc(input_struct input_desc,
 		{
 			LoadFeedingBuff_fl<CFILTER_SIZE,CCONV_STRIDE,CNUM_KERNELS,(IINPUT_PLANES>>2)>
 			(input_desc, conv_desc, output_desc,weight_desc, out_pixels1_fc0,
+			#if !LINEBUFFER_PORT
 			istaging_buff0_fb0, 
+			#else
 			lineBuffer,
+			#if LAYER1INCLUDED
 			pingpong,
+			#endif
+			#endif
 			input_buff1_fc0, pc_fc0,current_plane_fc0,out_row_offset_fb0,
 					/*..continue..*/pad_row_fc0, pad_row_wo_fc0,row_id_1st_32pix_fc0, col_id_1st_32pix_fc0, row_id_2nd_32pix_fc0, col_id_2nd_32pix_fc0, mac_fz0,&pc_pong);
 #if COMPUTE_OFF
@@ -7353,9 +7419,14 @@ void ProcInputBuff_fc(input_struct input_desc,
 		
 			LoadFeedingBuff_fl<CFILTER_SIZE,CCONV_STRIDE,CNUM_KERNELS,(IINPUT_PLANES>>2)>
 			(input_desc, conv_desc,output_desc,weight_desc,out_pixels0_fc0,
+			#if !LINEBUFFER_PORT
 			istaging_buff0_fb0, 
+			#else
 			lineBuffer,
+			#if LAYER1INCLUDED
 			pingpong,
+			#endif
+			#endif
 			input_buff0_fc0, pc_fc0,current_plane_fc0,out_row_offset_fb0,
 					/*..continue..*/pad_row_fc0, pad_row_wo_fc0,row_id_1st_32pix_fc0, col_id_1st_32pix_fc0, row_id_2nd_32pix_fc0, col_id_2nd_32pix_fc0, mac_fz0,&pc_ping);
 	#if COMPUTE_OFF
@@ -7398,9 +7469,15 @@ void ProcFeedingBuff_fz(input_struct input_desc,
 		conv_struct conv_desc,
 		output_struct output_desc,
 		weight_struct weight_desc,
+		#if !LINEBUFFER_PORT
 		ap_uint<64> istaging_buff0_fb0[8][XI_ISTAGEBUFF_DEPTH],
+		#else
 		ap_uint<64> lineBuffer[8][XI_ISTAGEBUFF_DEPTH*2],
+		#if LAYER1INCLUDED
 		bool pingpong,
+		#endif
+		#endif
+		
 		gmem_weighttype *gmem_weight1_fa0, gmem_weighttype *gmem_weight2_fa0,
 #if (XI_KER_PROC==16 || (XI_WTS_PORT_64BIT_EN==1 && XI_KER_PROC==8) )
 		gmem_weighttype *gmem_weight3_fa0,
@@ -7416,9 +7493,14 @@ void ProcFeedingBuff_fz(input_struct input_desc,
 	{
 		ProcInputBuff_fc<IN_WW,IN_HH,OUT_WW,OUT_HH,CNUM_KERNELS,CFILTER_SIZE,CCONV_STRIDE,PPOOL_STRIDE,PPOOL_SIZE,IINPUT_PLANES,(CNUM_KERNELS>>5),((OUT_WW*6)>>5),PNKPF>
 		(input_desc, conv_desc,output_desc,weight_desc,
+		#if !LINEBUFFER_PORT
 		istaging_buff0_fb0,
+		#else
 		lineBuffer,
+		#if LAYER1INCLUDED
 		pingpong,
+		#endif
+		#endif
 		gmem_weight1_fa0,gmem_weight2_fa0,
 #if (XI_KER_PROC==16 || (XI_WTS_PORT_64BIT_EN==1 && XI_KER_PROC==8) )
 				gmem_weight3_fa0,gmem_weight4_fa0,
@@ -7489,9 +7571,14 @@ void ProcFeedingBuff_En_fz(input_struct input_desc,
 		conv_struct conv_desc,
 		output_struct output_desc,
 		weight_struct weight_desc,
+		#if !LINEBUFFER_PORT
 		ap_uint<64> istaging_buff0_fb0[8][XI_ISTAGEBUFF_DEPTH],
+		#else
 		ap_uint<64> lineBuffer[8][XI_ISTAGEBUFF_DEPTH*2],
+		#if LAYER1INCLUDED
 		bool pingpong,
+		#endif
+		#endif
 		gmem_weighttype *gmem_weight1_fa0, gmem_weighttype *gmem_weight2_fa0,
 #if (XI_KER_PROC==16 || (XI_WTS_PORT_64BIT_EN==1 && XI_KER_PROC==8) )
 		gmem_weighttype *gmem_weight3_fa0,
@@ -7523,6 +7610,7 @@ void ProcFeedingBuff_En_fz(input_struct input_desc,
 		bool last_itr_stage, bool ap_clk_div2) {
 #pragma HLS INLINE OFF
 
+#if FUTRUE_IMPLEMENTATION
 	if (conv_desc.conv3d_intg_en || conv_desc.avg_pool_en
 			|| conv_desc.max_pool_en || conv_desc.pool_fuse_en) {
 		Conv3dTop(conv_desc, istaging_buff0_fb0, conv3d_loop_bound,
@@ -7531,9 +7619,8 @@ void ProcFeedingBuff_En_fz(input_struct input_desc,
 				conv3d_wts_buf,
 #endif
 				conv3d_startrow_op);
-
-
 	}
+#endif
 
 	ap_uint<16> startrow_fg0,endrow_fg0;
 
@@ -7565,9 +7652,14 @@ void ProcFeedingBuff_En_fz(input_struct input_desc,
 	{
 		ProcFeedingBuff_fz<IN_WW,IN_HH,OUT_WW,OUT_HH,CNUM_KERNELS,CFILTER_SIZE,CCONV_STRIDE,PPOOL_STRIDE,PPOOL_SIZE,IINPUT_PLANES,(CNUM_KERNELS>>5),((OUT_WW*6)>>5),PNKPF>
 		(input_desc, conv_desc,output_desc,weight_desc,
+				#if !LINEBUFFER_PORT
 				istaging_buff0_fb0,
+				#else
 				lineBuffer,
+				#if LAYER1INCLUDED
 				pingpong,
+				#endif
+				#endif
 				gmem_weight1_fa0,gmem_weight2_fa0,
 #if (XI_KER_PROC==16 || (XI_WTS_PORT_64BIT_EN==1 && XI_KER_PROC==8) )
 				gmem_weight3_fa0,gmem_weight4_fa0,
@@ -7577,7 +7669,7 @@ void ProcFeedingBuff_En_fz(input_struct input_desc,
 
 	else
 	{
-
+#if FUTRUE_IMPLEMENTATION
 		StoreNormData(conv_desc,
 				layerx_loop_cnt_fg0,
 				input_desc ,
@@ -7586,6 +7678,7 @@ void ProcFeedingBuff_En_fz(input_struct input_desc,
 				gmem_istg_out_2_fa0,
 #endif
 				istaging_buff0_fb0, startrow_fg0, endrow_fg0, start_off_A_fg0);
+	#endif
 	}
 
 }
@@ -7628,6 +7721,18 @@ void ProcIStagingBuff_fb(input_struct input_desc,
 		bool ap_clk_div2) {
 #pragma HLS INLINE OFF
 
+
+
+#if LINEBUFFER_PORT
+	ap_uint<64> inputLineBuffer[8][XI_ISTAGEBUFF_DEPTH*2];
+#pragma HLS ARRAY_PARTITION variable=inputLineBuffer complete dim=1
+#if XI_ISTG_URAM_EN==0
+#pragma HLS resource variable=inputLineBuffer core=RAM_S2P_BRAM latency=2
+#else
+#pragma HLS RESOURCE variable=inputLineBuffer core=XPM_MEMORY uram
+#endif
+
+#else
 	ap_uint<64> istaging_buff0_fb0[8][XI_ISTAGEBUFF_DEPTH],istaging_buff1_fb0[8][XI_ISTAGEBUFF_DEPTH];
 
 #pragma HLS ARRAY_PARTITION variable=istaging_buff0_fb0 complete dim=1
@@ -7640,8 +7745,7 @@ void ProcIStagingBuff_fb(input_struct input_desc,
 #pragma HLS RESOURCE variable=istaging_buff1_fb0 core=XPM_MEMORY uram
 #endif
 
-
-
+#endif
 
 
 	ap_uint<72> ostaging_buff0_fb0[2][XI_OSTG_BUFFER_SET][XI_OSTAGEBUFF_DEPTH],
@@ -7778,17 +7882,12 @@ void ProcIStagingBuff_fb(input_struct input_desc,
 	
 	
 
-	ap_uint<64> inputLineBuffer[8][XI_ISTAGEBUFF_DEPTH*2];
-#pragma HLS ARRAY_PARTITION variable=inputLineBuffer complete dim=1
-#if XI_ISTG_URAM_EN==0
-#pragma HLS resource variable=inputLineBuffer core=RAM_S2P_BRAM latency=2
-#else
-#pragma HLS RESOURCE variable=inputLineBuffer core=XPM_MEMORY uram
-#endif
 
+	
 	if(conv_desc.read_from_ddr == 1)
 	{
-		readLineBuffer<XI_ISTAGEBUFF_DEPTH*2, ap_uint<14> >
+		#if LINEBUFFER_PORT
+		readLineBuffer<XI_ISTAGEBUFF_DEPTH*2,uLineBuffAddr_t >
 		(
 			conv_desc,
 			input_desc,
@@ -7803,31 +7902,32 @@ void ProcIStagingBuff_fb(input_struct input_desc,
 			input_desc.width_x_PackNum,
 			0
 		);
-		input_desc.endRow=endrow_fb0;
+		#else
 		
-#if XI_DISABLE_BN
-		LoadIStagingBuff_fg<IN_WW,IN_HH,IINPUT_PLANES>
-		(input_desc, conv_desc, gmem_input_layer1_fa0, gmem_input_layer_other1_fa0,
-#if !XI_SINGLE_IO_PORT_EN
-				gmem_input_layer_other2_fa0,
+	#if XI_DISABLE_BN
+			LoadIStagingBuff_fg<IN_WW,IN_HH,IINPUT_PLANES>
+			(input_desc, conv_desc, gmem_input_layer1_fa0, gmem_input_layer_other1_fa0,
+	#if !XI_SINGLE_IO_PORT_EN
+					gmem_input_layer_other2_fa0,
+	#endif
+					gmem_bias_fa0,gmem_istg_out_1_fa0,
+	#if !XI_SINGLE_IO_PORT_EN
+					gmem_istg_out_2_fa0,
+	#endif
+					istaging_buff0_fb0, startrow_fb0, endrow_fb0,norm_startrow_fb0,norm_endrow_fb0,conv3d_loop_bound);
+	#else
+			LoadIStagingBuff_fg<IN_WW, IN_HH, IINPUT_PLANES>(input_desc, conv_desc,
+					gmem_input_layer1_fa0, gmem_input_layer_other1_fa0,
+	#if !XI_SINGLE_IO_PORT_EN
+					gmem_input_layer_other2_fa0,
+	#endif
+					gmem_bias_fa0, gmem_inp_norm_2_fa0,
+					gmem_inp_norm_3_fa0, gmem_istg_out_1_fa0, gmem_istg_out_2_fa0,
+					istaging_buff0_fb0, startrow_fb0, endrow_fb0, norm_startrow_fb0,
+					norm_endrow_fb0, mean_buff, variance_buff, beta_buff,
+					conv3d_loop_bound);
+	#endif	
 #endif
-				gmem_bias_fa0,gmem_istg_out_1_fa0,
-#if !XI_SINGLE_IO_PORT_EN
-				gmem_istg_out_2_fa0,
-#endif
-				istaging_buff0_fb0, startrow_fb0, endrow_fb0,norm_startrow_fb0,norm_endrow_fb0,conv3d_loop_bound);
-#else
-		LoadIStagingBuff_fg<IN_WW, IN_HH, IINPUT_PLANES>(input_desc, conv_desc,
-				gmem_input_layer1_fa0, gmem_input_layer_other1_fa0,
-#if !XI_SINGLE_IO_PORT_EN
-				gmem_input_layer_other2_fa0,
-#endif
-				gmem_bias_fa0, gmem_inp_norm_2_fa0,
-				gmem_inp_norm_3_fa0, gmem_istg_out_1_fa0, gmem_istg_out_2_fa0,
-				istaging_buff0_fb0, startrow_fb0, endrow_fb0, norm_startrow_fb0,
-				norm_endrow_fb0, mean_buff, variance_buff, beta_buff,
-				conv3d_loop_bound);
-#endif	
 	
 	}
 	startrow_process_fb0 = -conv_desc.pad_num;
@@ -7844,16 +7944,24 @@ void ProcIStagingBuff_fb(input_struct input_desc,
 			/*..continue..*/output_row_fb0 += conv_desc.ostg_row_count, output_row_next_fb0 += conv_desc.ostg_row_count)
 	{
 #pragma HLS LOOP_TRIPCOUNT min=59 max=59
-printf("START processing row:%d %d\n ",(int) startrow_process_fb0, (int) input_desc.endRow );
+
+	#if LINEBUFFER_PORT
+		#pragma HLS dependence variable=inputLineBuffer intra false
+	#endif
 		if (!pingpong_flag_fb0)
 		{
 
 
 			ProcFeedingBuff_En_fz<IN_WW, IN_HH, OUT_WW, OUT_HH, CNUM_KERNELS,CFILTER_SIZE, CCONV_STRIDE, PPOOL_STRIDE, PPOOL_SIZE,IINPUT_PLANES, (CNUM_KERNELS >> 5), ((OUT_WW * 6) >> 5),PNKPF>
 			(input_desc, conv_desc, output_desc, weight_desc,
+					#if !LINEBUFFER_PORT
 					istaging_buff0_fb0, 
+					#else
 					inputLineBuffer,
+					#if LAYER1INCLUDED
 					0,
+					#endif
+					#endif
 					gmem_weight1_fa0, gmem_weight2_fa0,
 #if (XI_KER_PROC==16 || (XI_WTS_PORT_64BIT_EN==1 && XI_KER_PROC==8) )
 					gmem_weight3_fa0, gmem_weight4_fa0,
@@ -7891,48 +7999,49 @@ printf("START processing row:%d %d\n ",(int) startrow_process_fb0, (int) input_d
 			lastEndRowIdx=endrow_fb0;
 			endrow_fb0 += startrow_inc_fb0;
 
+#if LINEBUFFER_PORT
+			readLineBuffer<XI_ISTAGEBUFF_DEPTH*2, uLineBuffAddr_t >
+			(
+				conv_desc,
+				input_desc,
+				gmem_input_layer_other1_fa0,
+				gmem_input_layer_other2_fa0,
+				gmem_input_layer1_fa0,
+				inputLineBuffer,
+				lastEndRowIdx, endrow_fb0,
+				inHeight,inWidth,inSize, 
+				input_desc.packNum,
+				input_desc.planes,
+				input_desc.width_x_PackNum,
+				1
+			);
+	
+#else	
 
-		readLineBuffer<XI_ISTAGEBUFF_DEPTH*2, ap_uint<14> >
-		(
-			conv_desc,
-			input_desc,
-			gmem_input_layer_other1_fa0,
-			gmem_input_layer_other2_fa0,
-			gmem_input_layer1_fa0,
-			inputLineBuffer,
-			lastEndRowIdx, endrow_fb0,
-			inHeight,inWidth,inSize, 
-			input_desc.packNum,
-			input_desc.planes,
-			input_desc.width_x_PackNum,
-			1
-		);
-		input_desc.endRow=endrow_fb0;
-		
-
-#if XI_DISABLE_BN
-			LoadIStagingBuff_fg<IN_WW,IN_HH,IINPUT_PLANES>
-			(input_desc, conv_desc, gmem_input_layer1_fa0, gmem_input_layer_other1_fa0,
-#if !XI_SINGLE_IO_PORT_EN
-					gmem_input_layer_other2_fa0,
-#endif
-					gmem_bias_fa0,gmem_istg_out_1_fa0,
-#if !XI_SINGLE_IO_PORT_EN
-					gmem_istg_out_2_fa0,
-#endif
-					istaging_buff1_fb0, startrow_fb0, endrow_fb0,norm_startrow_fb0,norm_endrow_fb0,conv3d_loop_bound);
-#else
-			LoadIStagingBuff_fg<IN_WW, IN_HH, IINPUT_PLANES>(input_desc,
-					conv_desc, gmem_input_layer1_fa0,
-					gmem_input_layer_other1_fa0,
-#if !XI_SINGLE_IO_PORT_EN
-					gmem_input_layer_other2_fa0,
-#endif
-					gmem_bias_fa0, gmem_inp_norm_2_fa0, gmem_inp_norm_3_fa0,
-					gmem_istg_out_1_fa0, gmem_istg_out_2_fa0,
-					istaging_buff1_fb0, startrow_fb0, endrow_fb0,
-					norm_startrow_fb0, norm_endrow_fb0, mean_buff,
-					variance_buff, beta_buff, conv3d_loop_bound);
+	#if XI_DISABLE_BN
+				LoadIStagingBuff_fg<IN_WW,IN_HH,IINPUT_PLANES>
+				(input_desc, conv_desc, gmem_input_layer1_fa0, gmem_input_layer_other1_fa0,
+	#if !XI_SINGLE_IO_PORT_EN
+						gmem_input_layer_other2_fa0,
+	#endif
+						gmem_bias_fa0,gmem_istg_out_1_fa0,
+	#if !XI_SINGLE_IO_PORT_EN
+						gmem_istg_out_2_fa0,
+	#endif
+						istaging_buff1_fb0, startrow_fb0, endrow_fb0,norm_startrow_fb0,norm_endrow_fb0,conv3d_loop_bound);
+	#else
+				LoadIStagingBuff_fg<IN_WW, IN_HH, IINPUT_PLANES>(input_desc,
+						conv_desc, gmem_input_layer1_fa0,
+						gmem_input_layer_other1_fa0,
+	#if !XI_SINGLE_IO_PORT_EN
+						gmem_input_layer_other2_fa0,
+	#endif
+						gmem_bias_fa0, gmem_inp_norm_2_fa0, gmem_inp_norm_3_fa0,
+						gmem_istg_out_1_fa0, gmem_istg_out_2_fa0,
+						istaging_buff1_fb0, startrow_fb0, endrow_fb0,
+						norm_startrow_fb0, norm_endrow_fb0, mean_buff,
+						variance_buff, beta_buff, conv3d_loop_bound);
+	#endif
 #endif
 
 			pingpong_flag_fb0 = 1;
@@ -7941,9 +8050,14 @@ printf("START processing row:%d %d\n ",(int) startrow_process_fb0, (int) input_d
 			CFILTER_SIZE, CCONV_STRIDE, PPOOL_STRIDE, PPOOL_SIZE,
 			IINPUT_PLANES, (CNUM_KERNELS >> 5), ((OUT_WW * 6) >> 5),
 			PNKPF>(input_desc, conv_desc, output_desc, weight_desc,
-					istaging_buff1_fb0, 
+					#if !LINEBUFFER_PORT
+					istaging_buff0_fb0, 
+					#else
 					inputLineBuffer,
+					#if LAYER1INCLUDED
 					1,
+					#endif
+					#endif
 					gmem_weight1_fa0, gmem_weight2_fa0,
 #if (XI_KER_PROC==16 || (XI_WTS_PORT_64BIT_EN==1 && XI_KER_PROC==8) )
 					gmem_weight3_fa0,gmem_weight4_fa0,
@@ -7980,23 +8094,23 @@ printf("START processing row:%d %d\n ",(int) startrow_process_fb0, (int) input_d
 			else
 			lastEndRowIdx=endrow_fb0;
 			endrow_fb0 += startrow_inc_fb0;
-
-		readLineBuffer<XI_ISTAGEBUFF_DEPTH*2, ap_uint<14> >
-		(
-			conv_desc,
-			input_desc,
-			gmem_input_layer_other1_fa0,
-			gmem_input_layer_other2_fa0,
-			gmem_input_layer1_fa0,
-			inputLineBuffer,
-			lastEndRowIdx, endrow_fb0,
-			inHeight,inWidth,inSize, 
-			input_desc.packNum,
-			input_desc.planes,
-			input_desc.width_x_PackNum,
-			0
-		);
-		input_desc.endRow=endrow_fb0;
+#if LINEBUFFER_PORT
+			readLineBuffer<XI_ISTAGEBUFF_DEPTH*2, uLineBuffAddr_t >
+			(
+				conv_desc,
+				input_desc,
+				gmem_input_layer_other1_fa0,
+				gmem_input_layer_other2_fa0,
+				gmem_input_layer1_fa0,
+				inputLineBuffer,
+				lastEndRowIdx, endrow_fb0,
+				inHeight,inWidth,inSize, 
+				input_desc.packNum,
+				input_desc.planes,
+				input_desc.width_x_PackNum,
+				0
+			);
+#else
 #if XI_DISABLE_BN
 			LoadIStagingBuff_fg<IN_WW,IN_HH,IINPUT_PLANES>
 			(input_desc, conv_desc, gmem_input_layer1_fa0, gmem_input_layer_other1_fa0,
@@ -8020,6 +8134,7 @@ printf("START processing row:%d %d\n ",(int) startrow_process_fb0, (int) input_d
 					istaging_buff0_fb0, startrow_fb0, endrow_fb0,
 					norm_startrow_fb0, norm_endrow_fb0, mean_buff,
 					variance_buff, beta_buff, conv3d_loop_bound);
+#endif
 #endif
 			pingpong_flag_fb0 = 0;
 		}
@@ -8045,9 +8160,14 @@ printf("START processing row:%d %d\n ",(int) startrow_process_fb0, (int) input_d
 		/*..continue..*/PPOOL_SIZE, IINPUT_PLANES, (CNUM_KERNELS >> 5),
 		((OUT_WW * 6) >> 5), PNKPF>(input_desc, conv_desc, output_desc,
 				weight_desc, 
-				istaging_buff1_fb0, 
+				#if !LINEBUFFER_PORT
+				istaging_buff0_fb0, 
+				#else
 				inputLineBuffer,
+				#if LAYER1INCLUDED
 				1,
+				#endif
+				#endif
 				gmem_weight1_fa0,
 				gmem_weight2_fa0,
 #if (XI_KER_PROC==16 || (XI_WTS_PORT_64BIT_EN==1 && XI_KER_PROC==8) )
@@ -8089,9 +8209,15 @@ printf("START processing row:%d %d\n ",(int) startrow_process_fb0, (int) input_d
 		CFILTER_SIZE, CCONV_STRIDE, PPOOL_STRIDE,
 		/*..continue..*/PPOOL_SIZE, IINPUT_PLANES, (CNUM_KERNELS >> 5),
 		((OUT_WW * 6) >> 5), PNKPF>(input_desc, conv_desc, output_desc,
-				weight_desc, istaging_buff0_fb0, 
+				weight_desc, 
+				#if !LINEBUFFER_PORT
+				istaging_buff0_fb0, 
+				#else
 				inputLineBuffer,
+				#if LAYER1INCLUDED
 				0,
+				#endif
+				#endif
 				gmem_weight1_fa0,
 				gmem_weight2_fa0,
 #if (XI_KER_PROC==16 || (XI_WTS_PORT_64BIT_EN==1 && XI_KER_PROC==8) )

@@ -5,6 +5,7 @@
 #include <fcntl.h>
 #include <hls_stream.h>
 #include <time.h>
+#include <string.h>
 
 #include "../include/xi_conv_config.h"
 #include "../include/xi_conv_desc.h"
@@ -16,7 +17,7 @@
 
 
 #define GEN_SOL 0
-#define DBG_INFO 0
+
 
 
 
@@ -52,8 +53,9 @@ int main()
     clock_t startTime = clock();
     int scala_args[128]={};
 
-    int layerId=4;
 
+    int layerId=6;
+  
     puts("loadDesc");
     load_data(layerId, weights1,weights2, weights3, weights4, 
     input_other1, input_other2,
@@ -95,8 +97,6 @@ int main()
     //     weights3[i]=i*4+3;
     //     weights4[i]=i*4+4;
     // }
-
-
 
 
     // for(int i=0;i<BIAS_DEPTH;i++)

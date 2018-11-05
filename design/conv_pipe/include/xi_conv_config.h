@@ -27,6 +27,11 @@ limitations under the License.
 #define COMPUTE_OFF 1
 #define PRINT_LINEBUFFER_CONTENT 0
 #define PRINT_PINGPONGBUFFER_CONTENT 0
+#define LINEBUFFER_PORT 1
+#define LAYER1INCLUDED 1
+#define FUTRUE_IMPLEMENTATION 0
+
+
 //**** URAM ENABLE FLAGS FOR THE BUFFERS
 #define XI_BIAS_URAM_EN 	0
 #define XI_WTS_URAM_EN 		0
@@ -43,11 +48,11 @@ limitations under the License.
 #define XI_OSTAGEBUFF_DEPTH 1024
 #define XI_WEIGHTBUFF_DEPTH 1024
 #else
-#define XI_KER_PROC       	16
-#define XI_PIX_PROC       	32
-#define XI_ISTAGEBUFF_DEPTH 8192
-#define XI_OSTAGEBUFF_DEPTH 2048
-#define XI_WEIGHTBUFF_DEPTH 2048	
+#define XI_KER_PROC       	16 		//8
+#define XI_PIX_PROC       	32 		//16
+#define XI_ISTAGEBUFF_DEPTH 8192 	//2048
+#define XI_OSTAGEBUFF_DEPTH 2048  	//1024
+#define XI_WEIGHTBUFF_DEPTH 2048  	//1024	
 #endif
 
 //**DON'T MODIFY THE BELOW MACROS**//
@@ -253,7 +258,13 @@ typedef ap_uint<128> outtype ;
 #ifdef __HLS_SYN__
 #define __SDSVHLS__
 #endif
-void XiConvolutionTop(				gmem_weighttype *weights1,
+
+#ifndef __SDSOC
+int XiConvolutionTop(
+#else
+void XiConvolutionTop(
+#endif
+		gmem_weighttype *weights1,
 		gmem_weighttype *weights2,
 #if (XI_KER_PROC==16 || (XI_WTS_PORT_64BIT_EN==1 && XI_KER_PROC==8))
 		gmem_weighttype *weights3,
