@@ -11,11 +11,11 @@ void load_args_conv
     int *scalar_args
 )
 { 
-    char filename[50];
+    char filename[200];
     FILE* fd;
     sprintf(filename,DATA_FILE_PATH"args_%d_group%d", layerIdx, groupIdx);
     fd = fopen(filename, "rb");
-    if(fd==NULL) exit(-3);
+    if(fd==NULL) { printf("%s not found\n", filename); exit(-3);}
     fread(scalar_args,sizeof(int),128, fd);
     fclose(fd);
 }
@@ -41,7 +41,7 @@ void load_data
     gmem_inputtype_layer1* istg_out2
 )
 {
-    char filename[50];
+    char filename[200];
 
     FILE* fd;
 
@@ -50,25 +50,25 @@ void load_data
     //* read weight data *//
     sprintf(filename,DATA_FILE_PATH"weight_%d_0", layerIdx);
     fd = fopen(filename, "rb");
-    if(fd==NULL) exit(-3);
+    if(fd==NULL) { printf("%s not found\n", filename); exit(-3);}
     fread(weights1,sizeof(char),   WEIGHT_BYTES,fd);
     fclose(fd);
 
     sprintf(filename,DATA_FILE_PATH"weight_%d_1", layerIdx);
     fd = fopen(filename, "rb");
-    if(fd==NULL) exit(-3);
+    if(fd==NULL) { printf("%s not found\n", filename); exit(-3);}
     fread(weights2,sizeof(char),   WEIGHT_BYTES,fd);
     fclose(fd);
 
     sprintf(filename,DATA_FILE_PATH"weight_%d_2", layerIdx);
     fd = fopen(filename, "rb");
-    if(fd==NULL) exit(-3);
+    if(fd==NULL) { printf("%s not found\n", filename); exit(-3);}
     fread(weights3,sizeof(char),   WEIGHT_BYTES,fd);
     fclose(fd);
 
     sprintf(filename,DATA_FILE_PATH"weight_%d_3", layerIdx);
     fd = fopen(filename, "rb");
-    if(fd==NULL) exit(-3);
+    if(fd==NULL) { printf("%s not found\n", filename); exit(-3);}
     fread(weights4,sizeof(char),   WEIGHT_BYTES,fd);
     fclose(fd);
 
@@ -76,31 +76,31 @@ void load_data
 
     sprintf(filename,DATA_FILE_PATH"input_%d_0", layerIdx);
     fd = fopen(filename, "rb");
-    if(fd==NULL) exit(-3);
+    if(fd==NULL) { printf("%s not found\n", filename); exit(-3);}
     fread(input_other1,sizeof(char), INPUT_BYTES,fd);
     fclose(fd);
 
     sprintf(filename,DATA_FILE_PATH"input_%d_1", layerIdx);
     fd = fopen(filename, "rb");
-    if(fd==NULL) exit(-3);
+    if(fd==NULL) { printf("%s not found\n", filename); exit(-3);}
     fread(input_other2,sizeof(char), INPUT_BYTES,fd);
     fclose(fd);
 
     sprintf(filename,DATA_FILE_PATH"input_%d_2", layerIdx);
     fd = fopen(filename, "rb");
-    if(fd==NULL) exit(-3);
-    fread(input_other1,sizeof(char), INPUT_BYTES,fd);
+    if(fd==NULL) { printf("%s not found\n", filename); exit(-3);}
+    fread(input_layer1,sizeof(char), INPUT_BYTES,fd);
     fclose(fd);
 
     sprintf(filename,DATA_FILE_PATH"input_%d_3", layerIdx);
     fd = fopen(filename, "rb");
-    if(fd==NULL) exit(-3);
+    if(fd==NULL) { printf("%s not found\n", filename); exit(-3);}
     fread(inp_norm_2,sizeof(char), INPUT_BYTES,fd);
     fclose(fd);
 
     sprintf(filename,DATA_FILE_PATH"input_%d_4", layerIdx);
     fd = fopen(filename, "rb");
-    if(fd==NULL) exit(-3);
+    if(fd==NULL) { printf("%s not found\n", filename); exit(-3);}
     fread(inp_norm_3,sizeof(char), INPUT_BYTES,fd);
     fclose(fd);
 
@@ -108,7 +108,7 @@ void load_data
     //* read bias data
     sprintf(filename,DATA_FILE_PATH"bias_%d", layerIdx);
     fd = fopen(filename, "rb");
-    if(fd==NULL) exit(-3);
+    if(fd==NULL) { printf("%s not found\n", filename); exit(-3);}
     fread(bias,sizeof(char),BIAS_BYTES,fd);
     fclose(fd);
     
@@ -116,25 +116,25 @@ void load_data
     //* output data
     sprintf(filename,DATA_FILE_PATH"output_%d_0", layerIdx);
     fd = fopen(filename, "rb");
-    if(fd==NULL) exit(-3);
+    if(fd==NULL) { printf("%s not found\n", filename); exit(-3);}
     fread(output1,sizeof(char), OUTPUT_BYTES ,fd);
     fclose(fd);
 
     sprintf(filename,DATA_FILE_PATH"output_%d_1", layerIdx);
     fd = fopen(filename, "rb");
-    if(fd==NULL) exit(-3);
+    if(fd==NULL) { printf("%s not found\n", filename); exit(-3);}
     fread(output2,sizeof(char), OUTPUT_BYTES,fd);
     fclose(fd);
 
     sprintf(filename,DATA_FILE_PATH"output_%d_2", layerIdx);
     fd = fopen(filename, "rb");
-    if(fd==NULL) exit(-3);
+    if(fd==NULL) { printf("%s not found\n", filename); exit(-3);}
     fread(istg_out1,sizeof(char), OUTPUT_BYTES,fd);
     fclose(fd);
 
     sprintf(filename,DATA_FILE_PATH"output_%d_3", layerIdx);
     fd = fopen(filename, "rb");
-    if(fd==NULL) exit(-3);
+    if(fd==NULL) { printf("%s not found\n", filename); exit(-3);}
     fread(istg_out2,sizeof(char), OUTPUT_BYTES,fd);
     fclose(fd);
 }
@@ -151,6 +151,21 @@ void save_answer
     FILE* fd = fopen(filename, "wb");
     fwrite( output1_gold,sizeof(char),OUTPUT_BYTES,fd);
     fwrite( output2_gold,sizeof(char),OUTPUT_BYTES,fd);
+    fclose(fd);
+}
+
+
+
+void load_answer
+(
+    char* filename,
+    gmem_outputtype* output1_gold,
+    gmem_outputtype* output2_gold
+)
+{
+    FILE* fd = fopen(filename, "rb");
+    fread( output1_gold,sizeof(char),OUTPUT_BYTES,fd);
+    fread( output2_gold,sizeof(char),OUTPUT_BYTES,fd);
     fclose(fd);
 }
 

@@ -1,6 +1,6 @@
 
 
-#include "print_parameter.h"
+#include "dbg.h"
 
 
 void printConvDesc(conv_struct & conv_desc, FILE* fp)
@@ -77,7 +77,12 @@ void printConvDesc(conv_struct & conv_desc, FILE* fp)
     fprintf(fp,"conv_desc.iw_mul_istg_row_count： %d \n",(int) conv_desc.iw_mul_istg_row_count);
     fprintf(fp,"conv_desc.ow_mul_ostg_row_count： %d \n",(int) conv_desc.ow_mul_ostg_row_count);
     fprintf(fp,"conv_desc.ow_mul_ostg_row_cnt_last_itr： %d \n",(int) conv_desc.ow_mul_ostg_row_cnt_last_itr);
-    fprintf(fp,"conv_desc.feed_addr16[16]： %d \n",(int) conv_desc.feed_addr16[16]);
+    
+    
+    fprintf(fp,"conv_desc.feed_addr16：[ ");
+    for(int i=0;i<16;i++) fprintf(fp,"%d ",(int) conv_desc.feed_addr16[i]);
+    fprintf(fp,"]\n");
+
     fprintf(fp,"conv_desc.rounding_conv： %d \n",(int) conv_desc.rounding_conv);
     fprintf(fp,"conv_desc.rounding_bn： %d \n",(int) conv_desc.rounding_bn);
     fprintf(fp,"conv_desc.startrow_inc： %d \n",(int) conv_desc.startrow_inc);
@@ -162,15 +167,27 @@ void printWeightDesc(weight_struct & weight_desc, FILE* fp)
 
 
 
+void printGroupDesc(group_conv_struct & group_desc, FILE* fp)
+{
+    fprintf(fp,"group_desc.input_1st_offset %d \n",(int) group_desc.input_1st_offset);
+    fprintf(fp,"group_desc.input_other_offset %d\n",(int) group_desc.input_other_offset);
+    fprintf(fp,"group_desc.weight_offset %d \n",(int) group_desc.weight_offset);
+    fprintf(fp,"group_desc.output_offset %d \n",(int) group_desc.output_offset);
+    fprintf(fp,"group_desc.bias_offset %d \n",(int) group_desc.bias_offset);
+}
+
+
 void printDesc(
                 conv_struct & conv_desc,
                 input_struct & input_desc,
                 output_struct & output_desc,
                 weight_struct & weight_desc,
+                group_conv_struct & group_desc,
                 FILE* fp)
 {
     printConvDesc(conv_desc,fp);
     printInputDesc(input_desc,fp);
     printOutputDesc(output_desc,fp);
     printWeightDesc(weight_desc,fp);
+    printGroupDesc(group_desc, fp);
 }
