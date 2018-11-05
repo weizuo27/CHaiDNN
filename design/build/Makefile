@@ -37,7 +37,7 @@
 
 # Main Variables
 LIBRARY     := libxlnxdnn.so
-PLATFORM    := /home/user/software/chaiSimplify/CHaiDNN/platform/build/zcu102
+PLATFORM    := /home/weizuo/chaisimplify/platform/build/zcu102
 CLOCK_ID    := 1 # Core clock ID
 DM_CLOCK_ID := 1 # Data Motion Clock ID
 # Below path should be relative
