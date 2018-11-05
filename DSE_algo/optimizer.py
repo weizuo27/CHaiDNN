@@ -63,26 +63,24 @@ class optimizer:
             self.assignMappingResult()
             #Now update the latency since the IPs are assigned
             #self.g.drawGraph()
-            print(self.g)
+            #print(self.g)
             self.g.computeLatency()
             #add nodes to factor in pipeline
             self.addPipelineNodes()
-            self.g.printNodeLatency()
+            #self.g.printNodeLatency()
             #fill-in the IPReuseTable:
             self.IPReuseTable = dict()
             self.constructIPReuseTable()
             #add the the edges to factor in the IP reuse
             #self.addReuseEdges()
             #now update the violation path related ILP, resolve the ILP
-            """
-            status, ret = self.scheduling()
+            status, ret = self.scheduling(self.new_latency_target)
             if(status == "success"):
                 self.latency_ub = ret
                 self.new_latency_target = (self.latency_ub + self.latency_lb)/2
             else: #Failed
                 self.updateResourceILPBuilder(violation_path)
                 self.g.retriveOriginalGraph()
-            """
             oneIter = False #For debugging purpose
         
     def constructIPReuseTable(self):
@@ -170,18 +168,19 @@ class optimizer:
         path = dict() # The dictionary, to record critical path to the node. Key: node. Value: list of nodes to represent the path
         noteList = self.g.topological_sort()
         for n in noteList:
+            max_starting = 0
+            max_pred = None
             preds = list(self.g.G.predecessors(n))
             if len(preds) == 0:
                 startingTime[n] = 0.0
                 path[n] = [n]
-            max_starting = 0
-            max_pred = None
-            for pred in preds:
-                if max_starting < startingTime[pred] + pred.pipelinedLatency:
-                    max_starting = startingTime[pred] + pred.pipelinedLatency
-                    max_pred = pred
-            startingTime[n] = max_starting
-            path[n] = path[max_pred] + [n]
+            else:
+                for pred in preds:
+                    if max_starting < startingTime[pred] + pred.pipelinedLatency:
+                        max_starting = startingTime[pred] + pred.pipelinedLatency
+                        max_pred = pred
+                startingTime[n] = max_starting
+                path[n] = path[max_pred] + [n]
             #if at one node the overall latency exceeds the budget:
             #need to reverse the path to get the shortest path that 
             #violates the constraints
