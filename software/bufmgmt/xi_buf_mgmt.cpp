@@ -164,6 +164,7 @@ void xiConstBufCreate(
 #endif
 
 	//# Total size for params and mean
+	//Wei: This is to allocate for params (args) for each layer and mean (?)
 	int total_size = mean_size + (seq_len*MAX_PARAM_SIZE*sizeof(int));
 
 	//# Create memory for parameters
@@ -172,8 +173,10 @@ void xiConstBufCreate(
 	int param_off = 0;
 
 	void *ptr_mean = addOffset<BUF_ADDR_TYPE>(param_buf, 0);
+	//Wei: The offset of the starting address of params
 	param_off += mean_size;
 
+	//Wei: The size of the params of one layer
 	int scalar_size = MAX_PARAM_SIZE*sizeof(HPARAM_TYPE);
 
 
@@ -209,6 +212,7 @@ void xiConstBufCreate(
 #endif
 
 		//# initializing buffers for scalar parameters
+		//Wei: Assign the address of the params of the current layer (this is not alloc, which is done before)
 		curLayer.params = addOffset<BUF_ADDR_TYPE>(param_buf, param_off);
 		param_off += scalar_size;
 
@@ -237,6 +241,7 @@ void xiConstBufCreate(
 				int group = xlayer_seq[iter].hw_ops -> conv_params -> group;
 
 				//# compute weights1 size
+				//Wei: The size of 1/4 of the total weights (The in and out plane are aligned)
 				n_size = convWeightsSize(out_depth, in_depth, kernel_h, kernel_w, group);
 				n_size = n_size / WEIGHT_PORTS;
 				//cout << "wts_size : " << n_size << endl;
@@ -544,6 +549,7 @@ void xiConstBufCreate(
 	cout << "Constant buffers allocated for image-0" << endl;
 #endif
 
+	//Wei this is just for the 2nd image, copy all the pointers of the constant in as well
 	//# Copying the pointers for other images
 	for (int i = 1; i < NUM_IMG; i++)
 	{
@@ -581,9 +587,9 @@ void xiIOBuffCreate(
 	string cur_handle;
 	void *base_ptr;
 
-	//# compute size of maximum handle shape in the network
+	//# compute size of maximum handle shape in the network 
 	int max_size = maxshapeToSize<HCONV_OUT_TYPE>(xlayer_seq[0].ip_blob[0].handle_shape);
-	//cout << "input max_size : " << max_size << endl;
+	cout << "input max_size : " << max_size << endl;
 
 	//# Offset & Position for concatination
 	vector <io_peers> offPair;
@@ -623,7 +629,7 @@ void xiIOBuffCreate(
 #if EN_PRINT
 			cout << endl << "/////////////////////////////// layer : " << iter << endl;
 			cout << "(Layer, Type, HW/SW) " << xlayer_seq[iter].hw_ops -> name << ", " << xlayer_seq[iter].hw_ops -> type << ", " << xlayer_seq[iter].layer_type << endl;
-			//cout << "handle size (ip, op): " << xlayer_seq[iter].ip_blob.size() << " " << xlayer_seq[iter].op_blob.size() << endl;
+			cout << "handle size (ip, op): " << xlayer_seq[iter].ip_blob.size() << " " << xlayer_seq[iter].op_blob.size() << endl;
 			for(unsigned int i = 0; i < xlayer_seq[iter].ip_blob.size(); i++)
 			{
 				cout << xlayer_seq[iter].ip_blob[i].handle << " - " << xlayer_seq[iter].ip_blob[i].mem_type << " , ";
@@ -665,7 +671,7 @@ void xiIOBuffCreate(
 				//# input peers shape
 				//TODO :: Enable after support
 				in_offset = peersToShape<HCONV_OUT_TYPE, KER_PROC>(xlayer_seq[iter].ip_peers_shapes);
-				//cout << "in_offset : " << in_offset << endl;
+				cout << "in_offset : " << in_offset << endl;
 
 				//# Checking the existence of input handle in the map
 				//# For every new handle, creates new memory
@@ -677,9 +683,11 @@ void xiIOBuffCreate(
 #endif
 
 					//# Creating unique memory for input image data
+					//Wei: This means this is the first stage
 					if(cur_handle == "data")
 					{
 						//# TODO : Using 3 Ports for first layer of convolution
+						//Wei: Although they have allocated 3 ports, only one is used???
 						int num_inports = 3;
 						for(int i = 0; i < num_inports; i++)
 						{
@@ -730,7 +738,7 @@ void xiIOBuffCreate(
 #endif
 
 				int opCode = xlayer_seq[iter].opcode;
-
+				//Wei: Only if there is one blob the following for loop holds?
 				for(int j = 0; (j < INPUT_PORTS) && (l_ib == 0); j++)
 				{
 					//# Filling Dummy pointers & these are not being used by kernel

@@ -73,7 +73,8 @@ CONV_INC_DIRS   := include src
 POOL_INC_DIRS   := include src
 DECONV_INC_DIRS := include src
 CONV_INCS       := ${CONV_INC_DIRS:%=-I${SRC_PATH}/conv/%}
-POOL_INCS       := ${POOL_INC_DIRS:%=-I${SRC_PATH}/pool/%}
+#POOL_INCS       := ${POOL_INC_DIRS:%=-I${SRC_PATH}/pool/%}
+POOL_INCS       := ${POOL_INC_DIRS:%=-I${SRC_PATH}/pool_pipe/%}
 DECONV_INCS     := ${DECONV_INC_DIRS:%=-I${SRC_PATH}/deconv/%}
 # Below path must have absolute path
 CONV_SCRIPTS_PATH := $(shell pwd)/${PROJ_PATH}/conv/scripts

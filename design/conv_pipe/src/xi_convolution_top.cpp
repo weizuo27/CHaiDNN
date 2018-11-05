@@ -14,8 +14,8 @@ See the License for the specific language governing permissions and
 limitations under the License.
 ----------------------------------------------------*/
 
-#include "xi_conv_config.h"
-#include "xi_conv_desc.h"
+#include "../include/xi_conv_config.h"
+#include "../include/xi_conv_desc.h"
 typedef ap_int<27> dsp27_t;
 #if XI_DP_ENABLE
 #include <dsp_builtins.h>

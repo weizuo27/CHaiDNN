@@ -20,6 +20,7 @@ limitations under the License.
 #include "../common/kernelinfo_class.h"
 #include "xi_kernels.h"
 #include "../scheduler/xi_utils.hpp"
+#include "../common/hw_kernel_info.h"
 
 #ifdef __SDSOC
 #include <sds_lib.h>

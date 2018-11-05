@@ -1,9 +1,9 @@
 .PHONY: all
 
 # Provide Correct SDx Path
-SDx_BUILD_PATH = /proj/xbuilds/2018.2_daily_latest/installs/lin64/SDx/2018.2
+SDx_BUILD_PATH = /opt/Xilinx/SDx/2018.2
 
-ARM_CXX = aarch64-linux-gnu-g++
+ARM_CXX = aarch64-linux-gnu-g++ -g
 OPENCV_DIR := ../../SD_Card/opencv/arm64
 PB_ARM_DIR := ../../SD_Card/protobuf/arm64
 BLAS_ARM_DIR := ../../SD_Card/cblas/arm64

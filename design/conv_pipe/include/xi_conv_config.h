@@ -18,11 +18,15 @@ limitations under the License.
 #define _XI_CONV_CONFIG_H_
 
 #include <ap_int.h>
+#include <hls_stream.h>
 
 //#define XI_DIET_CHAI_Z 		0 //Enable this Macro to reduce the resource utilization of the design to fit to smaller devices
 //#define XI_DIET_CHAI_ZUPLUS	0 //Enable this Macro to reduce the resource utilization of the design to fit to smaller devices
 
-
+#define DBG_INFO 0
+#define COMPUTE_OFF 1
+#define PRINT_LINEBUFFER_CONTENT 0
+#define PRINT_PINGPONGBUFFER_CONTENT 0
 //**** URAM ENABLE FLAGS FOR THE BUFFERS
 #define XI_BIAS_URAM_EN 	0
 #define XI_WTS_URAM_EN 		0
@@ -296,5 +300,73 @@ void XiConvolutionTop(				gmem_weighttype *weights1,
 #define XI_NKPF 8//4
 #define XI_PAD 0
 #endif
+
+
+
+
+
+
+
+
+
+
+
+// template <class T>
+// class StreamInterfact_t
+// {
+
+// public:
+// 	hls::stream< T > & streamPort;
+// 	StreamInterfact_t(hls::stream< T > & streamIn) : streamPort(streamIn) {};
+// 	T read( ap_uint<32> address, bool flag)
+// 	{
+// 		return streamPort.read();
+// 	}
+// 	void write( T val, ap_uint<32> address, bool flag)
+// 	{
+// 		streamPort.write(val);
+// 	}
+
+// };
+
+// template <class T>
+// class MemInterfact_t
+// {
+
+// public:
+// 	T   *memPort;
+// 	MemInterfact_t(T* memPort) : memPort(memPort) {};
+// 	T read( ap_uint<32> address, bool flag)
+// 	{
+// 		return memPort[address];
+// 	}
+// 	void write( T val, ap_uint<32> address, bool flag)
+// 	{
+// 		memPort[address]=T;
+// 	}
+// };
+
+// template <class T>
+// class MiscInterfact_t
+// {
+// 	T  *memPort;
+// 	hls::stream< T > & streamPort;
+
+// 	T read( ap_uint<32> address, bool flag)
+// 	{
+// 		if( flag)
+// 			return streamPort.read();
+// 		else
+// 			return memPort[address];
+// 	}
+// 	void write( T val, ap_uint<32> address, bool flag)
+// 	{
+// 		if( flag)
+// 			streamPort.write(val);
+// 		else
+// 			memPort[address]=T;
+// 	}
+// };
+
 
 #endif//_XI_CONV_CONFIG_H_

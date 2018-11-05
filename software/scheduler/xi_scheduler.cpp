@@ -271,6 +271,28 @@ void xiExec(void *handle, vector<void *> input, vector<void *> output)
 				hwQueue[ImgId][whichConv].startclk = sds_clock_counter();
 #endif
 
+#if DBG_CONV_KER
+		//Arg
+		if(convImgId == 0){
+			int *params = (int*)hwQueue[0][whichConv].params;
+			if(params == nullptr){
+				printf("param is null\n");
+			}
+			else{
+				string fileName = "args_"+to_string(whichConv) + "_group0";
+				FILE *f = fopen(fileName.c_str(), "w");
+				int tmpArg[128];
+				cout << "write " << whichConv << endl;
+				for (int i = 0; i < 128; ++i){
+					//printf("%d, %d\n", i,params[i]);
+					tmpArg[i] =params[i];
+				}
+				fwrite(tmpArg, sizeof(int), sizeof(tmpArg), f);
+				fclose(f);
+			}
+		}
+#endif
+
 					ConvolutionForward(
 							(CHAR_TYPE*)hwQueue[ImgId][whichConv].wts_ptrs[0], (CHAR_TYPE*)hwQueue[ImgId][whichConv].wts_ptrs[1],
 #if (KER_PROC==16 || (PORT_BITWIDTH_64BIT==1 && KER_PROC==8))
@@ -329,7 +351,26 @@ void xiExec(void *handle, vector<void *> input, vector<void *> output)
 #if LAYERWISE_PERFORMANCE
 				hwQueue[ImgId][whichPool].startclk = sds_clock_counter();
 #endif
-					
+/*
+					int* params = (INT_TYPE*)hwQueue[ImgId][whichPool].params;
+					uRowIdx_t rowStep = 1;
+					short pwin_h = params[7];
+					short pwin_w = params[8];
+					short ps_h = params[5];
+					uRowIdx_t initialReadRows = pwin_h+(rowStep-1)*ps_h;
+					uPixelIdx_t inlineBufferPlaneStep = (rowStep*ps_h+initialReadRows)*in_w;
+   					uPixelIdx_t outlineBufferPlaneStep =out_w*2*rowStep;
+    				ap_uint<32> inDDRPlaneStep= in_h*in_w;
+    				ap_uint<32> outDDRPlaneStep= out_w*out_h;
+
+					params[15] = rowStep;
+					params[16] = initialReadRows;
+        			params[17] = inlineBufferPlaneStep;
+        			params[18] = outlineBufferPlaneStep;
+        			params[19] = inDDRPlaneStep;
+					*/
+
+
 					//# Call Pool wrapper
 					PoolForward(
 							(SHORT_TYPE*)hwQueue[ImgId][whichPool].in_ptrs[0], (SHORT_TYPE*)hwQueue[ImgId][whichPool].out_ptrs[0],
@@ -714,6 +755,26 @@ void xiExec(void *handle, vector<void *> input, vector<void *> output)
 				std::cout << "[DEBUG] convForward, Group : " << convImgId << std::endl;
 #endif
 
+#if DBG_CONV_KER
+		//Arg
+		if(convImgId == 0){
+			if(params == nullptr){
+				printf("param is null\n");
+			}
+			else{
+				string fileName = "args_"+to_string(whichConv) + "_group1";
+				FILE *f = fopen(fileName.c_str(), "w");
+				int tmpArg[128];
+				cout << "write " << whichConv << endl;
+				for (int i = 0; i < 128; ++i){
+					//printf("%d, %d\n", i,params[i]);
+					tmpArg[i] =params[i];
+				}
+				fwrite(tmpArg, sizeof(int), sizeof(tmpArg), f);
+				fclose(f);
+			}
+		}
+#endif
 				ConvolutionForward(
 						(CHAR_TYPE*)hwQueue[convImgId][whichConv].wts_ptrs[0], (CHAR_TYPE*)hwQueue[convImgId][whichConv].wts_ptrs[1],
 #if (KER_PROC==16 || (PORT_BITWIDTH_64BIT==1 && KER_PROC==8))
@@ -763,9 +824,50 @@ void xiExec(void *handle, vector<void *> input, vector<void *> output)
 			hwQueue[convImgId][whichConv].endclk = sds_clock_counter();
 #endif
 			
-#if ENABLE_ERROR_CHECKS || LAYERWISE_OUTPUT_WRITE
+#if DBG_CONV_KER
 			if(convImgId == 0)
 			{
+				printf("write weight\n");
+				//Weight
+				for (int i = 0; i < 4; i++){
+					 string fileName = "weight_"+to_string(whichConv) + "_" + to_string(i);
+					 FILE *f = fopen(fileName.c_str(), "w");
+					 fwrite(hwQueue[convImgId][whichConv].wts_ptrs[i], sizeof(char), 221184 * sizeof(char), f);
+					 fclose(f);
+				} 
+
+				//Bias
+				printf("write bias\n");
+				string fileName = "bias_"+to_string(whichConv);
+				FILE *f = fopen(fileName.c_str(), "w");
+				fwrite(hwQueue[convImgId][whichConv].bias_ptr, sizeof(short),  3072 * sizeof(short), f);
+				fclose(f);
+				}
+
+				//Input
+				printf("write input\n");
+				for(int i = 0; i < 5; i++){
+					if(i < 2)
+						cout << "input " << i  << " " << hwQueue[convImgId][whichConv].in_ptrs[i] << endl;
+					string fileName = "input_"+to_string(whichConv) + "_" + to_string(i);
+					FILE *f = fopen(fileName.c_str(), "w");
+					fwrite(hwQueue[convImgId][whichConv].in_ptrs[i], sizeof(char), 290400 * sizeof(char), f);
+					fclose(f);
+				}
+
+				printf("write output\n");
+				//Output
+				for(int i = 0; i < 4; i++){
+					if(i < 2)
+						cout << "output " << i  << " " << hwQueue[convImgId][whichConv].out_ptrs[i] << endl;
+					 string fileName = "output_"+to_string(whichConv) + "_" + to_string(i);
+					 FILE *f = fopen(fileName.c_str(), "w");
+					 fwrite(hwQueue[convImgId][whichConv].out_ptrs[i], sizeof(char), 290400 * sizeof(char), f);
+					 fclose(f);
+				}
+#endif
+
+#if ENABLE_ERROR_CHECKS || LAYERWISE_OUTPUT_WRITE || DBG_ONV_KER
 				int convErr = errorCheck(hwQueue[convImgId][whichConv]);
 				
 #if !LAYERWISE_OUTPUT_WRITE

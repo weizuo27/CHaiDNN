@@ -25,6 +25,7 @@ limitations under the License.
 #include <string.h>
 #include <stdio.h>
 
+
 using namespace std;
 
 //# Buffer Management Module
@@ -38,6 +39,10 @@ using namespace std;
 
 //# Error Check
 #include "../checkers/checkers.hpp"
+
+//Enable Pipeline Pool
+#include "ap_int.h"
+#include "../common/hw_kernel_info.h"
 
 //# Layers required
 #define NEEDED_CONV		1
