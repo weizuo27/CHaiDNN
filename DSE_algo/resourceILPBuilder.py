@@ -113,7 +113,7 @@ class resourceILPBuilder():
         self.constraints.append(exp_LUT <= self.LUT_budget)
         self.constraints.append(exp_BW <= self.BW_budget)
 
-    def addViolationPaths(self, violation_path, layerQueue, IP_queue):
+    def addViolationPaths(self, violation_path, layerQueue, IP_table):
         """
         Violation means that the current mapping cannot be held for all 
         nodes in the path at the same time. So the constraints should be
@@ -128,7 +128,7 @@ class resourceILPBuilder():
             for j_idx, ip in enumerate(IP_table[node.type]):
                 if ip.orig_name == node.mappedIP.orig_name:
                     exp+= self.mappingVariables[node.type][i_idx][j_idx]
-        self.constraints.append(exp < len(violation_path))
+        self.constraints.append(exp <= len(violation_path)-1)
 
     def createProblem(self):
         """
@@ -148,7 +148,11 @@ class resourceILPBuilder():
         self.prob = cvx.Problem(self.obj, self.constraints)
 
     def solveProblem(self):
+        """
+            return: True if the optimal solution can be found. False otherwise
+        """
         self.prob.solve(solver = "GUROBI")
+        return self.prob.status == "optimal"
     def printSolution(self):
         print("status:", self.prob.status)
         print("optimal value", self.prob.value)

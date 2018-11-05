@@ -45,8 +45,8 @@ def generateIPs(fileName):
     f.close()
     return IPs
 
-def hw_supported_layer(layer_type, ):
-    """
-    Test whether a layer is supported by hardware
-    """
-    return la
+def printViolationPath(vioPath):
+    print "Violation path"
+    for i in vioPath:
+        print i.name, "-->"
+        

@@ -37,7 +37,7 @@
 
 # Main Variables
 LIBRARY     := libxlnxdnn.so
-PLATFORM    := /home/user/software/chaiSimplify/CHaiDNN/platform/build/zcu102
+PLATFORM    := /home/weizuo/chaisimplify/platform/build/zcu102
 CLOCK_ID    := 1 # Core clock ID
 DM_CLOCK_ID := 1 # Data Motion Clock ID
 # Below path should be relative
@@ -58,7 +58,7 @@ else
 	POOL_ENABLE   := 0
 	DECONV_ENABLE := 0
  else
-   ifeq (${SIMP_CHAI}, 1)
+   ifeq (${PIPE_CHAI}, 1)
 	POOL_ENABLE   := 1
 	DECONV_ENABLE := 0
    endif
@@ -72,12 +72,21 @@ WRAPPER_PATH  := ${PROJ_PATH}/wrapper
 CONV_INC_DIRS   := include src
 POOL_INC_DIRS   := include src
 DECONV_INC_DIRS := include src
-CONV_INCS       := ${CONV_INC_DIRS:%=-I${SRC_PATH}/conv/%}
+ifeq (${PIPE_CHAI}, 1)
+   CONV_INCS       := ${CONV_INC_DIRS:%=-I${SRC_PATH}/conv_pipe/%}
+else
+   CONV_INCS       := ${CONV_INC_DIRS:%=-I${SRC_PATH}/conv/%}
+endif
+
 #POOL_INCS       := ${POOL_INC_DIRS:%=-I${SRC_PATH}/pool/%}
 POOL_INCS       := ${POOL_INC_DIRS:%=-I${SRC_PATH}/pool_pipe/%}
 DECONV_INCS     := ${DECONV_INC_DIRS:%=-I${SRC_PATH}/deconv/%}
 # Below path must have absolute path
-CONV_SCRIPTS_PATH := $(shell pwd)/${PROJ_PATH}/conv/scripts
+ifeq (${PIPE_CHAI}, 1)
+   CONV_SCRIPTS_PATH := $(shell pwd)/${PROJ_PATH}/conv_pipe/scripts
+else
+   CONV_SCRIPTS_PATH := $(shell pwd)/${PROJ_PATH}/conv/scripts
+endif
 
 # Options and command(s) variables
 VERBOSE  := #-verbose
@@ -135,9 +144,15 @@ print_vars :
 	@echo "POOL_ENABLE       = \"${POOL_ENABLE}\""
 	@echo "DECONV_ENABLE     = \"${DECONV_ENABLE}\""
 
-xi_convolution_top.o: ${SRC_PATH}/conv/src/xi_convolution_top.cpp
-	${CC} ${SDSFLAGS} ${CFLAGS} ${CONV_FLAGS} -sds-hw XiConvolutionTop ${SRC_PATH}/conv/src/xi_convolution_top.cpp -clkid ${CLOCK_ID} \
-	                                                  -hls-tcl ${CONV_SCRIPTS_PATH}/config_core.tcl -sds-end -fPIC $< -o $@
+ifeq (${PIPE_CHAI}, 1)
+   xi_convolution_top.o: ${SRC_PATH}/conv_pipe/src/xi_convolution_top.cpp
+   ${CC} ${SDSFLAGS} ${CFLAGS} ${CONV_FLAGS} -sds-hw XiConvolutionTop ${SRC_PATH}/conv_pipe/src/xi_convolution_top.cpp -clkid ${CLOCK_ID} \
+      -hls-tcl ${CONV_SCRIPTS_PATH}/config_core.tcl -sds-end -fPIC $< -o $@
+else
+   xi_convolution_top.o: ${SRC_PATH}/conv/src/xi_convolution_top.cpp
+   ${CC} ${SDSFLAGS} ${CFLAGS} ${CONV_FLAGS} -sds-hw XiConvolutionTop ${SRC_PATH}/conv/src/xi_convolution_top.cpp -clkid ${CLOCK_ID} \
+      -hls-tcl ${CONV_SCRIPTS_PATH}/config_core.tcl -sds-end -fPIC $< -o $@
+endif
 
 pooling_layer_dp_2xio_top.o: ${SRC_PATH}/pool/src/pooling_layer_dp_2xio_top.cpp
 	${CC} ${SDSFLAGS} ${CFLAGS} -sds-hw PoolTop ${SRC_PATH}/pool/src/pooling_layer_dp_2xio_top.cpp -clkid ${CLOCK_ID} -sds-end -fPIC $< -o $@
