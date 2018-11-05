@@ -854,7 +854,7 @@ void xiExec(void *handle, vector<void *> input, vector<void *> output)
 					fwrite(hwQueue[convImgId][whichConv].in_ptrs[i], sizeof(char), 290400 * sizeof(char), f);
 					fclose(f);
 				}
-				
+
 				printf("write output\n");
 				//Output
 				for(int i = 0; i < 4; i++){
@@ -863,15 +863,6 @@ void xiExec(void *handle, vector<void *> input, vector<void *> output)
 					 string fileName = "output_"+to_string(whichConv) + "_" + to_string(i);
 					 FILE *f = fopen(fileName.c_str(), "w");
 					 fwrite(hwQueue[convImgId][whichConv].out_ptrs[i], sizeof(char), 290400 * sizeof(char), f);
-					 fclose(f);
-				}
-
-
-
-				for(int i = 0; i < 5; i++){
-					 string fileName = "input_"+to_string(whichConv) + "_" + to_string(i);
-					 FILE *f = fopen(fileName.c_str(), "w");
-					 fwrite(hwQueue[convImgId][whichConv].in_ptrs[i], sizeof(char), 290400 * sizeof(char), f);
 					 fclose(f);
 				}
 #endif
