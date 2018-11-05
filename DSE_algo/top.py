@@ -22,6 +22,6 @@ latency_budget = args.latency_budget
 app_fileName = args.app_fileName
 IP_fileName = args.IP_fileName
 
-opt = optimizer(BRAM_budget, DSP_budget, FF_budget, LUT_budget, BW_budget, latency_budget, app_fileName, IP_fileName)
+opt = optimizer(BRAM_budget, DSP_budget, FF_budget, LUT_budget, BW_budget, latency_budget, app_fileName, IP_fileName, 10000)
 
 

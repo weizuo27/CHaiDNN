@@ -6,7 +6,7 @@ import itertools
 
 class optimizer:
     def __init__(self, BRAM_budget, DSP_budget, FF_budget, LUT_budget, BW_budget, latency_Budget,
-            app_fileName, IP_fileName):
+            app_fileName, IP_fileName, EPS):
         """
         The top function of the optimizer
         Args:
@@ -16,7 +16,7 @@ class optimizer:
             FF_budget: The budget of FF
             BW_budget: The budget of Bandwidth
             latency_Budget: the latency budget
-
+            EPS: The margin of scheduling, the difference bound between upper and lower bound
             hw_layers:. The dictionary of the layers that are supported by hardware
             app_fileName: The graph description file from CHaiDNN
             IP_fileName: the file contains the IP candidates and charicterization data
@@ -46,25 +46,26 @@ class optimizer:
         self.latency_achieved = None
         #2. Loop body
         firstIter = True
-        #while(self.latency_lb < self.latency_ub):
         oneIter = 0
-        while(oneIter < 2): #For debugging purpose
-            print oneIter, "iteration\n"
+        #while(oneIter < 4): #For debugging purpose
+        while(-self.latency_lb+self.latency_ub> EPS):
+            print oneIter, firstIter, "iteration\n"
             self.rb.createProblem()
             optimal = self.rb.solveProblem()
             if(not optimal):
                 #print "not opt"
                 assert (not firstIter), "The resource budget is too tight, no feasible mapping solution."
-                firstIter = False
                 self.latency_lb = self.new_latency_target
                 #FIXME: The latency should be integer or floating point?
                 self.new_latency_target = (self.latency_lb + self.latency_ub)/2 
+                print "new_ub", self.latency_ub, "new_lb", self.latency_lb, "new target,", self.new_latency_target
+                firstIter = False
                 continue
+            firstIter = False
             self.rb.printSolution()
             #assign the mapping result
             self.assignMappingResult()
             #Now update the latency since the IPs are assigned
-            self.g.drawGraph()
             print(self.g)
             self.g.computeLatency()
             #add nodes to factor in pipeline
@@ -74,16 +75,26 @@ class optimizer:
             self.IPReuseTable = dict()
             self.constructIPReuseTable()
             #add the the edges to factor in the IP reuse
-            #self.addReuseEdges()
+            self.addReuseEdges()
+            self.g.drawGraph()
             #now update the violation path related ILP, resolve the ILP
             status, ret = self.scheduling(self.new_latency_target)
             if(status == "success"):
                 self.latency_ub = ret
+                self.latency_achieved = ret
                 self.new_latency_target = (self.latency_ub + self.latency_lb)/2
+                print "scheduling", status
+                print "new_ub", self.latency_ub, "new_lb", self.latency_lb, "new target,", self.new_latency_target
             else: #Failed
+                print "scheduling", status
+                printViolationPath(ret)
                 self.updateResourceILPBuilder(ret)
-                self.g.retriveOriginalGraph()
+            self.g.retriveOriginalGraph()
             oneIter += 1
+        if self.latency_achieved == None:
+            print "The latency budget is too small, cannot find any feasible solution"
+        else:
+            print "The achieved latency is ", self.latency_achieved
         
     def constructIPReuseTable(self):
         """
@@ -193,10 +204,11 @@ class optimizer:
                 if n.latency > latency_Budget:
                     return "failed", violation_path
                 for m in path[n][-2::-1]:
+                    print m.name
                     if m.type == "pipeNode":
                         continue
+                    violation_path += [m]
                     if endtime - startingTime[m] > latency_Budget:
-                        violation_path += [m]
                         return "failed", violation_path
         #if succeed, return the optimal latency
         return "success", endtime

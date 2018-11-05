@@ -44,3 +44,9 @@ def generateIPs(fileName):
         IPs.append(IP_inst)
     f.close()
     return IPs
+
+def printViolationPath(vioPath):
+    print "Violation path"
+    for i in vioPath:
+        print i.name, "-->"
+        
