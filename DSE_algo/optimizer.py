@@ -2,6 +2,7 @@ from resourceILPBuilder import resourceILPBuilder
 from graph import graph
 from graph import pipeNode
 from utils import *
+from copy import deepcopy
 import itertools
 
 class optimizer:
@@ -24,7 +25,7 @@ class optimizer:
                 key: layer_type; value: The list of IPs of that type
             IPReuseTable: The dictionary to describe that for each IP, which layer(s) are using it
                 key: IP; Value: The list of layers that use it, in the topological sorted order
-        """
+i       """
         #Hard code the hardware supported layers
         self.hw_layers = {
             "Convolution": 1,
@@ -49,17 +50,18 @@ class optimizer:
         oneIter = 0
         #while(oneIter < 4): #For debugging purpose
         while(-self.latency_lb+self.latency_ub> EPS):
-            print oneIter, firstIter, "iteration\n"
+            print oneIter, "iteration\n"
             self.rb.createProblem()
             optimal = self.rb.solveProblem()
             if(not optimal):
-                #print "not opt"
                 assert (not firstIter), "The resource budget is too tight, no feasible mapping solution."
                 self.latency_lb = self.new_latency_target
                 #FIXME: The latency should be integer or floating point?
+                self.rb.violation_constraints = []
                 self.new_latency_target = (self.latency_lb + self.latency_ub)/2 
                 print "new_ub", self.latency_ub, "new_lb", self.latency_lb, "new target,", self.new_latency_target
                 firstIter = False
+                oneIter += 1
                 continue
             firstIter = False
             self.rb.printSolution()
@@ -67,6 +69,7 @@ class optimizer:
             self.assignMappingResult()
             #Now update the latency since the IPs are assigned
             print(self.g)
+            #self.g.drawGraph()
             self.g.computeLatency()
             #add nodes to factor in pipeline
             self.addPipelineNodes()
@@ -76,12 +79,12 @@ class optimizer:
             self.constructIPReuseTable()
             #add the the edges to factor in the IP reuse
             self.addReuseEdges()
-            self.g.drawGraph()
             #now update the violation path related ILP, resolve the ILP
             status, ret = self.scheduling(self.new_latency_target)
             if(status == "success"):
                 self.latency_ub = ret
                 self.latency_achieved = ret
+                self.mapping_solution = deepcopy(self.g)
                 self.new_latency_target = (self.latency_ub + self.latency_lb)/2
                 print "scheduling", status
                 print "new_ub", self.latency_ub, "new_lb", self.latency_lb, "new target,", self.new_latency_target
@@ -95,6 +98,8 @@ class optimizer:
             print "The latency budget is too small, cannot find any feasible solution"
         else:
             print "The achieved latency is ", self.latency_achieved
+            print "mapping"
+            print(self.mapping_solution)
         
     def constructIPReuseTable(self):
         """
@@ -216,7 +221,7 @@ class optimizer:
     def updateResourceILPBuilder(self, violation_path):
         """
         After the scheduling, if there is violation_path, 
-        we need to update the constarints and resolve the ILP
+        we need to update the constraints and resolve the ILP
         Args:
             violation_path: The list, contains the list of nodes that compose the violation
         """

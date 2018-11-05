@@ -1,0 +1,21 @@
+Network : AlexNet
+Input Blob : data
+Output Blob : pool5
+Start Layer : data
+End Layer : pool5
+
+# -------------------- Layers ------------------------ #
+[data:0] --> { conv1 - Convolution: F = 1x1x3x3; S = 1; P = 0; D = 1; Group = 1; ReLU = 1; HasBias = 1; Weights = ; Bias = ; WDim = 1x1x3x3; BDim = 1;  } --> [conv1:0]
+Xilinx
+[conv1:0] --> { conv2 - Convolution: F = 1x1x3x3; S = 1; P = 0; D = 1; Group = 1; ReLU = 1; HasBias = 1; Weights = ; Bias = ; WDim = 1x1x3x3; BDim = 1;  } --> [conv2:0]
+Xilinx
+[conv2:0] --> { conv3 - Convolution: F = 1x1x3x3; S = 1; P = 0; D = 1; Group = 1; ReLU = 1; HasBias = 1; Weights = ; Bias = ; WDim = 1x1x3x3; BDim = 1;  } --> [conv3:0]
+Xilinx
+
+# -------------------- Blobs ------------------------ #
+data : 1x1x20x20
+conv1 : 1x1x18x18
+conv2 : 1x1x16x16
+conv3 : 1x1x14x14
+
+# -------------------- Software layer latency --------------------- #
