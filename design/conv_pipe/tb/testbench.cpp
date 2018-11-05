@@ -4,6 +4,7 @@
 #include <sys/stat.h> 
 #include <fcntl.h>
 #include <hls_stream.h>
+#include <time.h>
 
 #include "../include/xi_conv_config.h"
 #include "../include/xi_conv_desc.h"
@@ -48,11 +49,13 @@ gmem_outputtype output2_sol[OUTPUT_DEPTH]={};
 
 int main()
 {
+    clock_t startTime = clock();
     int scala_args[128]={};
 
+    int layerId=6;
 
-    
-    load_data(2, weights1,weights2, weights3, weights4, 
+    puts("loadDesc");
+    load_data(layerId, weights1,weights2, weights3, weights4, 
     input_other1, input_other2,
     input_layer1,
     bias,
@@ -60,8 +63,47 @@ int main()
     output1_sol,output2_sol,
     istg_out1,istg_out2);
 
+    // int depth=96;
+    // int Pixel=27*27;
+    // for(int j=0;j<depth/4;j++)
+    // for(int i=0;i<Pixel;i++)
+    // {
+    //     unsigned long int Val=j*65536+i;
+    //     int addr= (j/4)*Pixel+i;
+    //     switch( j%4)
+    //     {
+    //         case 0: input_other1[addr].range(63,0)=Val;break;
+    //         case 1: input_other1[addr].range(127,64)=Val;break;
+    //         case 2: input_other2[addr].range(63,0)=Val;break;
+    //         default: input_other2[addr].range(127,64)=Val;break;
+    //     }
+  
+        
 
-    load_args_conv(2,0,scala_args);
+    // }
+
+
+
+    // for(int i=0;i<WEIGHT_DEPTH;i++)
+    // {
+    //     weights1[i]=i*4+1;
+    //     weights2[i]=i*4+2;
+    //     weights3[i]=i*4+3;
+    //     weights4[i]=i*4+4;
+    // }
+
+
+
+
+    // for(int i=0;i<BIAS_DEPTH;i++)
+    // {
+    //     bias[i]=i;
+    // }
+
+    load_args_conv(layerId,0,scala_args);
+    printf("layer [%d %d]\n", layerId,0);
+
+
     XiConvolutionTop(weights1,weights2, weights3, weights4, 
     output1,output2,
     input_other1, input_other2,
@@ -69,51 +111,31 @@ int main()
     bias,
     inp_norm_2, inp_norm_3,
     istg_out1,istg_out2, 
-    scala_args,0);
-
-
-    load_args_conv(2,0,scala_args);
-    XiConvolutionTop(weights1,weights2, weights3, weights4, 
-    output1,output2,
-    input_other1, input_other2,
-    input_layer1,
-    bias,
-    inp_norm_2, inp_norm_3,
-    istg_out1,istg_out2, 
-    scala_args,0);
-
-
+    scala_args    
+    #ifdef __SDSVHLS__
+    ,0
+    #endif
+    );
 
     
 
 
+    load_args_conv(layerId,1,scala_args);
+    printf("%d\n", scala_args[110]);
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-   
-
-       
-
+    XiConvolutionTop(weights1,weights2, weights3, weights4, 
+    output1,output2,
+    input_other1, input_other2,
+    input_layer1,
+    bias,
+    inp_norm_2, inp_norm_3,
+    istg_out1,istg_out2, 
+    scala_args
+    
+    #ifdef __SDSVHLS__
+    ,0
+    #endif
+    );
 
 #if DBG_INFO
     for(int i=0;i<OUTPUT_DEPTH;i++)
@@ -123,15 +145,11 @@ int main()
         printf("Output3 addr:%d, value: %x\t%x\n",i,(int) output3[i].range(63,0), (int)output3[i].range(127,64));
         printf("Output4 addr:%d, value: %x\t%x\n",i,(int) output4[i].range(63,0), (int)output4[i].range(127,64));
     }
-
-    
     for(int i=0;i<INPUT_DEPTH;i++)
-   {
-       printf("INput1 addr:%d, value: %x\t%x\n",i,(int) input_other1[i].range(63,0), (int)input_other1[i].range(127,64));
-       printf("INput2 addr:%d, value: %x\t%x\n",i,(int) input_other2[i].range(63,0), (int)input_other2[i].range(127,64));
-   }
-
-
+    {
+        printf("INput1 addr:%d, value: %x\t%x\n",i,(int) input_other1[i].range(63,0), (int)input_other1[i].range(127,64));
+        printf("INput2 addr:%d, value: %x\t%x\n",i,(int) input_other2[i].range(63,0), (int)input_other2[i].range(127,64));
+    }
    for(int i=0;i<WEIGHT_DEPTH;i++)
    {
        printf("weights1 addr:%d, value: %x\t%x\n",i,(int) weights1[i].range(63,0), (int)weights1[i].range(127,64));
@@ -143,30 +161,47 @@ int main()
 
 
 #if GEN_SOL
-    save_answer("/home/xliu79/Research/2018Fall/CHaiPipeline/hls_project/src/gold_model/sol_layer0",output1,output2);
-    save_answer("/home/xliu79/Research/2018Fall/CHaiPipeline/hls_project/src/gold_model/sol_layer1",output3,output4);
+    save_answer("/home/xliu79/Research/2018Fall/CHaiPipeline/hls_project/src/gold_model/dbg_sol_layer0_1",output1,output2);
+    // save_answer("/home/xliu79/Research/2018Fall/CHaiPipeline/hls_project/src/gold_model/sol_layer1",output3,output4);
 #else
 
+ load_answer("/home/xliu79/Research/2018Fall/debugData/dbg_sol_layer6",output1_sol,output2_sol);
 
 
-    if(!memcmp(output1_sol,output1,sizeof(gmem_outputtype)*OUTPUT_DEPTH))
+
+    // for(int i=0;i<11664;i++)
+    // {
+    //     if(output1_sol[i]!=output1[i]) 
+    //     {
+    //         printf("Addr[%8d] %08x %08x %08x %08x\n", i,
+    //         (unsigned int) output1_sol[i].range(127,96),
+    //         (unsigned int) output1_sol[i].range(95,64),
+    //         (unsigned int) output1_sol[i].range(63,32),
+    //         (unsigned int) output1_sol[i].range(31,0));
+        
+    //         printf("Addr[%8d] %08x %08x %08x %08x\n", i,
+    //         (unsigned int) output1[i].range(127,96),
+    //         (unsigned int) output1[i].range(95,64),
+    //         (unsigned int) output1[i].range(63,32),
+    //         (unsigned int) output1[i].range(31,0));
+    //     }
+    // }
+    if(!memcmp(output1_sol,output1,sizeof(gmem_outputtype)*OUTPUT_DEPTH) )
     puts("output1 same!");
     else
     puts("output1_differ!");
-
+    
     if(!memcmp(output2_sol,output2,sizeof(gmem_outputtype)*OUTPUT_DEPTH))
     puts("output2 same!");
     else puts("output2_differ!");
-    
-
-
-
 
 #endif
 
 
 
+clock_t endTime = clock();
 
-
-
+clock_t clockTicksTaken = endTime - startTime;
+double timeInSeconds = clockTicksTaken / (double) CLOCKS_PER_SEC;
+printf("output time: %f\n", timeInSeconds);
 }

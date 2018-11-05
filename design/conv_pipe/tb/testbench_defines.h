@@ -12,9 +12,9 @@
 #define PLANE_PACK_SIZE 16 
 
 #define WEIGHT_BYTES 221184
-#define INPUT_BYTES 12288
+#define INPUT_BYTES 290400
 #define OUTPUT_BYTES 290400
-#define BIAS_BYTES 290400
+#define BIAS_BYTES 12288
 
 
 #define WEIGHT_DEPTH WEIGHT_BYTES/PLANE_PACK_SIZE
@@ -26,6 +26,13 @@
 
 
 void save_answer(
+    char* filename,
+    gmem_outputtype* output1_gold,
+    gmem_outputtype* output2_gold
+);
+
+void load_answer
+(
     char* filename,
     gmem_outputtype* output1_gold,
     gmem_outputtype* output2_gold

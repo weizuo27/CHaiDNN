@@ -17,6 +17,23 @@ limitations under the License.
 #ifndef _XI_CONV_DESC_H_
 #define _XI_CONV_DESC_H_
 
+#include <ap_int.h>
+
+
+#define XI_LINEBUFFER_DEPTH 8192*2
+typedef ap_uint<14> uLineBuffAddr_t;
+
+
+
+typedef ap_uint<16> uPixelIdx_t; // assuming MAXIMUM 256*256 image size
+typedef ap_int<17> 	sPixelIdx_t;
+typedef ap_uint<8> 	uRowIdx_t; // assuming maximum row 256 
+typedef ap_int<9> 	sRowIdx_t; 
+typedef ap_uint<10> uPlnIdx_t; // assuming maxium plane 1024
+typedef ap_uint<6> 	uPlnPackIdx_t;  // 1024/16
+typedef ap_uint<4>  uDimWindow_t;  // assuming max window 16x16 
+typedef ap_uint<8> 	uSizeWindow_t;
+
 typedef struct input_descriptor {
 	ap_uint<16> width;
 	ap_uint<16> height;
@@ -27,7 +44,11 @@ typedef struct input_descriptor {
         bool mean_sub_flag;
     	ap_uint<16> in_size_x_plane16;
     	ap_uint<16> row8_x_iw;
+			uPixelIdx_t width_x_PackNum;
+	uPixelIdx_t packNum;
+	uRowIdx_t endRow;
 }input_struct;
+
 
 typedef struct output_descriptor {
 	ap_uint<16> width;
@@ -68,31 +89,31 @@ typedef struct conv_descriptor {
 	ap_uint<16> ostg_row_count;
 	ap_uint<16> ostg_row_cnt_last_itr;
 	ap_uint<16> istg_row_count;
-	ap_uint<8> straddle;
-	ap_uint<12> compute_loop_count;
-	ap_uint<16> out_pix;
+	ap_uint<8> straddle; //? not so clear
+	ap_uint<12> compute_loop_count;  
+	ap_uint<16> out_pix;  
 	ap_uint<5> shift_precision1;
 	ap_uint<5> shift_precision2;
 	ap_uint<5> inout_precision;
 	bool buff_split;
-	ap_uint<16> pix_by_outwidth;
-	ap_uint<16> pix_mod_outwidth;
-	ap_uint<16> pix2_div_outwidth;
-	ap_uint<16> pix2_div_outwidth_x_ow;
-	ap_uint<16> pix2_mod_outwidth;
+	ap_uint<16> pix_by_outwidth; //*  XI_PIX_PROC div outwidth 
+	ap_uint<16> pix_mod_outwidth;//* XI_PIX_PROC mod outwidth
+	ap_uint<16> pix2_div_outwidth; //* XI_PIX_PROC/2 div outwidth 
+	ap_uint<16> pix2_div_outwidth_x_ow;//* XI_PIX_PROC/2 div outwidth * outWidth , normalize pix2 into integer times of outwith 
+	ap_uint<16> pix2_mod_outwidth;//*  XI_PIX_PROC/2 mod outwidth
 	ap_uint<8> fsz_by_stride;
 	ap_uint<8> fsz_mod_stride;
-	ap_uint<3> mac_loop_count;
+	ap_uint<3> mac_loop_count; //* it shall always be 1 when the layer is to compute convolution
 	ap_uint<8> opcode;
-	bool conv_enable;
-	bool lrn_intra_sos_enable;
+	bool conv_enable; 
+	bool lrn_intra_sos_enable; 
 	bool lrn_inter_sos_enable;
 	bool bn_intra_sos_enable;
 	bool l2_sos_enable;
 	bool sos_enable;
 	bool bn_intra_mean_enable;
 	bool bn_snb_enable;
-	ap_uint<8> pix_per_kp;
+	ap_uint<8> pix_per_kp; //* should always equals  XI_PIX_PROC
 	ap_uint<12> loop_bound_1x1_filter;
 	ap_uint<16> feeding_buff_plane_loop_bound;
 	ap_uint<8>  feeding_buff_row_loop_bound;
@@ -133,9 +154,9 @@ typedef struct conv_descriptor {
 	ap_uint<10> feed_addr16[16];
 	int rounding_conv;
 	int rounding_bn;
-	ap_uint<16> startrow_inc;
-	ap_uint<16> pc_loop_bound_last_itr;
-	ap_uint<16> pc_loop_bound;
+	ap_uint<16> startrow_inc; //* computation row increment step
+	ap_uint<16> pc_loop_bound_last_itr; //*  (outheight%startrow_inc) * outWidth, remainder for last iter 
+	ap_uint<16> pc_loop_bound; //* startrow_inc*outWidth
 	ap_uint<8> fsz_by_stride_x_stride;
 
 	bool conv3d_intg_en;

@@ -18,11 +18,15 @@ limitations under the License.
 #define _XI_CONV_CONFIG_H_
 
 #include <ap_int.h>
+#include <hls_stream.h>
 
 //#define XI_DIET_CHAI_Z 		0 //Enable this Macro to reduce the resource utilization of the design to fit to smaller devices
 //#define XI_DIET_CHAI_ZUPLUS	0 //Enable this Macro to reduce the resource utilization of the design to fit to smaller devices
 
-
+#define DBG_INFO 0
+#define COMPUTE_OFF 1
+#define PRINT_LINEBUFFER_CONTENT 0
+#define PRINT_PINGPONGBUFFER_CONTENT 0
 //**** URAM ENABLE FLAGS FOR THE BUFFERS
 #define XI_BIAS_URAM_EN 	0
 #define XI_WTS_URAM_EN 		0
@@ -246,9 +250,9 @@ typedef ap_uint<128> outtype ;
 #define XI_OUTPUTPACKCOUNT_LOG2		4 - LOG2_NUM_PORT_IO
 #endif
 
-//#ifdef __HLS_SYN__
+#ifdef __HLS_SYN__
 #define __SDSVHLS__
-//#endif
+#endif
 void XiConvolutionTop(				gmem_weighttype *weights1,
 		gmem_weighttype *weights2,
 #if (XI_KER_PROC==16 || (XI_WTS_PORT_64BIT_EN==1 && XI_KER_PROC==8))
@@ -297,17 +301,72 @@ void XiConvolutionTop(				gmem_weighttype *weights1,
 #define XI_PAD 0
 #endif
 
-//*****************INDEX DATATYPE SPECIFICATION**********************//
-//*change them to larger bitwidth if the dimensions are larger
 
 
-typedef ap_uint<16> uPixelIdx_t; // assuming MAXIMUM 256*256 image size
-typedef ap_int<17> 	sPixelIdx_t;
-typedef ap_uint<8> 	uRowIdx_t; // assuming maximum row 256 
-typedef ap_int<9> 	sRowIdx_t; 
-typedef ap_uint<10> uPlnIdx_t; // assuming maxium plane 1024
-typedef ap_uint<6> 	uPlnPackIdx_t;  // 1024/16
-typedef ap_uint<4>  uDimWindow_t;  // assuming max window 16x16 
-typedef ap_uint<8> 	uSizeWindow_t;
+
+
+
+
+
+
+
+
+// template <class T>
+// class StreamInterfact_t
+// {
+
+// public:
+// 	hls::stream< T > & streamPort;
+// 	StreamInterfact_t(hls::stream< T > & streamIn) : streamPort(streamIn) {};
+// 	T read( ap_uint<32> address, bool flag)
+// 	{
+// 		return streamPort.read();
+// 	}
+// 	void write( T val, ap_uint<32> address, bool flag)
+// 	{
+// 		streamPort.write(val);
+// 	}
+
+// };
+
+// template <class T>
+// class MemInterfact_t
+// {
+
+// public:
+// 	T   *memPort;
+// 	MemInterfact_t(T* memPort) : memPort(memPort) {};
+// 	T read( ap_uint<32> address, bool flag)
+// 	{
+// 		return memPort[address];
+// 	}
+// 	void write( T val, ap_uint<32> address, bool flag)
+// 	{
+// 		memPort[address]=T;
+// 	}
+// };
+
+// template <class T>
+// class MiscInterfact_t
+// {
+// 	T  *memPort;
+// 	hls::stream< T > & streamPort;
+
+// 	T read( ap_uint<32> address, bool flag)
+// 	{
+// 		if( flag)
+// 			return streamPort.read();
+// 		else
+// 			return memPort[address];
+// 	}
+// 	void write( T val, ap_uint<32> address, bool flag)
+// 	{
+// 		if( flag)
+// 			streamPort.write(val);
+// 		else
+// 			memPort[address]=T;
+// 	}
+// };
+
 
 #endif//_XI_CONV_CONFIG_H_
