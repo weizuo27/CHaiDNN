@@ -1,0 +1,4 @@
+ID,  TYPE,          BRAM,    DSP, FF,  LUT, BW, Latency
+IP1, Convolution,   10,      10,  10,  10,  10, 20
+IP2, Convolution,   20,      20,  20,  20,  20, 15
+IP3, Convolution,   40,      40,  40,  40,  40, 10

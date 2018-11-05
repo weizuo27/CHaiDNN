@@ -1,40 +1,933 @@
-Network : AlexNet
-Input Blob : data
-Output Blob : pool5
-Start Layer : data
-End Layer : pool5
+0 iteration
 
-# -------------------- Layers ------------------------ #
-[data:0] --> { conv1 - Convolution: F = 96x3x11x11; S = 4; P = 0; D = 1; Group = 1; ReLU = 1; HasBias = 1; Weights = ; Bias = ; WDim = 96x3x11x11; BDim = 96;  } --> [conv1:0]
-Xilinx
-[pool1:0] --> { conv2 - Convolution: F = 256x48x5x5; S = 1; P = 2; D = 1; Group = 2; ReLU = 1; HasBias = 1; Weights = ; Bias = ; WDim = 256x48x5x5; BDim = 256;  } --> [conv2:0]
-Xilinx
-[pool2:0] --> { conv3 - Convolution: F = 384x256x3x3; S = 1; P = 1; D = 1; Group = 1; ReLU = 1; HasBias = 1; Weights = ; Bias = ; WDim = 384x256x3x3; BDim = 384;  } --> [conv3:0]
-Xilinx
-[conv3:0] --> { conv4 - Convolution: F = 384x192x3x3; S = 1; P = 1; D = 1; Group = 2; ReLU = 1; HasBias = 1; Weights = ; Bias = ; WDim = 384x192x3x3; BDim = 384;  } --> [conv4:0]
-Xilinx
-[conv4:0] --> { conv5 - Convolution: F = 256x192x3x3; S = 1; P = 1; D = 1; Group = 2; ReLU = 1; HasBias = 1; Weights = ; Bias = ; WDim = 256x192x3x3; BDim = 256;  } --> [conv5:0]
-Xilinx
-[pool5:0] --> { format_converter0 - XPack Layer: Operation: Unpack;  } --> [format_converter0:0]
-Xilinx
-[conv1:0] --> { pool1 - Pooling : PoolType = MAXPOOL; N = 96; K = 3; S = 2; P = 0 } --> [pool1:0]
-Xilinx
-[conv2:0] --> { pool2 - Pooling : PoolType = MAXPOOL; N = 256; K = 3; S = 2; P = 0 } --> [pool2:0]
-Xilinx
-[conv5:0] --> { pool5 - Pooling : PoolType = MAXPOOL; N = 256; K = 3; S = 2; P = 0 } --> [pool5:0]
-Xilinx
+Academic license - for non-commercial use only
+('status:', 'optimal')
+('optimal value', 3.0)
+Convolution :
+mapping 0 0 conv1_IP10 1.0
+mapping 0 1 conv1_IP11 0.0
+mapping 0 2 conv1_IP12 0.0
+mapping 0 3 conv1_IP13 0.0
+mapping 0 4 conv1_IP20 0.0
+mapping 0 5 conv1_IP21 0.0
+mapping 0 6 conv1_IP30 0.0
 
-# -------------------- Blobs ------------------------ #
-conv1 : 1x96x55x55
-conv2 : 1x256x27x27
-conv3 : 1x384x13x13
-conv4 : 1x384x13x13
-conv5 : 1x256x13x13
-data : 1x3x227x227
-format_converter0 : 1x256x6x6
-pool1 : 1x96x27x27
-pool2 : 1x256x13x13
-pool5 : 1x256x6x6
 
-# -------------------- Software layer latency --------------------- #
-format_converter0 : 10
+mapping 1 0 conv2_IP10 0.0
+mapping 1 1 conv2_IP11 0.0
+mapping 1 2 conv2_IP12 1.0
+mapping 1 3 conv2_IP13 0.0
+mapping 1 4 conv2_IP20 0.0
+mapping 1 5 conv2_IP21 0.0
+mapping 1 6 conv2_IP30 0.0
+
+
+mapping 2 0 conv3_IP10 0.0
+mapping 2 1 conv3_IP11 0.0
+mapping 2 2 conv3_IP12 0.0
+mapping 2 3 conv3_IP13 0.0
+mapping 2 4 conv3_IP20 0.0
+mapping 2 5 conv3_IP21 1.0
+mapping 2 6 conv3_IP30 0.0
+
+
+resource 0 1.0
+resource 1 0.0
+resource 2 1.0
+resource 3 0.0
+resource 4 0.0
+resource 5 1.0
+resource 6 0.0
+ Convolution: conv1 assigned IP: IP10 conv2 assigned IP: IP12 conv3 assigned IP: IP21 
+
+{}
+conv1 comuteOneRow  360
+conv2 comuteOneRow  360
+conv3 comuteOneRow  360
+pipeNode1   -6120   -6120
+pipeNode0   -5400   -5400
+conv2   5760   360
+conv1   6480   360
+conv3   5040   360
+scheduling success
+new_ub 5760.0 new_lb 0 new target, 2880.0
+1 iteration
+
+('status:', 'optimal')
+('optimal value', 3.0)
+Convolution :
+mapping 0 0 conv1_IP10 1.0
+mapping 0 1 conv1_IP11 0.0
+mapping 0 2 conv1_IP12 0.0
+mapping 0 3 conv1_IP13 0.0
+mapping 0 4 conv1_IP20 0.0
+mapping 0 5 conv1_IP21 0.0
+mapping 0 6 conv1_IP30 0.0
+
+
+mapping 1 0 conv2_IP10 0.0
+mapping 1 1 conv2_IP11 0.0
+mapping 1 2 conv2_IP12 1.0
+mapping 1 3 conv2_IP13 0.0
+mapping 1 4 conv2_IP20 0.0
+mapping 1 5 conv2_IP21 0.0
+mapping 1 6 conv2_IP30 0.0
+
+
+mapping 2 0 conv3_IP10 0.0
+mapping 2 1 conv3_IP11 0.0
+mapping 2 2 conv3_IP12 0.0
+mapping 2 3 conv3_IP13 0.0
+mapping 2 4 conv3_IP20 0.0
+mapping 2 5 conv3_IP21 1.0
+mapping 2 6 conv3_IP30 0.0
+
+
+resource 0 1.0
+resource 1 0.0
+resource 2 1.0
+resource 3 0.0
+resource 4 0.0
+resource 5 1.0
+resource 6 0.0
+ Convolution: conv1 assigned IP: IP10 conv2 assigned IP: IP12 conv3 assigned IP: IP21 
+
+{}
+conv1 comuteOneRow  360
+conv2 comuteOneRow  360
+conv3 comuteOneRow  360
+pipeNode3   -6120   -6120
+pipeNode2   -5400   -5400
+conv2   5760   360
+conv1   6480   360
+conv3   5040   360
+scheduling failed
+Violation path
+conv1 -->
+2 iteration
+
+('status:', 'optimal')
+('optimal value', 3.0)
+Convolution :
+mapping 0 0 conv1_IP10 0.0
+mapping 0 1 conv1_IP11 0.0
+mapping 0 2 conv1_IP12 0.0
+mapping 0 3 conv1_IP13 0.0
+mapping 0 4 conv1_IP20 1.0
+mapping 0 5 conv1_IP21 0.0
+mapping 0 6 conv1_IP30 0.0
+
+
+mapping 1 0 conv2_IP10 1.0
+mapping 1 1 conv2_IP11 -0.0
+mapping 1 2 conv2_IP12 -0.0
+mapping 1 3 conv2_IP13 0.0
+mapping 1 4 conv2_IP20 -0.0
+mapping 1 5 conv2_IP21 -0.0
+mapping 1 6 conv2_IP30 0.0
+
+
+mapping 2 0 conv3_IP10 0.0
+mapping 2 1 conv3_IP11 1.0
+mapping 2 2 conv3_IP12 -0.0
+mapping 2 3 conv3_IP13 -0.0
+mapping 2 4 conv3_IP20 -0.0
+mapping 2 5 conv3_IP21 -0.0
+mapping 2 6 conv3_IP30 0.0
+
+
+resource 0 1.0
+resource 1 1.0
+resource 2 0.0
+resource 3 0.0
+resource 4 1.0
+resource 5 -0.0
+resource 6 0.0
+ Convolution: conv1 assigned IP: IP20 conv2 assigned IP: IP10 conv3 assigned IP: IP11 
+
+{}
+conv1 comuteOneRow  270
+conv2 comuteOneRow  320
+conv3 comuteOneRow  320
+pipeNode4   -4800   -4800
+pipeNode5   -4540   -4540
+conv2   5120   320
+conv1   4860   270
+conv3   4480   320
+scheduling failed
+Violation path
+conv1 -->
+3 iteration
+
+('status:', 'optimal')
+('optimal value', 1.0)
+Convolution :
+mapping 0 0 conv1_IP10 0.0
+mapping 0 1 conv1_IP11 0.0
+mapping 0 2 conv1_IP12 0.0
+mapping 0 3 conv1_IP13 0.0
+mapping 0 4 conv1_IP20 0.0
+mapping 0 5 conv1_IP21 0.0
+mapping 0 6 conv1_IP30 1.0
+
+
+mapping 1 0 conv2_IP10 0.0
+mapping 1 1 conv2_IP11 0.0
+mapping 1 2 conv2_IP12 0.0
+mapping 1 3 conv2_IP13 0.0
+mapping 1 4 conv2_IP20 0.0
+mapping 1 5 conv2_IP21 0.0
+mapping 1 6 conv2_IP30 1.0
+
+
+mapping 2 0 conv3_IP10 0.0
+mapping 2 1 conv3_IP11 0.0
+mapping 2 2 conv3_IP12 0.0
+mapping 2 3 conv3_IP13 0.0
+mapping 2 4 conv3_IP20 0.0
+mapping 2 5 conv3_IP21 0.0
+mapping 2 6 conv3_IP30 1.0
+
+
+resource 0 0.0
+resource 1 0.0
+resource 2 0.0
+resource 3 0.0
+resource 4 0.0
+resource 5 0.0
+resource 6 1.0
+ Convolution: conv1 assigned IP: IP30 conv2 assigned IP: IP30 conv3 assigned IP: IP30 
+
+{}
+conv1 comuteOneRow  180
+conv2 comuteOneRow  160
+conv3 comuteOneRow  140
+conv2   2560   160
+conv1   3240   180
+conv3   1960   140
+conv1 conv2
+conv1 conv3
+conv2 conv3
+scheduling failed
+Violation path
+conv1 -->
+4 iteration
+
+new_ub 5760.0 new_lb 2880.0 new target, 4320.0
+5 iteration
+
+('status:', 'optimal')
+('optimal value', 3.0)
+Convolution :
+mapping 0 0 conv1_IP10 1.0
+mapping 0 1 conv1_IP11 0.0
+mapping 0 2 conv1_IP12 0.0
+mapping 0 3 conv1_IP13 0.0
+mapping 0 4 conv1_IP20 0.0
+mapping 0 5 conv1_IP21 0.0
+mapping 0 6 conv1_IP30 0.0
+
+
+mapping 1 0 conv2_IP10 0.0
+mapping 1 1 conv2_IP11 0.0
+mapping 1 2 conv2_IP12 1.0
+mapping 1 3 conv2_IP13 0.0
+mapping 1 4 conv2_IP20 0.0
+mapping 1 5 conv2_IP21 0.0
+mapping 1 6 conv2_IP30 0.0
+
+
+mapping 2 0 conv3_IP10 0.0
+mapping 2 1 conv3_IP11 0.0
+mapping 2 2 conv3_IP12 0.0
+mapping 2 3 conv3_IP13 0.0
+mapping 2 4 conv3_IP20 0.0
+mapping 2 5 conv3_IP21 1.0
+mapping 2 6 conv3_IP30 0.0
+
+
+resource 0 1.0
+resource 1 0.0
+resource 2 1.0
+resource 3 0.0
+resource 4 0.0
+resource 5 1.0
+resource 6 0.0
+ Convolution: conv1 assigned IP: IP10 conv2 assigned IP: IP12 conv3 assigned IP: IP21 
+
+{}
+conv1 comuteOneRow  360
+conv2 comuteOneRow  360
+conv3 comuteOneRow  360
+pipeNode7   -6120   -6120
+conv2   5760   360
+conv1   6480   360
+conv3   5040   360
+pipeNode6   -5400   -5400
+scheduling failed
+Violation path
+conv1 -->
+6 iteration
+
+('status:', 'optimal')
+('optimal value', 3.0)
+Convolution :
+mapping 0 0 conv1_IP10 0.0
+mapping 0 1 conv1_IP11 0.0
+mapping 0 2 conv1_IP12 0.0
+mapping 0 3 conv1_IP13 0.0
+mapping 0 4 conv1_IP20 1.0
+mapping 0 5 conv1_IP21 0.0
+mapping 0 6 conv1_IP30 0.0
+
+
+mapping 1 0 conv2_IP10 1.0
+mapping 1 1 conv2_IP11 -0.0
+mapping 1 2 conv2_IP12 -0.0
+mapping 1 3 conv2_IP13 0.0
+mapping 1 4 conv2_IP20 -0.0
+mapping 1 5 conv2_IP21 -0.0
+mapping 1 6 conv2_IP30 0.0
+
+
+mapping 2 0 conv3_IP10 0.0
+mapping 2 1 conv3_IP11 1.0
+mapping 2 2 conv3_IP12 -0.0
+mapping 2 3 conv3_IP13 -0.0
+mapping 2 4 conv3_IP20 -0.0
+mapping 2 5 conv3_IP21 -0.0
+mapping 2 6 conv3_IP30 0.0
+
+
+resource 0 1.0
+resource 1 1.0
+resource 2 0.0
+resource 3 0.0
+resource 4 1.0
+resource 5 -0.0
+resource 6 0.0
+ Convolution: conv1 assigned IP: IP20 conv2 assigned IP: IP10 conv3 assigned IP: IP11 
+
+{}
+conv1 comuteOneRow  270
+conv2 comuteOneRow  320
+conv3 comuteOneRow  320
+pipeNode9   -4540   -4540
+pipeNode8   -4800   -4800
+conv2   5120   320
+conv1   4860   270
+conv3   4480   320
+scheduling failed
+Violation path
+conv1 -->
+7 iteration
+
+('status:', 'optimal')
+('optimal value', 1.0)
+Convolution :
+mapping 0 0 conv1_IP10 0.0
+mapping 0 1 conv1_IP11 0.0
+mapping 0 2 conv1_IP12 0.0
+mapping 0 3 conv1_IP13 0.0
+mapping 0 4 conv1_IP20 0.0
+mapping 0 5 conv1_IP21 0.0
+mapping 0 6 conv1_IP30 1.0
+
+
+mapping 1 0 conv2_IP10 0.0
+mapping 1 1 conv2_IP11 0.0
+mapping 1 2 conv2_IP12 0.0
+mapping 1 3 conv2_IP13 0.0
+mapping 1 4 conv2_IP20 0.0
+mapping 1 5 conv2_IP21 0.0
+mapping 1 6 conv2_IP30 1.0
+
+
+mapping 2 0 conv3_IP10 0.0
+mapping 2 1 conv3_IP11 0.0
+mapping 2 2 conv3_IP12 0.0
+mapping 2 3 conv3_IP13 0.0
+mapping 2 4 conv3_IP20 0.0
+mapping 2 5 conv3_IP21 0.0
+mapping 2 6 conv3_IP30 1.0
+
+
+resource 0 0.0
+resource 1 0.0
+resource 2 0.0
+resource 3 0.0
+resource 4 0.0
+resource 5 0.0
+resource 6 1.0
+ Convolution: conv1 assigned IP: IP30 conv2 assigned IP: IP30 conv3 assigned IP: IP30 
+
+{}
+conv1 comuteOneRow  180
+conv2 comuteOneRow  160
+conv3 comuteOneRow  140
+conv2   2560   160
+conv1   3240   180
+conv3   1960   140
+conv1 conv2
+conv1 conv3
+conv2 conv3
+conv1
+scheduling failed
+Violation path
+conv2 -->
+conv1 -->
+8 iteration
+
+new_ub 5760.0 new_lb 4320.0 new target, 5040.0
+9 iteration
+
+('status:', 'optimal')
+('optimal value', 3.0)
+Convolution :
+mapping 0 0 conv1_IP10 1.0
+mapping 0 1 conv1_IP11 0.0
+mapping 0 2 conv1_IP12 0.0
+mapping 0 3 conv1_IP13 0.0
+mapping 0 4 conv1_IP20 0.0
+mapping 0 5 conv1_IP21 0.0
+mapping 0 6 conv1_IP30 0.0
+
+
+mapping 1 0 conv2_IP10 0.0
+mapping 1 1 conv2_IP11 0.0
+mapping 1 2 conv2_IP12 1.0
+mapping 1 3 conv2_IP13 0.0
+mapping 1 4 conv2_IP20 0.0
+mapping 1 5 conv2_IP21 0.0
+mapping 1 6 conv2_IP30 0.0
+
+
+mapping 2 0 conv3_IP10 0.0
+mapping 2 1 conv3_IP11 0.0
+mapping 2 2 conv3_IP12 0.0
+mapping 2 3 conv3_IP13 0.0
+mapping 2 4 conv3_IP20 0.0
+mapping 2 5 conv3_IP21 1.0
+mapping 2 6 conv3_IP30 0.0
+
+
+resource 0 1.0
+resource 1 0.0
+resource 2 1.0
+resource 3 0.0
+resource 4 0.0
+resource 5 1.0
+resource 6 0.0
+ Convolution: conv1 assigned IP: IP10 conv2 assigned IP: IP12 conv3 assigned IP: IP21 
+
+{}
+conv1 comuteOneRow  360
+conv2 comuteOneRow  360
+conv3 comuteOneRow  360
+pipeNode11   -6120   -6120
+conv2   5760   360
+conv1   6480   360
+conv3   5040   360
+pipeNode10   -5400   -5400
+scheduling failed
+Violation path
+conv1 -->
+10 iteration
+
+('status:', 'optimal')
+('optimal value', 3.0)
+Convolution :
+mapping 0 0 conv1_IP10 0.0
+mapping 0 1 conv1_IP11 0.0
+mapping 0 2 conv1_IP12 0.0
+mapping 0 3 conv1_IP13 0.0
+mapping 0 4 conv1_IP20 1.0
+mapping 0 5 conv1_IP21 0.0
+mapping 0 6 conv1_IP30 0.0
+
+
+mapping 1 0 conv2_IP10 1.0
+mapping 1 1 conv2_IP11 -0.0
+mapping 1 2 conv2_IP12 -0.0
+mapping 1 3 conv2_IP13 0.0
+mapping 1 4 conv2_IP20 -0.0
+mapping 1 5 conv2_IP21 -0.0
+mapping 1 6 conv2_IP30 0.0
+
+
+mapping 2 0 conv3_IP10 0.0
+mapping 2 1 conv3_IP11 1.0
+mapping 2 2 conv3_IP12 -0.0
+mapping 2 3 conv3_IP13 -0.0
+mapping 2 4 conv3_IP20 -0.0
+mapping 2 5 conv3_IP21 -0.0
+mapping 2 6 conv3_IP30 0.0
+
+
+resource 0 1.0
+resource 1 1.0
+resource 2 0.0
+resource 3 0.0
+resource 4 1.0
+resource 5 -0.0
+resource 6 0.0
+ Convolution: conv1 assigned IP: IP20 conv2 assigned IP: IP10 conv3 assigned IP: IP11 
+
+{}
+conv1 comuteOneRow  270
+conv2 comuteOneRow  320
+conv3 comuteOneRow  320
+pipeNode12   -4800   -4800
+conv2   5120   320
+conv1   4860   270
+conv3   4480   320
+pipeNode13   -4540   -4540
+scheduling failed
+Violation path
+conv2 -->
+11 iteration
+
+('status:', 'optimal')
+('optimal value', 2.0)
+Convolution :
+mapping 0 0 conv1_IP10 0.0
+mapping 0 1 conv1_IP11 0.0
+mapping 0 2 conv1_IP12 0.0
+mapping 0 3 conv1_IP13 0.0
+mapping 0 4 conv1_IP20 1.0
+mapping 0 5 conv1_IP21 0.0
+mapping 0 6 conv1_IP30 0.0
+
+
+mapping 1 0 conv2_IP10 0.0
+mapping 1 1 conv2_IP11 0.0
+mapping 1 2 conv2_IP12 0.0
+mapping 1 3 conv2_IP13 0.0
+mapping 1 4 conv2_IP20 1.0
+mapping 1 5 conv2_IP21 -0.0
+mapping 1 6 conv2_IP30 0.0
+
+
+mapping 2 0 conv3_IP10 0.0
+mapping 2 1 conv3_IP11 1.0
+mapping 2 2 conv3_IP12 0.0
+mapping 2 3 conv3_IP13 0.0
+mapping 2 4 conv3_IP20 -0.0
+mapping 2 5 conv3_IP21 -0.0
+mapping 2 6 conv3_IP30 0.0
+
+
+resource 0 0.0
+resource 1 1.0
+resource 2 0.0
+resource 3 0.0
+resource 4 1.0
+resource 5 -0.0
+resource 6 -0.0
+ Convolution: conv1 assigned IP: IP20 conv2 assigned IP: IP20 conv3 assigned IP: IP11 
+
+{}
+conv1 comuteOneRow  270
+conv2 comuteOneRow  240
+conv3 comuteOneRow  280
+pipeNode14   -3560   -3560
+conv2   3840   240
+conv1   4860   270
+conv3   3920   280
+conv1 conv2
+conv1
+scheduling failed
+Violation path
+conv2 -->
+conv1 -->
+12 iteration
+
+('status:', 'optimal')
+('optimal value', 1.0)
+Convolution :
+mapping 0 0 conv1_IP10 0.0
+mapping 0 1 conv1_IP11 0.0
+mapping 0 2 conv1_IP12 0.0
+mapping 0 3 conv1_IP13 0.0
+mapping 0 4 conv1_IP20 0.0
+mapping 0 5 conv1_IP21 0.0
+mapping 0 6 conv1_IP30 1.0
+
+
+mapping 1 0 conv2_IP10 0.0
+mapping 1 1 conv2_IP11 0.0
+mapping 1 2 conv2_IP12 0.0
+mapping 1 3 conv2_IP13 0.0
+mapping 1 4 conv2_IP20 0.0
+mapping 1 5 conv2_IP21 0.0
+mapping 1 6 conv2_IP30 1.0
+
+
+mapping 2 0 conv3_IP10 0.0
+mapping 2 1 conv3_IP11 0.0
+mapping 2 2 conv3_IP12 0.0
+mapping 2 3 conv3_IP13 0.0
+mapping 2 4 conv3_IP20 0.0
+mapping 2 5 conv3_IP21 0.0
+mapping 2 6 conv3_IP30 1.0
+
+
+resource 0 0.0
+resource 1 0.0
+resource 2 0.0
+resource 3 0.0
+resource 4 0.0
+resource 5 0.0
+resource 6 1.0
+ Convolution: conv1 assigned IP: IP30 conv2 assigned IP: IP30 conv3 assigned IP: IP30 
+
+{}
+conv1 comuteOneRow  180
+conv2 comuteOneRow  160
+conv3 comuteOneRow  140
+conv2   2560   160
+conv1   3240   180
+conv3   1960   140
+conv1 conv2
+conv1 conv3
+conv2 conv3
+conv1
+scheduling failed
+Violation path
+conv2 -->
+conv1 -->
+13 iteration
+
+new_ub 5760.0 new_lb 5040.0 new target, 5400.0
+14 iteration
+
+('status:', 'optimal')
+('optimal value', 3.0)
+Convolution :
+mapping 0 0 conv1_IP10 1.0
+mapping 0 1 conv1_IP11 0.0
+mapping 0 2 conv1_IP12 0.0
+mapping 0 3 conv1_IP13 0.0
+mapping 0 4 conv1_IP20 0.0
+mapping 0 5 conv1_IP21 0.0
+mapping 0 6 conv1_IP30 0.0
+
+
+mapping 1 0 conv2_IP10 0.0
+mapping 1 1 conv2_IP11 0.0
+mapping 1 2 conv2_IP12 1.0
+mapping 1 3 conv2_IP13 0.0
+mapping 1 4 conv2_IP20 0.0
+mapping 1 5 conv2_IP21 0.0
+mapping 1 6 conv2_IP30 0.0
+
+
+mapping 2 0 conv3_IP10 0.0
+mapping 2 1 conv3_IP11 0.0
+mapping 2 2 conv3_IP12 0.0
+mapping 2 3 conv3_IP13 0.0
+mapping 2 4 conv3_IP20 0.0
+mapping 2 5 conv3_IP21 1.0
+mapping 2 6 conv3_IP30 0.0
+
+
+resource 0 1.0
+resource 1 0.0
+resource 2 1.0
+resource 3 0.0
+resource 4 0.0
+resource 5 1.0
+resource 6 0.0
+ Convolution: conv1 assigned IP: IP10 conv2 assigned IP: IP12 conv3 assigned IP: IP21 
+
+{}
+conv1 comuteOneRow  360
+conv2 comuteOneRow  360
+conv3 comuteOneRow  360
+pipeNode15   -5400   -5400
+conv2   5760   360
+conv1   6480   360
+conv3   5040   360
+pipeNode16   -6120   -6120
+scheduling failed
+Violation path
+conv1 -->
+15 iteration
+
+('status:', 'optimal')
+('optimal value', 3.0)
+Convolution :
+mapping 0 0 conv1_IP10 0.0
+mapping 0 1 conv1_IP11 0.0
+mapping 0 2 conv1_IP12 0.0
+mapping 0 3 conv1_IP13 0.0
+mapping 0 4 conv1_IP20 1.0
+mapping 0 5 conv1_IP21 0.0
+mapping 0 6 conv1_IP30 0.0
+
+
+mapping 1 0 conv2_IP10 1.0
+mapping 1 1 conv2_IP11 -0.0
+mapping 1 2 conv2_IP12 -0.0
+mapping 1 3 conv2_IP13 0.0
+mapping 1 4 conv2_IP20 -0.0
+mapping 1 5 conv2_IP21 -0.0
+mapping 1 6 conv2_IP30 0.0
+
+
+mapping 2 0 conv3_IP10 0.0
+mapping 2 1 conv3_IP11 1.0
+mapping 2 2 conv3_IP12 -0.0
+mapping 2 3 conv3_IP13 -0.0
+mapping 2 4 conv3_IP20 -0.0
+mapping 2 5 conv3_IP21 -0.0
+mapping 2 6 conv3_IP30 0.0
+
+
+resource 0 1.0
+resource 1 1.0
+resource 2 0.0
+resource 3 0.0
+resource 4 1.0
+resource 5 -0.0
+resource 6 0.0
+ Convolution: conv1 assigned IP: IP20 conv2 assigned IP: IP10 conv3 assigned IP: IP11 
+
+{}
+conv1 comuteOneRow  270
+conv2 comuteOneRow  320
+conv3 comuteOneRow  320
+pipeNode18   -4540   -4540
+conv2   5120   320
+conv1   4860   270
+conv3   4480   320
+pipeNode17   -4800   -4800
+pipeNode18
+conv1
+scheduling failed
+Violation path
+conv2 -->
+conv1 -->
+16 iteration
+
+('status:', 'optimal')
+('optimal value', 2.0)
+Convolution :
+mapping 0 0 conv1_IP10 0.0
+mapping 0 1 conv1_IP11 0.0
+mapping 0 2 conv1_IP12 0.0
+mapping 0 3 conv1_IP13 0.0
+mapping 0 4 conv1_IP20 1.0
+mapping 0 5 conv1_IP21 0.0
+mapping 0 6 conv1_IP30 0.0
+
+
+mapping 1 0 conv2_IP10 0.0
+mapping 1 1 conv2_IP11 0.0
+mapping 1 2 conv2_IP12 0.0
+mapping 1 3 conv2_IP13 0.0
+mapping 1 4 conv2_IP20 1.0
+mapping 1 5 conv2_IP21 -0.0
+mapping 1 6 conv2_IP30 0.0
+
+
+mapping 2 0 conv3_IP10 1.0
+mapping 2 1 conv3_IP11 0.0
+mapping 2 2 conv3_IP12 0.0
+mapping 2 3 conv3_IP13 0.0
+mapping 2 4 conv3_IP20 -0.0
+mapping 2 5 conv3_IP21 -0.0
+mapping 2 6 conv3_IP30 0.0
+
+
+resource 0 1.0
+resource 1 0.0
+resource 2 0.0
+resource 3 0.0
+resource 4 1.0
+resource 5 -0.0
+resource 6 -0.0
+ Convolution: conv1 assigned IP: IP20 conv2 assigned IP: IP20 conv3 assigned IP: IP10 
+
+{}
+conv1 comuteOneRow  270
+conv2 comuteOneRow  240
+conv3 comuteOneRow  280
+conv2   3840   240
+conv1   4860   270
+conv3   3920   280
+pipeNode19   -3560   -3560
+conv1 conv2
+conv1
+scheduling failed
+Violation path
+conv2 -->
+conv1 -->
+17 iteration
+
+('status:', 'optimal')
+('optimal value', 1.0)
+Convolution :
+mapping 0 0 conv1_IP10 0.0
+mapping 0 1 conv1_IP11 0.0
+mapping 0 2 conv1_IP12 0.0
+mapping 0 3 conv1_IP13 0.0
+mapping 0 4 conv1_IP20 0.0
+mapping 0 5 conv1_IP21 0.0
+mapping 0 6 conv1_IP30 1.0
+
+
+mapping 1 0 conv2_IP10 0.0
+mapping 1 1 conv2_IP11 0.0
+mapping 1 2 conv2_IP12 0.0
+mapping 1 3 conv2_IP13 0.0
+mapping 1 4 conv2_IP20 0.0
+mapping 1 5 conv2_IP21 0.0
+mapping 1 6 conv2_IP30 1.0
+
+
+mapping 2 0 conv3_IP10 0.0
+mapping 2 1 conv3_IP11 0.0
+mapping 2 2 conv3_IP12 0.0
+mapping 2 3 conv3_IP13 0.0
+mapping 2 4 conv3_IP20 0.0
+mapping 2 5 conv3_IP21 0.0
+mapping 2 6 conv3_IP30 1.0
+
+
+resource 0 0.0
+resource 1 0.0
+resource 2 0.0
+resource 3 0.0
+resource 4 0.0
+resource 5 0.0
+resource 6 1.0
+ Convolution: conv1 assigned IP: IP30 conv2 assigned IP: IP30 conv3 assigned IP: IP30 
+
+{}
+conv1 comuteOneRow  180
+conv2 comuteOneRow  160
+conv3 comuteOneRow  140
+conv2   2560   160
+conv1   3240   180
+conv3   1960   140
+conv1 conv2
+conv1 conv3
+conv2 conv3
+conv1
+scheduling failed
+Violation path
+conv2 -->
+conv1 -->
+18 iteration
+
+new_ub 5760.0 new_lb 5400.0 new target, 5580.0
+19 iteration
+
+('status:', 'optimal')
+('optimal value', 3.0)
+Convolution :
+mapping 0 0 conv1_IP10 1.0
+mapping 0 1 conv1_IP11 0.0
+mapping 0 2 conv1_IP12 0.0
+mapping 0 3 conv1_IP13 0.0
+mapping 0 4 conv1_IP20 0.0
+mapping 0 5 conv1_IP21 0.0
+mapping 0 6 conv1_IP30 0.0
+
+
+mapping 1 0 conv2_IP10 0.0
+mapping 1 1 conv2_IP11 0.0
+mapping 1 2 conv2_IP12 1.0
+mapping 1 3 conv2_IP13 0.0
+mapping 1 4 conv2_IP20 0.0
+mapping 1 5 conv2_IP21 0.0
+mapping 1 6 conv2_IP30 0.0
+
+
+mapping 2 0 conv3_IP10 0.0
+mapping 2 1 conv3_IP11 0.0
+mapping 2 2 conv3_IP12 0.0
+mapping 2 3 conv3_IP13 0.0
+mapping 2 4 conv3_IP20 0.0
+mapping 2 5 conv3_IP21 1.0
+mapping 2 6 conv3_IP30 0.0
+
+
+resource 0 1.0
+resource 1 0.0
+resource 2 1.0
+resource 3 0.0
+resource 4 0.0
+resource 5 1.0
+resource 6 0.0
+ Convolution: conv1 assigned IP: IP10 conv2 assigned IP: IP12 conv3 assigned IP: IP21 
+
+{}
+conv1 comuteOneRow  360
+conv2 comuteOneRow  360
+conv3 comuteOneRow  360
+pipeNode20   -5400   -5400
+conv2   5760   360
+conv1   6480   360
+conv3   5040   360
+pipeNode21   -6120   -6120
+scheduling failed
+Violation path
+conv1 -->
+20 iteration
+
+('status:', 'optimal')
+('optimal value', 3.0)
+Convolution :
+mapping 0 0 conv1_IP10 0.0
+mapping 0 1 conv1_IP11 0.0
+mapping 0 2 conv1_IP12 0.0
+mapping 0 3 conv1_IP13 0.0
+mapping 0 4 conv1_IP20 1.0
+mapping 0 5 conv1_IP21 0.0
+mapping 0 6 conv1_IP30 0.0
+
+
+mapping 1 0 conv2_IP10 1.0
+mapping 1 1 conv2_IP11 -0.0
+mapping 1 2 conv2_IP12 -0.0
+mapping 1 3 conv2_IP13 0.0
+mapping 1 4 conv2_IP20 -0.0
+mapping 1 5 conv2_IP21 -0.0
+mapping 1 6 conv2_IP30 0.0
+
+
+mapping 2 0 conv3_IP10 0.0
+mapping 2 1 conv3_IP11 1.0
+mapping 2 2 conv3_IP12 -0.0
+mapping 2 3 conv3_IP13 -0.0
+mapping 2 4 conv3_IP20 -0.0
+mapping 2 5 conv3_IP21 -0.0
+mapping 2 6 conv3_IP30 0.0
+
+
+resource 0 1.0
+resource 1 1.0
+resource 2 0.0
+resource 3 0.0
+resource 4 1.0
+resource 5 -0.0
+resource 6 0.0
+ Convolution: conv1 assigned IP: IP20 conv2 assigned IP: IP10 conv3 assigned IP: IP11 
+
+{}
+conv1 comuteOneRow  270
+conv2 comuteOneRow  320
+conv3 comuteOneRow  320
+pipeNode23   -4540   -4540
+pipeNode22   -4800   -4800
+conv2   5120   320
+conv1   4860   270
+conv3   4480   320
+scheduling success
+new_ub 5120.0 new_lb 5400.0 new target, 5260.0
+The achieved latency is  5120.0
+mapping
+ Convolution: conv1 assigned IP: IP20 conv2 assigned IP: IP10 conv3 assigned IP: IP11 
+

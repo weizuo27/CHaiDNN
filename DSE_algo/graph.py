@@ -109,7 +109,7 @@ class layer:
             #We neglect the first row, and assume that one output row requires 4 input row.
             IP_latency = self.mappedIP.computeLatency(
                     [cout, cin, kw, kh],
-                    in_width,
+                    out_width,
                     S) 
         elif self.type == "Pooling":
             PoolType = self.params[0].split("=")[1]
@@ -118,7 +118,7 @@ class layer:
             S = int(self.params[3].split("=")[1])
             P = int(self.params[4].split("=")[1])
             IP_latency = self.mappedIP.computeLatency(
-                    [N,kh,S,P], in_width, S)
+                    [N,kh,S,P], out_width, S)
         else:
             assert 0, "This layer has unsupported type"
 
@@ -306,3 +306,5 @@ class graph:
         self.G.clear()
         self.G.add_edges_from(self.original_edges)
         self.G.add_nodes_from(self.original_nodes)
+        for n in self.G.nodes:
+            n.lat_one_row = None

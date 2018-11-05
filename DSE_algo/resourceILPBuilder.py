@@ -13,6 +13,7 @@ class resourceILPBuilder():
         BW_budget: The budget of Bandwidth
         mappingVariables: Dictionary. Key: layer type. Values: 2-dim array B_ij: i-th layer mapps to j-th IP
         constraints: The list of constraints that should satisfy
+        violation_constraints, the list of constraints that only represent the path violating a latency
         resourceVariables: Dictionary. key: layer type. Value: 1-dim array R_j: j-th IP is used 
     """
 
@@ -27,6 +28,7 @@ class resourceILPBuilder():
         #the set of variables
         self.mappingVariables = dict() 
         self.constraints = []
+        self.violation_constraints = []
         self.resourceVariables = dict()
 
     def createVs(self, IP_table, layerQueue, hw_supported_layers):
@@ -128,7 +130,7 @@ class resourceILPBuilder():
             for j_idx, ip in enumerate(IP_table[node.type]):
                 if ip.orig_name == node.mappedIP.orig_name:
                     exp+= self.mappingVariables[node.type][i_idx][j_idx]
-        self.constraints.append(exp <= len(violation_path)-1)
+        self.violation_constraints.append(exp <= len(violation_path)-1)
 
     def createProblem(self):
         """
@@ -145,7 +147,7 @@ class resourceILPBuilder():
             obj_vars += self.resourceVariables[layer_type]
         #print "obj_vars ", obj_vars
         self.obj = cvx.Maximize(sum(obj_vars)) #Only check the feasibility
-        self.prob = cvx.Problem(self.obj, self.constraints)
+        self.prob = cvx.Problem(self.obj, self.constraints+self.violation_constraints)
 
     def solveProblem(self):
         """
