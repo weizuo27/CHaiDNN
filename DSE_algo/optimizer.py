@@ -47,27 +47,29 @@ class optimizer:
         #2. Loop body
         firstIter = True
         #while(self.latency_lb < self.latency_ub):
-        oneIter = True
-        while(oneIter): #For debugging purpose
+        oneIter = 0
+        while(oneIter < 2): #For debugging purpose
+            print oneIter, "iteration\n"
             self.rb.createProblem()
             optimal = self.rb.solveProblem()
             if(not optimal):
+                #print "not opt"
                 assert (not firstIter), "The resource budget is too tight, no feasible mapping solution."
                 firstIter = False
                 self.latency_lb = self.new_latency_target
                 #FIXME: The latency should be integer or floating point?
                 self.new_latency_target = (self.latency_lb + self.latency_ub)/2 
                 continue
-            #self.rb.printSolution()
+            self.rb.printSolution()
             #assign the mapping result
             self.assignMappingResult()
             #Now update the latency since the IPs are assigned
-            #self.g.drawGraph()
-            #print(self.g)
+            self.g.drawGraph()
+            print(self.g)
             self.g.computeLatency()
             #add nodes to factor in pipeline
             self.addPipelineNodes()
-            #self.g.printNodeLatency()
+            self.g.printNodeLatency()
             #fill-in the IPReuseTable:
             self.IPReuseTable = dict()
             self.constructIPReuseTable()
@@ -79,9 +81,9 @@ class optimizer:
                 self.latency_ub = ret
                 self.new_latency_target = (self.latency_ub + self.latency_lb)/2
             else: #Failed
-                self.updateResourceILPBuilder(violation_path)
+                self.updateResourceILPBuilder(ret)
                 self.g.retriveOriginalGraph()
-            oneIter = False #For debugging purpose
+            oneIter += 1
         
     def constructIPReuseTable(self):
         """
@@ -176,8 +178,8 @@ class optimizer:
                 path[n] = [n]
             else:
                 for pred in preds:
-                    if max_starting < startingTime[pred] + pred.pipelinedLatency:
-                        max_starting = startingTime[pred] + pred.pipelinedLatency
+                    if max_starting < startingTime[pred] + pred.latency:
+                        max_starting = startingTime[pred] + pred.latency
                         max_pred = pred
                 startingTime[n] = max_starting
                 path[n] = path[max_pred] + [n]
@@ -186,17 +188,18 @@ class optimizer:
             #violates the constraints
             # TODO: Currently just using linear, later can use binary search
             endtime = startingTime[n] + n.latency
-            if startingTime[n] + n.latency > latency_Budget:
+            if endtime > latency_Budget:
                 violation_path = [n]
                 if n.latency > latency_Budget:
                     return "failed", violation_path
-                for m in path[n][::-1]:
+                for m in path[n][-2::-1]:
+                    if m.type == "pipeNode":
+                        continue
                     if endtime - startingTime[m] > latency_Budget:
                         violation_path += [m]
                         return "failed", violation_path
-
         #if succeed, return the optimal latency
-        return "success", startingTime[n] + n.latency
+        return "success", endtime
 
     def updateResourceILPBuilder(self, violation_path):
         """

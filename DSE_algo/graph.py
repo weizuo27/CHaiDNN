@@ -1,5 +1,5 @@
 import matplotlib.pyplot as plt
-from copy import deepcopy
+from copy import copy
 import networkx as nx
 import cvxpy as cvx
 
@@ -7,6 +7,7 @@ class pipeNode:
     idx = 0
     def __init__(self, neg_latency):
         self.name = "pipeNode" + str(pipeNode.idx)
+        self.type = "pipeNode"
         self.mappedIP = None
         pipeNode.idx+=1
         self.latency = neg_latency
@@ -85,6 +86,7 @@ class layer:
             prevLayer: one previous layer
             pipelined: Bool. Whether the previous layer and current layer are pipelined
         """
+        #print self.name, self.mappedIP
         assert (self.mappedIP is not None), self.name + " mapped IP is not decided,\
             so no way to compute the latency"
         #FIXME: If it is mapped to software, it should not be pipelined?
@@ -183,7 +185,9 @@ class graph:
         self.SWMapping = dict()
         self.layerQueue = dict()
         self.construct(filename)
-        self.original = deepcopy(self.G)
+        self.original = nx.create_empty_copy(self.G)
+        self.original_nodes = list(self.G.nodes)
+        self.original_edges = list(self.G.edges)
 
     def construct(self, filename):
         """
@@ -280,7 +284,6 @@ class graph:
                 n.latency = int(self.SWMapping[n.name])
                 n.lat_one_row = int(self.SWMapping[n.name]) #FIXME: False name 
             else:
-                print n.name
                 predList = list(self.G.predecessors(n))
                 if len(predList) == 0:
                     n.computeLatencyOneRow(None, False)
@@ -300,4 +303,6 @@ class graph:
         return nx.topological_sort(self.G)
 
     def retriveOriginalGraph(self):
-        self.G = self.original
+        self.G.clear()
+        self.G.add_edges_from(self.original_edges)
+        self.G.add_nodes_from(self.original_nodes)
