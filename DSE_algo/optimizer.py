@@ -46,7 +46,9 @@ class optimizer:
         self.latency_achieved = None
         #2. Loop body
         firstIter = True
-        while(self.latency_lb < self.latency_ub):
+        #while(self.latency_lb < self.latency_ub):
+        oneIter = True
+        while(oneIter): #For debugging purpose
             self.rb.createProblem()
             optimal = self.rb.solveProblem()
             if(not optimal):
@@ -60,6 +62,7 @@ class optimizer:
             #assign the mapping result
             self.assignMappingResult()
             #Now update the latency since the IPs are assigned
+            #self.g.drawGraph()
             print(self.g)
             self.g.computeLatency()
             #add nodes to factor in pipeline
@@ -69,9 +72,9 @@ class optimizer:
             self.IPReuseTable = dict()
             self.constructIPReuseTable()
             #add the the edges to factor in the IP reuse
-            self.addReuseEdges()
-            #self.g.drawGraph()
+            #self.addReuseEdges()
             #now update the violation path related ILP, resolve the ILP
+            """
             status, ret = self.scheduling()
             if(status == "success"):
                 self.latency_ub = ret
@@ -79,6 +82,8 @@ class optimizer:
             else: #Failed
                 self.updateResourceILPBuilder(violation_path)
                 self.g.retriveOriginalGraph()
+            """
+            oneIter = False #For debugging purpose
         
     def constructIPReuseTable(self):
         """
@@ -87,7 +92,7 @@ class optimizer:
             value: The number of layers that mapped to the IP
         """
         nodes_list = self.g.topological_sort()
-        for node in node_list:
+        for node in nodes_list:
             if node.mappedIP is None or node.mappedIP == "Software":
                  continue
             if node.mappedIP not in self.IPReuseTable:
@@ -165,8 +170,8 @@ class optimizer:
         path = dict() # The dictionary, to record critical path to the node. Key: node. Value: list of nodes to represent the path
         noteList = self.g.topological_sort()
         for n in noteList:
-            preds = self.g.G.predecessors(n)
-            if len(list(pred)) == 0:
+            preds = list(self.g.G.predecessors(n))
+            if len(preds) == 0:
                 startingTime[n] = 0.0
                 path[n] = [n]
             max_starting = 0
@@ -185,7 +190,7 @@ class optimizer:
             if startingTime[n] + n.latency > latency_Budget:
                 violation_path = [n]
                 if n.latency > latency_Budget:
-                return "failed", violation_path
+                    return "failed", violation_path
                 for m in path[n][::-1]:
                     if endtime - startingTime[m] > latency_Budget:
                         violation_path += [m]

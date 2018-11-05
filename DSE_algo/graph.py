@@ -1,4 +1,5 @@
 import matplotlib.pyplot as plt
+from copy import deepcopy
 import networkx as nx
 import cvxpy as cvx
 
@@ -9,7 +10,7 @@ class pipeNode:
         self.mappedIP = None
         pipeNode.idx+=1
         self.latency = neg_latency
-        self.pipelinedLatency = neg_latency
+        self.lat_one_row = neg_latency
 
 class layer:
     """
@@ -77,7 +78,7 @@ class layer:
         """
         self.IP_id = None
 
-    def computeLatencyOneRow(self, prevLayer==None, pipelined):
+    def computeLatencyOneRow(self, prevLayer, pipelined):
         """
         The latency to compute one row
         Args:
@@ -94,14 +95,20 @@ class layer:
         in_height, in_width = map(int, self.input_params[2:4])
         out_height, out_width = map(int, self.output_params[2:4])
 
-        elif self.type == "Convolution":
+        #Assumption: S < W, which is the case of most NN
+        if self.type == "Convolution":
             cout, cin, kw, kh = map(int, (self.params[0].split("=")[1]).split("x"))
+            S = int(self.params[1].split("=")[1])
             #FIXME: what is the best way to pass in the parameters
+
+            #TODO: Assumption: Now here we do not consider the warm-up phase of computation.
+            #E.g., a convolution. Stride =4, kh =11. For the first output row, it needs
+            #to compute 11 input rows, but for the remaining rows,  it only need 4. 
+            #We neglect the first row, and assume that one output row requires 4 input row.
             IP_latency = self.mappedIP.computeLatency(
                     [cout, cin, kw, kh],
                     in_width,
-                    kh
-                    ) 
+                    S) 
         elif self.type == "Pooling":
             PoolType = self.params[0].split("=")[1]
             N = int(self.params[1].split("=")[1])
@@ -109,17 +116,17 @@ class layer:
             S = int(self.params[3].split("=")[1])
             P = int(self.params[4].split("=")[1])
             IP_latency = self.mappedIP.computeLatency(
-                    [N,kh,S,P], in_width, K)
+                    [N,kh,S,P], in_width, S)
         else:
             assert 0, "This layer has unsupported type"
 
         if(prevLayer == None) or (not pipelined):
             self.lat_one_row = IP_latency
         else:
-            if self.lat_one_row = None:
-                self.lat_one_row = max(IP_latency, pred.computeNRows(kh))
+            if self.lat_one_row == None:
+                self.lat_one_row = max(IP_latency, prevLayer.computeNRows(S))
             else:
-                self.lat_one_row = max(self.lat_one_row, pred.computeNRows(kh))
+                self.lat_one_row = max(self.lat_one_row, prevLayer.computeNRows(S))
 
     def computeNRows(self, n):
         """
@@ -129,16 +136,15 @@ class layer:
         return:
             the latency to compute n rows
         """
-
         assert (self.mappedIP is not None), self.name + " mapped IP is not decided,\
             so no way to compute the latency of n rows"
-        if self.mappedIP = "Software":
+        if self.mappedIP == "Software":
             return
         assert (self.lat_one_row != None), "The lat_one_row is not computed, cannot compute \
         n rows"
         return self.lat_one_row * n
 
-    def computeLatency(self, previouslayer):
+    def computeLatency(self):
         """
         Compute the full latency of this layer using one IP
         """
@@ -177,7 +183,7 @@ class graph:
         self.SWMapping = dict()
         self.layerQueue = dict()
         self.construct(filename)
-        self.original = deepCopy(self.G)
+        self.original = deepcopy(self.G)
 
     def construct(self, filename):
         """
@@ -274,17 +280,18 @@ class graph:
                 n.latency = int(self.SWMapping[n.name])
                 n.lat_one_row = int(self.SWMapping[n.name]) #FIXME: False name 
             else:
-                predList = self.G.predecessors(n)
-                if len(list(predList)) == 0:
+                print n.name
+                predList = list(self.G.predecessors(n))
+                if len(predList) == 0:
                     n.computeLatencyOneRow(None, False)
-                else:
-                    for pred in predList:
-                        n.computeLatencyOneRow(pred, (pred.mappedIP != n.mappedIP))
+                for pred in predList:
+                    n.computeLatencyOneRow(pred, (pred.mappedIP != n.mappedIP))
+
                 n.computeLatency()
             
     def printNodeLatency(self):
         for n in self.G.nodes:
-            print n.name, " ", n.latency, " ", n.pipelinedLatency
+            print n.name, " ", n.latency, " ", n.lat_one_row
     def add_node(self, node):
         self.G.add_node(node)
         self.mapping[node] = node.name

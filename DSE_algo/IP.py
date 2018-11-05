@@ -9,7 +9,7 @@ class IP():
         orig_name: String. The original name of the IP. Since IP later can
         be renamed, we would like to record the original name also
     """
-    def __init__(self, name, type, resource_list, baseLat, orig_inst):
+    def __init__(self, name, type, resource_list, baseLat):
         self.name = str(name)
         self.type = str(type)
         self.orig_name = str(name)
