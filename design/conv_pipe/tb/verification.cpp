@@ -164,6 +164,11 @@ void load_answer
 )
 {
     FILE* fd = fopen(filename, "rb");
+    if(fd==NULL)
+    {
+        fprintf(stderr,"%s not found", filename);
+        exit(-4);
+    }
     fread( output1_gold,sizeof(char),OUTPUT_BYTES,fd);
     fread( output2_gold,sizeof(char),OUTPUT_BYTES,fd);
     fclose(fd);
