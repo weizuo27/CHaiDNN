@@ -203,6 +203,10 @@ i       """
             #need to reverse the path to get the shortest path that 
             #violates the constraints
             # TODO: Currently just using linear, later can use binary search
+            # TODO: Currently, once we detect a violation, we terminate, but 
+            # a maybe better idea is to let it finish the scheduling and if it is
+            # better than lower-bound, update the lower-bound and the achieved solution
+            # such that this solution does not need to be travelled again (like DP).
             endtime = startingTime[n] + n.latency
             if endtime > latency_Budget:
                 violation_path = [n]
