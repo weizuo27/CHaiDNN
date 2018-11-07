@@ -31,14 +31,14 @@ limitations under the License.
 #define NUM_KERNELS 8
 #define OUTWIDTH	480
 #define OUTHEIGHT	480
-#define DBG_INFO 1
+
 
 //*****************LINE BUFFER CONFIGURATIONS BEGIN**********************//
 //* Due to the address warpping implementation, please make sure the line buffer size to be 2's power 
 //* and change the bitwith of its address type to fit the buffer size 
 
-#define IN_LINE_BUFFER_SIZE 1024
-typedef ap_uint<10> inLineBuffAddr_t;
+#define IN_LINE_BUFFER_SIZE 2048
+typedef ap_uint<11> inLineBuffAddr_t;
 
 #define OUT_LINE_BUFFER_SIZE 512
 typedef ap_uint<9> outLineBuffAddr_t;
@@ -51,7 +51,7 @@ typedef ap_int<17> 	sPixelIdx_t;
 typedef ap_uint<8> 	uRowIdx_t; 
 typedef ap_int<9> 	sRowIdx_t;
 typedef ap_uint<16> uPlnIdx_t;
-typedef ap_int<8> 	sPlnPackIdx_t;
+typedef ap_int<10> 	sPlnPackIdx_t;
 typedef ap_uint<4>  uDimPool_t;
 typedef ap_uint<8> 	uSizePool_t;
 

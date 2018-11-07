@@ -22,8 +22,8 @@ IFLAG += -g
 CC      = g++
 GCOV = #-fprofile-arcs -ftest-coverage
 
-csim.out: src/testbench.cpp src/pooling_layer_dp_2xio_top.cpp
-	$(CC) $(GOCV)  -fsanitize=address -o csim.out  src/testbench.cpp src/pooling_layer_dp_2xio_top.cpp -MMD $(IFLAG)
+csim.out: tb/testbench.cpp src/pooling_layer_dp_2xio_top.cpp
+	$(CC) $(GOCV)  -fsanitize=address -o csim.out  tb/testbench.cpp src/pooling_layer_dp_2xio_top.cpp -MMD $(IFLAG)
 
 clean:
 
