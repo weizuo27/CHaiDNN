@@ -20,6 +20,7 @@ limitations under the License.
 //# Debug flag
 #define DEBUG			0
 
+
 //# Some FILE Handlers for debug
 FILE *iFp = NULL, *oFp = NULL, *rFp = NULL, *mpFp = NULL;
 
@@ -104,6 +105,7 @@ void PoolTop_Gold(
 	fprintf(stderr, "\n");
 
 	fprintf(stderr, "maxp-args : ");
+
 	fprintf(stderr, "%d %d %d %d %d %d %d %d %d %d %d %d\n",  in_h,  in_w,  out_h,   out_w,   n_planes,
 			ps_h,  ps_w,  pwin_h,  pwin_w, avg_pool,
 			pad,  one_by_diviser);
@@ -185,19 +187,13 @@ int PoolTop
 #pragma HLS interface m_axi port=out1			offset=slave bundle=gmem1 depth=4096
 #pragma HLS interface m_axi port=in2       		offset=slave bundle=gmem2 depth=4096
 #pragma HLS interface m_axi port=out2			offset=slave bundle=gmem3 depth=4096
-
 #pragma HLS interface m_axi port=wts			offset=slave bundle=gmem4 depth=36
-
 #pragma HLS interface m_axi port=scalar_pool_args	offset=slave bundle=gmem5 depth=32
 #pragma HLS interface s_axilite port=in1		bundle=control
 #pragma HLS interface s_axilite port=out1 		bundle=control
 #pragma HLS interface s_axilite port=in2		bundle=control
 #pragma HLS interface s_axilite port=out2 		bundle=control
-
 #pragma HLS interface s_axilite port=wts 		bundle=control
-
-
-
 #pragma HLS interface s_axilite port=scalar_pool_args 	bundle=control
 #pragma HLS interface s_axilite port=return 	bundle=control
 #endif

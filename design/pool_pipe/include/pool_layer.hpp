@@ -4,6 +4,11 @@
 
 #include <dsp_builtins.h>
 
+
+#define PRINT_INPUT_LINEBUFFER 0
+#define PRINT_OUTPUT_LINEBUFFER 0
+#define PRINT_INPUT_INDEX 0
+#define DBG_INFO 0
 template<class indata, int DPACK>
 void ReadInBuffer_Pooling(
     indata input1,
@@ -13,7 +18,7 @@ void ReadInBuffer_Pooling(
     uPlnIdx_t depth, 
     uRowIdx_t inHeight,
     uRowIdx_t inWidth,
-    uPixelIdx_t lineBufferPlaneStep,
+    uPixelIdx_t planePackNum,
     ap_uint<32> ddrPlaneStep,
     ap_int<8> lineBuffer1[DPACK][IN_LINE_BUFFER_SIZE],
     ap_int<8> lineBuffer2[DPACK][IN_LINE_BUFFER_SIZE]
@@ -38,23 +43,23 @@ void ReadInBuffer_Pooling(
         pixelsTotal = (endRowSat-startRowSat)* inWidth;
 
     ap_uint<16> ddrAddressOffset=startRowSat*inWidth;
-    inLineBuffAddr_t lineBufferAddressOffset=startRowSat*inWidth;
+    inLineBuffAddr_t lineBufferAddressOffset=startRowSat*inWidth*planePackNum;
 
-
+    
     for( uPlnIdx_t depthIdx=0; depthIdx < depth; depthIdx+=DPACK )
     {
         ap_uint<16> ddrAddress=ddrAddressOffset;
         inLineBuffAddr_t lineBufferAddress=lineBufferAddressOffset;
 
-        for(ap_uint<16> pixelIdx=0; pixelIdx < pixelsTotal; pixelIdx++,ddrAddress++, lineBufferAddress++ )
+        for(ap_uint<16> pixelIdx=0; pixelIdx < pixelsTotal; pixelIdx++,ddrAddress++, lineBufferAddress+=planePackNum)
         {
             #pragma HLS pipeline
             #pragma HLS dependence variable=lineBuffer1 intra false
 			#pragma HLS dependence variable=lineBuffer2 intra false
 
             GMEM_MAXPOOLTYPE temp1, temp2;
-            temp1=input1.read( ddrAddress);
-            temp2=input2.read( ddrAddress);
+            temp1=input1.read(ddrAddress);
+            temp2=input2.read(ddrAddress);
 
             for(int i=0;i<DPACK;i++)
             {
@@ -66,16 +71,17 @@ void ReadInBuffer_Pooling(
             }
         }
         ddrAddressOffset+=ddrPlaneStep;
-        lineBufferAddressOffset+=lineBufferPlaneStep;
+        lineBufferAddressOffset++;
     }
-
-    // for(int i=0;i<512;i++)
-    // {
-    //     printf("address[%4d][",i);
-    //     for(int j=0;j<16;j++)
-    //     printf("%4d ", (int) lineBuffer1[j][i]);
-    //     printf("]\n");
-    // }
+#if PRINT_INPUT_LINEBUFFER
+    for(int i=0;i<IN_LINE_BUFFER_SIZE;i++)
+    {
+        printf("address[%4d][",i);
+        for(int j=0;j<16;j++)
+        printf("%4d ", (int) lineBuffer1[j][i]);
+        printf("]\n");
+    }
+    #endif
 }
 
 //* quick design output lineBuffer mode
@@ -88,7 +94,7 @@ void WriteOutBuffer_Pooling(
     sPlnPackIdx_t depth, 
     uRowIdx_t outHeight,
     uRowIdx_t outWidth,
-    uPixelIdx_t lineBuffPlaneStep,
+    uPixelIdx_t planePackNum,
     ap_uint<32> ddrPlaneStep,
     ap_int<8> lineBuffer1[DPACK][OUT_LINE_BUFFER_SIZE],
     ap_int<8> lineBuffer2[DPACK][OUT_LINE_BUFFER_SIZE]
@@ -110,18 +116,26 @@ void WriteOutBuffer_Pooling(
         pixelsTotal =  0;
     else
         pixelsTotal = (endRowSat-startRowSat)* outWidth;
+
     ap_uint<32> ddrAddressOffset=startRowSat*outWidth;
-    ap_uint<32> lineBufferAddressOffset=startRowSat*outWidth; // it is a rounding address
+
+    ap_uint<32> lineBufferAddressOffset=startRowSat*outWidth*planePackNum; // it is a rounding address
+
+    
+
     for( uPlnIdx_t depthIdx=0; depthIdx < depth; depthIdx+=DPACK ) 
     {
         ap_uint<32> ddrAddress=ddrAddressOffset;
         outLineBuffAddr_t lineBufferAddress=lineBufferAddressOffset;
-        for(ap_uint<16> pixelIdx=0; pixelIdx < pixelsTotal; pixelIdx++,ddrAddress++, lineBufferAddress++ )
+      
+        for(ap_uint<16> pixelIdx=0; pixelIdx < pixelsTotal; pixelIdx++,ddrAddress++, lineBufferAddress+=planePackNum )
         {
             #pragma HLS pipeline
             #pragma HLS dependence variable=lineBuffer1 intra false
 			#pragma HLS dependence variable=lineBuffer2 intra false
             GMEM_MAXPOOLTYPE temp1, temp2;
+
+           
             for(int i=0;i<DPACK;i++)
             {
                 temp1.range(i*8+7,i*8)=lineBuffer1[i][lineBufferAddress];
@@ -130,19 +144,26 @@ void WriteOutBuffer_Pooling(
             {
                 temp2.range(i*8+7,i*8)=lineBuffer2[i][lineBufferAddress];
             }
+
+            
+
+      
             output1.write( ddrAddress,temp1);
             output2.write( ddrAddress,temp2);
         }
         ddrAddressOffset+=ddrPlaneStep;
-        lineBufferAddressOffset+=lineBuffPlaneStep;
+        lineBufferAddressOffset++;
     }
-    // for(int i=0;i<512;i++)
-    // {
-    //     printf("out[%4d][",i);
-    //     for(int j=0;j<16;j++)
-    //     printf("%4d ", (int) lineBuffer1[j][i]);
-    //     printf("]\n");
-    // }
+
+    #if PRINT_OUTPUT_LINEBUFFER
+    for(int i=0;i<512;i++)
+    {
+        printf("out[%4d][",i);
+        for(int j=0;j<16;j++)
+        printf("%4d ", (int) lineBuffer1[j][i]);
+        printf("]\n");
+    }
+    #endif
 }
 
 
@@ -170,8 +191,7 @@ ap_uint<8> oneDivisor,
 ap_uint<5> outShift,
 ap_int<5> wPad,
 bool avgPooling,
-uPixelIdx_t inPlaneStep,
-uPixelIdx_t outPlaneStep
+uPixelIdx_t planePackNum
 )
 {
     #pragma HLS array_partition variable=inBUffer1 dim=1 complete
@@ -197,7 +217,7 @@ uPixelIdx_t outPlaneStep
     else
         pixelsTotal = (outEndRowSat-outStartRowSat)* outWidth;
 
-    ap_uint<32> outAddressPlaneOffset=outStartRowSat*outWidth;
+    ap_uint<32> outAddressPlaneOffset=outStartRowSat*outWidth*planePackNum;
     ap_int<32>  inAddressPlaneOffset=0; // must be int here since it could be negative
 
 
@@ -240,9 +260,7 @@ uPixelIdx_t outPlaneStep
                 sum1[i] = sum2[i] = 0;
 
             }
-        #if DBG_INFO
-        printf("poolStrideW %d\n", (int) poolStrideH);
-        #endif
+  
         for(ap_uint<16>  compIdx=0; compIdx<compNumberTotal; compIdx++)
         {
             #pragma HLS pipeline
@@ -264,11 +282,9 @@ uPixelIdx_t outPlaneStep
 
 
 
-            inLineBuffAddr_t inAddr=inAddressPlaneOffset+inPixelComputeIdx;
+            inLineBuffAddr_t inAddr=inAddressPlaneOffset+inPixelComputeIdx*planePackNum;
 
-            #if DBG_INFO
-            printf("[%d,%d, %d] ", (int) inRowComputeIdx, (int) inColComputeIdx, (int) inBuffer1[0][inAddr] ); 
-            #endif
+
             
             if(poolCnt==poolWinSize)
             {
@@ -296,16 +312,34 @@ uPixelIdx_t outPlaneStep
                             max2[i] = 0;
                         } else {
                             max1[i] = inBuffer1[i][inAddr];
-                            max1[i] = inBuffer2[i][inAddr];
+                            max2[i] = inBuffer2[i][inAddr];
                         }
                     }
                 }
+                #if PRINT_INPUT_INDEX
+                printf("[Addr %d][", (int) outAddr);
+                for(int i=0;i<DPACK;i++)
+                printf("%2d ", (int) outBuffer1[i][outAddr]);
+                printf("]\n");
                 
-                outAddr++;
+                printf("OUT[%2d,%2d][", (int) inRowComputeIdx, (int) inColComputeIdx); 
+                for(int i=0;i<DPACK;i++)
+                printf(" (%2d %2d)",(int) max1[i], (int) inBuffer1[i][inAddr]);
+                printf("]\n");
+                #endif
+                
+                outAddr+=planePackNum;
                 poolCnt=1;
             }
             else
             {
+
+                #if PRINT_INPUT_INDEX
+                printf("INN[%2d,%2d][", (int) inRowComputeIdx, (int) inColComputeIdx); 
+                for(int i=0;i<DPACK;i++)
+                printf(" (%2d %2d)",(int) max1[i], (int) inBuffer1[i][inAddr]);
+                printf("]\n");
+                #endif
 
                 if (inColComputeIdx < 0 || inRowComputeIdx < 0 || (inColComputeIdx >= inWidth || inRowComputeIdx >= inHeight) && avgPooling  )  
                 {
@@ -337,7 +371,7 @@ uPixelIdx_t outPlaneStep
 					sum1[i] += (temp1[i]*oneDivisor);
 					sum2[i] += (temp2[i]*oneDivisor);
 					max1[i] = max1[i] > temp1[i] ? max1[i] : temp1[i];
-					max2[i] = max2[i] > temp1[i] ? max2[i] : temp2[i];
+					max2[i] = max2[i] > temp2[i] ? max2[i] : temp2[i];
 			    }
                 poolCnt++;
 		    }
@@ -363,13 +397,13 @@ uPixelIdx_t outPlaneStep
                 inColIdx+=poolStrideW;
                 outColIdx++;
             }  
-            #if DBG_INFO
+            #if PRINT_INPUT_INDEX
             if(winColDone && winRowDone)
             printf("\n");
             #endif                      
         }
-        outAddressPlaneOffset+=outPlaneStep;
-        inAddressPlaneOffset+=inPlaneStep;
+        outAddressPlaneOffset++;
+        inAddressPlaneOffset++;
     }
 }
 
@@ -430,10 +464,14 @@ void PoolingLayerLineBuffer
 	ap_uint<5> outshift	= (ap_uint<5>)scalar_pool_args[14];
     uRowIdx_t rowStep = (uRowIdx_t) scalar_pool_args[15];
     uRowIdx_t initialReadRows = (uRowIdx_t) scalar_pool_args[16];
-    uPixelIdx_t inLineBufferPlaneStep =(uPixelIdx_t) scalar_pool_args[17];
-    uPixelIdx_t outLineBufferPlaneStep =(uPixelIdx_t) scalar_pool_args[18];
-    ap_uint<32> inDDRPlaneStep= (ap_uint<32> ) scalar_pool_args[19];
-    ap_uint<32> outDDRPlaneStep= (ap_uint<32> ) scalar_pool_args[20];
+    ap_uint<32> inDDRPlaneStep= (ap_uint<32> ) scalar_pool_args[17];
+    ap_uint<32> outDDRPlaneStep= (ap_uint<32> ) scalar_pool_args[18];
+
+    sPlnPackIdx_t planePackNum;
+    if(n_planes%16)
+        planePackNum= (n_planes>>4)+1;
+    else
+        planePackNum= n_planes>>4;
 
 
     sRowIdx_t readStartRow= 0;
@@ -452,7 +490,7 @@ void PoolingLayerLineBuffer
         n_planes,
         in_h,
         in_w,
-        inLineBufferPlaneStep,
+        planePackNum,
         inDDRPlaneStep,
         inBuffer1,
         inBuffer2
@@ -466,12 +504,9 @@ void PoolingLayerLineBuffer
     {
 #pragma HLS dependence variable=inBuffer1 intra false
 #pragma HLS dependence variable=inBuffer2 intra false
-
 #pragma HLS dependence variable=outBuffer1 intra false
 #pragma HLS dependence variable=outBuffer2 intra false
-
-
-        printf("%d %d\n",(int) outStartRow,(int) rowStep);
+        
         ProcessPoolingRow<DPACK>(
         inBuffer1,inBuffer2,
         outBuffer1,outBuffer2,
@@ -491,15 +526,15 @@ void PoolingLayerLineBuffer
         outshift,
         pad,
         avg_pool,
-        inLineBufferPlaneStep,
-        outLineBufferPlaneStep);
+        planePackNum
+        );
         inStartRow+=inRowStep;
 
         WriteOutBuffer_Pooling<out_data_t,DPACK>
         (
             outData1, outData2,
             writeStartRow,writeStartRow+rowStep, n_planes,out_h,out_w,
-            outLineBufferPlaneStep,outDDRPlaneStep,outBuffer1,outBuffer2
+            planePackNum,outDDRPlaneStep,outBuffer1,outBuffer2
         );
         writeStartRow+=rowStep;
             
@@ -511,7 +546,7 @@ void PoolingLayerLineBuffer
             n_planes,
             in_h,
             in_w,
-            inLineBufferPlaneStep,
+            planePackNum,
             inDDRPlaneStep,
             inBuffer1,
             inBuffer2
@@ -523,7 +558,7 @@ void PoolingLayerLineBuffer
     (
         outData1, outData2,
         writeStartRow,writeStartRow+rowStep, n_planes,out_h,out_w,
-        outLineBufferPlaneStep,outDDRPlaneStep,outBuffer1,outBuffer2
+        planePackNum,outDDRPlaneStep,outBuffer1,outBuffer2
     );
 
 
