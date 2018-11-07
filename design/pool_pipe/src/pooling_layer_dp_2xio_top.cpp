@@ -163,8 +163,11 @@ public:
 };
 
 
-
+#ifndef __SDSOC
 int PoolTop
+#else
+void PoolTop
+#endif
 (
 	#if STREAMINTERFACE
     hls::stream<GMEM_MAXPOOLTYPE> &in1, 
@@ -180,6 +183,7 @@ int PoolTop
 	GMEM_POOLTYPE_WTS * wts,
 	int *scalar_pool_args
 )
+
 {
 
 #ifndef __SDSOC
