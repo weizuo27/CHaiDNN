@@ -67,11 +67,11 @@ WRAPPER_PATH  := ${PROJ_PATH}/wrapper
 CONV_INC_DIRS   := include src
 POOL_INC_DIRS   := include src
 DECONV_INC_DIRS := include src
-CONV_INCS       := ${CONV_INC_DIRS:%=-I${SRC_PATH}/conv/%}
+CONV_INCS       := ${CONV_INC_DIRS:%=-I${SRC_PATH}/conv_pipe/%}
 POOL_INCS       := ${POOL_INC_DIRS:%=-I${SRC_PATH}/pool/%}
 DECONV_INCS     := ${DECONV_INC_DIRS:%=-I${SRC_PATH}/deconv/%}
 # Below path must have absolute path
-CONV_SCRIPTS_PATH := $(shell pwd)/${PROJ_PATH}/conv/scripts
+CONV_SCRIPTS_PATH := $(shell pwd)/${PROJ_PATH}/conv_pipe/scripts
 
 # Options and command(s) variables
 VERBOSE  := #-verbose
@@ -129,8 +129,8 @@ print_vars :
 	@echo "POOL_ENABLE       = \"${POOL_ENABLE}\""
 	@echo "DECONV_ENABLE     = \"${DECONV_ENABLE}\""
 
-xi_convolution_top.o: ${SRC_PATH}/conv/src/xi_convolution_top.cpp
-	${CC} ${SDSFLAGS} ${CFLAGS} ${CONV_FLAGS} -sds-hw XiConvolutionTop ${SRC_PATH}/conv/src/xi_convolution_top.cpp -clkid ${CLOCK_ID} \
+xi_convolution_top.o: ${SRC_PATH}/conv_pipe/src/xi_convolution_top.cpp
+	${CC} ${SDSFLAGS} ${CFLAGS} ${CONV_FLAGS} -sds-hw XiConvolutionTop ${SRC_PATH}/conv_pipe/src/xi_convolution_top.cpp -clkid ${CLOCK_ID} \
 	                                                  -hls-tcl ${CONV_SCRIPTS_PATH}/config_core.tcl -sds-end -fPIC $< -o $@
 
 pooling_layer_dp_2xio_top.o: ${SRC_PATH}/pool/src/pooling_layer_dp_2xio_top.cpp
