@@ -75,16 +75,6 @@ typedef ap_uint<8> 	uSizePool_t;
 #pragma SDS data sys_port(wts:ps_e_S_AXI_HP0_FPD)
 
 #ifndef __SDSOC
-int PoolTop_Gold(GMEM_MAXPOOLTYPE *in1, GMEM_MAXPOOLTYPE *in2, GMEM_MAXPOOLTYPE *out1, GMEM_MAXPOOLTYPE *out2, 
-#if !RESERVE
-GMEM_POOLTYPE_WTS* wts, 
-#endif
-int *scalar_pool_args);
-#else
-void PoolTop_Gold(GMEM_MAXPOOLTYPE *in1, GMEM_MAXPOOLTYPE *in2, GMEM_MAXPOOLTYPE *out1, GMEM_MAXPOOLTYPE *out2, GMEM_POOLTYPE_WTS* wts, int *scalar_pool_args);
-#endif
-
-#ifndef __SDSOC
 int PoolTop(GMEM_MAXPOOLTYPE *in1, GMEM_MAXPOOLTYPE *in2, GMEM_MAXPOOLTYPE *out1, GMEM_MAXPOOLTYPE *out2, 
 #if !RESERVE
 GMEM_POOLTYPE_WTS* wts, 
@@ -94,22 +84,33 @@ int *scalar_pool_args);
 void PoolTop(GMEM_MAXPOOLTYPE *in1, GMEM_MAXPOOLTYPE *in2, GMEM_MAXPOOLTYPE *out1, GMEM_MAXPOOLTYPE *out2, GMEM_POOLTYPE_WTS* wts, int *scalar_pool_args);
 #endif
 
+#ifndef __SDSOC
+int PoolTop_Gold(GMEM_MAXPOOLTYPE *in1, GMEM_MAXPOOLTYPE *in2, GMEM_MAXPOOLTYPE *out1, GMEM_MAXPOOLTYPE *out2, 
+#if !RESERVE
+GMEM_POOLTYPE_WTS* wts, 
+#endif
+int *scalar_pool_args);
+#else
+void PoolTop_Gold(GMEM_MAXPOOLTYPE *in1, GMEM_MAXPOOLTYPE *in2, GMEM_MAXPOOLTYPE *out1, GMEM_MAXPOOLTYPE *out2, GMEM_POOLTYPE_WTS* wts, int *scalar_pool_args);
+#endif
 
-int PooltopPipeline
-(
-	#if STREAMINTERFACE
-    hls::stream<GMEM_MAXPOOLTYPE> &in1, 
-	hls::stream<GMEM_MAXPOOLTYPE> &in2, 
-	hls::stream<GMEM_MAXPOOLTYPE> &out1, 
-	hls::stream<GMEM_MAXPOOLTYPE> &out2,
-	#else 
-	GMEM_MAXPOOLTYPE *in1,
-	GMEM_MAXPOOLTYPE *in2,
-	GMEM_MAXPOOLTYPE *out1,
-	GMEM_MAXPOOLTYPE *out2,
-	#endif	
-	int *scalar_pool_args
-);
+
+
+//int PooltopPipeline
+//(
+//	#if STREAMINTERFACE
+//    hls::stream<GMEM_MAXPOOLTYPE> &in1, 
+//	hls::stream<GMEM_MAXPOOLTYPE> &in2, 
+//	hls::stream<GMEM_MAXPOOLTYPE> &out1, 
+//	hls::stream<GMEM_MAXPOOLTYPE> &out2,
+//	#else 
+//	GMEM_MAXPOOLTYPE *in1,
+//	GMEM_MAXPOOLTYPE *in2,
+//	GMEM_MAXPOOLTYPE *out1,
+//	GMEM_MAXPOOLTYPE *out2,
+//	#endif	
+//	int *scalar_pool_args
+//);
 
 
 
