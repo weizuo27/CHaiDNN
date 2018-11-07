@@ -40,28 +40,28 @@ limitations under the License.
 
 using namespace std;
 
-#define EN_PRINT 1
+#define EN_PRINT 0
 
 //# Enable prints in conctant buffer module
-#define EN_CONST_PRINT			1
+#define EN_CONST_PRINT			0
 //# Enable prints in IO module
-#define EN_IO_PRINT				1
+#define EN_IO_PRINT				0
 //# Enable prints in offset addition block
-#define EN_OFF_PRINT			1
+#define EN_OFF_PRINT			0
 //# Enable prints in memory allocation block
-#define EN_ADDR_PRINT			1
+#define EN_ADDR_PRINT			0
 //# Enable prints in shapetosize module
-#define EN_SHAPE2SIZE_PRINT		1
+#define EN_SHAPE2SIZE_PRINT		0
 //# Enable prints in shapetosize module
-#define EN_PEER2SIZE_PRINT		1
+#define EN_PEER2SIZE_PRINT		0
 //# Enable prints in checkstack module
-#define EN_STACK_PRINT			1
+#define EN_STACK_PRINT			0
 
 //# Enable prints in free buffer module
-#define EN_FREE_PRINT			1
+#define EN_FREE_PRINT			0
 
 //# Enable "." prints on terminal
-#define EN_CONSOLE_TXT_BUFMGMT_DBG 1
+#define EN_CONSOLE_TXT_BUFMGMT_DBG 0
 
 //# Cacheable memory limit 512KB
 #define CACHE_LIMIT				524288

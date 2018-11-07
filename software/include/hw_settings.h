@@ -29,7 +29,7 @@ limitations under the License.
 #endif
 
 #define LAYERWISE_OUTPUT_WRITE 0
-#define DBG_CONV_KER 1
+#define DBG_CONV_KER 0
 
 //**** CONFIGURABLE MACROS
 #if XI_DIET_CHAI_Z || XI_DIET_CHAI_ZUPLUS
