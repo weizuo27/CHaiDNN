@@ -379,8 +379,8 @@ int convOutputSize(int out_depth, int output_h, int output_w)
 //# Convolution weights size compute
 int convWeightsSize(int out_depth, int in_depth, int kernel_h, int kernel_w, int group)
 {
-	std::cout << "convWeightsSize (o_d, i_d, k_h, k_w, g) :" << out_depth << " " << in_depth
-		<< " " << kernel_h << " " << kernel_w << " " << group << std::endl;
+	//std::cout << "convWeightsSize (o_d, i_d, k_h, k_w, g) :" << out_depth << " " << in_depth
+	//	<< " " << kernel_h << " " << kernel_w << " " << group << std::endl;
 
 
 	int no_kernals_1 = out_depth;

@@ -589,7 +589,7 @@ void xiIOBuffCreate(
 
 	//# compute size of maximum handle shape in the network 
 	int max_size = maxshapeToSize<HCONV_OUT_TYPE>(xlayer_seq[0].ip_blob[0].handle_shape);
-	cout << "input max_size : " << max_size << endl;
+	//cout << "input max_size : " << max_size << endl;
 
 	//# Offset & Position for concatination
 	vector <io_peers> offPair;
@@ -629,7 +629,7 @@ void xiIOBuffCreate(
 #if EN_PRINT
 			cout << endl << "/////////////////////////////// layer : " << iter << endl;
 			cout << "(Layer, Type, HW/SW) " << xlayer_seq[iter].hw_ops -> name << ", " << xlayer_seq[iter].hw_ops -> type << ", " << xlayer_seq[iter].layer_type << endl;
-			cout << "handle size (ip, op): " << xlayer_seq[iter].ip_blob.size() << " " << xlayer_seq[iter].op_blob.size() << endl;
+			//cout << "handle size (ip, op): " << xlayer_seq[iter].ip_blob.size() << " " << xlayer_seq[iter].op_blob.size() << endl;
 			for(unsigned int i = 0; i < xlayer_seq[iter].ip_blob.size(); i++)
 			{
 				cout << xlayer_seq[iter].ip_blob[i].handle << " - " << xlayer_seq[iter].ip_blob[i].mem_type << " , ";
@@ -671,7 +671,7 @@ void xiIOBuffCreate(
 				//# input peers shape
 				//TODO :: Enable after support
 				in_offset = peersToShape<HCONV_OUT_TYPE, KER_PROC>(xlayer_seq[iter].ip_peers_shapes);
-				cout << "in_offset : " << in_offset << endl;
+				//cout << "in_offset : " << in_offset << endl;
 
 				//# Checking the existence of input handle in the map
 				//# For every new handle, creates new memory
