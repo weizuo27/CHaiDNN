@@ -1,7 +1,8 @@
-#include "head.hpp"
+#include "head_ip1.hpp"
 //#include "/opt/Xilinx/Vivado/2018.2/include/gmp.h"
 
-void foo_IP2 ( AXI_STREAM &in, uint* out) {
+void foo_IP1 ( uint *in, AXI_STREAM &out, int *dest_out) {
+#pragma HLS INTERFACE m_axi depth=100 port=dest_out
 #pragma HLS INTERFACE axis register both port=out
 #pragma HLS INTERFACE m_axi depth=2048 port=in
 
@@ -18,6 +19,7 @@ void foo_IP2 ( AXI_STREAM &in, uint* out) {
 		}
 	}
 
+
 	int in_next_row = 3;
 	int one = 0;
 	int two = 1;
@@ -30,8 +32,9 @@ void foo_IP2 ( AXI_STREAM &in, uint* out) {
 			buff_out[out_comp_row][j] = buff_in[one][j]
 									  + buff_in[two][j] + buff_in[three][j];
 		}
+
 		//read
-		if(i<N){
+		if(i<N-3){
 			for(j = 0; j < N; j++){
 				buff_in[in_next_row][j] = in[(i+3)*N + j];
 			}
@@ -63,6 +66,7 @@ void foo_IP2 ( AXI_STREAM &in, uint* out) {
 
 
 	}
+
 	int out_comp_row_write = out_comp_row == 1 ? 0 : 1;
 	//Final write
 	for(j = 0; j < N; j++){

@@ -1,5 +1,5 @@
 #include "/opt/Xilinx/Vivado/2018.2/include/gmp.h"
-#include "head.hpp"
+#include "head_ip1.hpp"
 #include "stdlib.h"
 #include "stdio.h"
 int main(){
