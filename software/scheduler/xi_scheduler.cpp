@@ -371,8 +371,27 @@ void xiExec(void *handle, vector<void *> input, vector<void *> output)
 					*/
 
 
-					//# Call Pool wrapper
-					PoolForward(
+					//# Call Pool wrapper 
+                short in_h        	= ((INT_TYPE*)hwQueue[ImgId][whichPool].params)[0]; 
+                short in_w        	= ((INT_TYPE*)hwQueue[ImgId][whichPool].params)[1]; 
+                short out_h       	= ((INT_TYPE*)hwQueue[ImgId][whichPool].params)[2]; 
+                short out_w      	= ((INT_TYPE*)hwQueue[ImgId][whichPool].params)[3];
+                short ps_h	  	    = ((INT_TYPE*)hwQueue[ImgId][whichPool].params)[5];
+                short pwin_h	  	= ((INT_TYPE*)hwQueue[ImgId][whichPool].params)[7];
+                unsigned char pad	    = ((INT_TYPE*)hwQueue[ImgId][whichPool].params)[10];
+
+                int rowStep = 1;
+
+                unsigned int initialReadRows = pwin_h+(rowStep-1)*ps_h-pad;
+                ap_uint<32> inDDRPlaneStep= in_h*in_w;
+                ap_uint<32> outDDRPlaneStep= out_w*out_h;
+
+                ((INT_TYPE*)hwQueue[ImgId][whichPool].params)[15] = rowStep; //ROW STEP, FIXME: May need to change to #define
+                ((INT_TYPE*)hwQueue[ImgId][whichPool].params)[16] = initialReadRows;
+                ((INT_TYPE*)hwQueue[ImgId][whichPool].params)[17] = inDDRPlaneStep;
+                ((INT_TYPE*)hwQueue[ImgId][whichPool].params)[18] = outDDRPlaneStep;
+
+                PoolForward(
 							(SHORT_TYPE*)hwQueue[ImgId][whichPool].in_ptrs[0], (SHORT_TYPE*)hwQueue[ImgId][whichPool].out_ptrs[0],
 							(SHORT_TYPE*)hwQueue[ImgId][whichPool].in_ptrs[1], (SHORT_TYPE*)hwQueue[ImgId][whichPool].out_ptrs[1],
 							(CHAR_TYPE*)hwQueue[ImgId][whichPool].wts_ptrs[0],
