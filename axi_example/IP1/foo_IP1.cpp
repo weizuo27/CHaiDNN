@@ -1,19 +1,51 @@
 #include "head_ip1.hpp"
 //#include "/opt/Xilinx/Vivado/2018.2/include/gmp.h"
 
+void comp(uint buff_out[2][N],uint buff_in[4][N], int out_comp_row, int one, int two, int three){
+	int j;
+	for(j=0; j < N; j++){
+	#pragma HLS UNROLL
+			buff_out[out_comp_row][j] = buff_in[one][j]
+									  + buff_in[two][j] + buff_in[three][j];
+	}
+}
+void read(uint buff_in[4][N], int i, int in_next_row, uint *in){
+	int j;
+if(i<N-3){
+	for(j = 0; j < N; j++){
+#pragma HLS PIPELINE II=1
+		buff_in[in_next_row][j] = in[(i+3)*N + j];
+	}
+}
+}
+
+void write(int i, AXI_VALUE & tmp, uint buff_out[2][N], int out_comp_row_write, AXI_STREAM &out){
+	int j;
+	if (i > 0){
+				for(j = 0; j < N; j++){
+	#pragma HLS PIPELINE
+					tmp.data = buff_out[out_comp_row_write][j];
+					out.write(tmp);
+				}
+			}
+
+}
 void foo_IP1 ( uint *in, AXI_STREAM &out, int *dest_out) {
 #pragma HLS INTERFACE m_axi depth=100 port=dest_out
 #pragma HLS INTERFACE axis register both port=out
 #pragma HLS INTERFACE m_axi depth=2048 port=in
 
 	uint buff_in[4][N];
+#pragma HLS RESOURCE variable=buff_in core=RAM_S2P_BRAM
 	uint buff_out[2][N];
+#pragma HLS RESOURCE variable=buff_out core=RAM_S2P_BRAM
 	AXI_VALUE tmp;
 	tmp.dest = dest_out[0];
 
 	int i, j;
 	//Initial read
-	for(i =0; i < 3; i++){
+	foo_IP1_label0:for(i =0; i < 3; i++){
+#pragma HLS PIPELINE II=1
 		for(j = 0; j < N; j++){
 			buff_in[i][j] = in[i*N + j];
 		}
@@ -27,18 +59,13 @@ void foo_IP1 ( uint *in, AXI_STREAM &out, int *dest_out) {
 	int out_comp_row =  0;
 
 	for (i = 0; i < N-2; i++) {
+#pragma HLS DEPENDENCE variable=buff_in intra false
+#pragma HLS DEPENDENCE variable=buff_out intra false
 		//Compute
-		for(j=0; j < N; j++){
-			buff_out[out_comp_row][j] = buff_in[one][j]
-									  + buff_in[two][j] + buff_in[three][j];
-		}
+		comp(buff_out,buff_in, out_comp_row, one, two, three);
 
 		//read
-		if(i<N-3){
-			for(j = 0; j < N; j++){
-				buff_in[in_next_row][j] = in[(i+3)*N + j];
-			}
-		}
+		read(buff_in, i,in_next_row,in);
 /*
 		if(i == 1){
 			printf("in_next_row %d,one %d, two %d, three %d\n", in_next_row, one, two, three);
@@ -57,19 +84,13 @@ void foo_IP1 ( uint *in, AXI_STREAM &out, int *dest_out) {
 		out_comp_row = (out_comp_row == 1) ? 0 :1;
 
 		//Write
-		if (i > 0){
-			for(j = 0; j < N; j++){
-				tmp.data = buff_out[out_comp_row_write][j];
-				out.write(tmp);
-			}
-		}
-
-
+		write(i, tmp, buff_out, out_comp_row_write, out);
 	}
 
 	int out_comp_row_write = out_comp_row == 1 ? 0 : 1;
 	//Final write
 	for(j = 0; j < N; j++){
+#pragma HLS PIPELINE
 		tmp.data = buff_out[out_comp_row_write][j];
 		out.write(tmp);
 	}
