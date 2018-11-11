@@ -4,12 +4,18 @@
 #include "stdio.h"
 int main(){
 	printf("just started\n");
+
+    int args[1];
+    args[0] = 30;
+    int M = args[0];
+
 	uint in_main[M*N];
 	AXI_STREAM in;
 	AXI_VALUE tmp;
 
 	uint out_main[(M-2)*N];
 	uint out_gold[(M-2)*N];
+
 
 	int i, j;
 	printf("before initialization\n");
@@ -33,7 +39,7 @@ int main(){
 
 	printf("before launching IP\n");
 
-	foo_IP2 (in, out_main);
+	foo_IP2 (in, out_main, args);
 	printf("after launching IP\n");
 
 	//Compare the output

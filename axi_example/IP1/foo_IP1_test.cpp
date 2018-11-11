@@ -11,9 +11,10 @@ int main(){
 
 	int i, j;
 	printf("before initialization\n");
+	int M = 32; 
 
 	//input initialization
-	for(i = 0; i < N; i++){
+	for(i = 0; i < M; i++){
 		for(j = 0; j < N; j++){
 			in_main[i*N+j] = i;
 		}
@@ -21,27 +22,27 @@ int main(){
 	printf("after initialization\n");
 
 	//Create reference output
-	for(i = 0; i <N-2; i++){
+	for(i = 0; i <M-2; i++){
 		for(j = 0; j<N; j++){
 			out_gold[i*N + j] = in_main[i*N+j]+in_main[(i+1)*N+j]+in_main[(i+2)*N+j];
 		}
 	}
 
-	int dest_out = 1; //Not useful for one IP simulation
 
 	printf("before launching IP\n");
 
-	foo_IP1 (in_main, out, &dest_out);
+	foo_IP1 (in_main, out, &M);
 	printf("after launching IP\n");
 
 	//Unpack the output
-	for(i = 0; i < N-2; i++)
+	for(i = 0; i < M-2; i++)
 		for(j = 0; j < N; j++){
-			out_main[i*N + j] = out.read().data;
+			//out_main[i*N + j] = out.read().data;
+			out_main[i*N + j] = out.read();
 		}
 
 	//Compare the output
-	for(i = 0; i < N-2; i++)
+	for(i = 0; i < M-2; i++)
 		for(j =0; j< N; j++){
 			if(out_main[i*N+j] != out_gold[i*N+j]){
 				printf("Incorrect result at [%d][%d], golden is %d, mine is%d\n",

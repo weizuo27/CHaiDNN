@@ -6,9 +6,9 @@
 #include <hls_stream.h>
 #define N 32
 
-typedef ap_axiu<32,4,5,5> AXI_VALUE;
+//typedef ap_axiu<32,4,5,5> AXI_VALUE;
+typedef int AXI_VALUE;
 typedef hls::stream<AXI_VALUE> AXI_STREAM;
 
 void foo_IP1 ( uint *in, AXI_STREAM &out, int *dest_out);
-void foo_IP2 ( AXI_STREAM &in, uint* out);
 #endif
