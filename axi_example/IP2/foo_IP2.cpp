@@ -1,6 +1,6 @@
 #include "head_ip2.hpp"
 
-void comp(uint buff_out[2][N], uint buff_in[4][N],
+void comp2(uint buff_out[2][N], uint buff_in[4][N],
 		int out_comp_row, int one, int two, int three){
 	int j;
 	for(j=0; j < N; j++){
@@ -10,7 +10,7 @@ void comp(uint buff_out[2][N], uint buff_in[4][N],
 	}
 }
 
-void read(uint buff_in[4][N], int i, int in_next_row, AXI_STREAM &in, int M){
+void read2(uint buff_in[4][N], int i, int in_next_row, AXI_STREAM &in, int M){
 	int j;
 	if(i<M-3){
 		for(j = 0; j < N; j++){
@@ -20,7 +20,7 @@ void read(uint buff_in[4][N], int i, int in_next_row, AXI_STREAM &in, int M){
 	}
 }
 
-void write(int i, uint buff_out[2][N], int out_comp_row_write, uint *out){
+void write2(int i, uint buff_out[2][N], int out_comp_row_write, uint *out){
 	int j;
 	if (i > 0){
 		for(j = 0; j < N; j++){
@@ -61,10 +61,10 @@ void foo_IP2 ( AXI_STREAM &in, uint* out, int* args) {
 #pragma HLS DEPENDENCE variable=buff_in intra false
 #pragma HLS DEPENDENCE variable=buff_out intra false
 		//Compute
-		 comp(buff_out, buff_in, out_comp_row, one, two, three);
+		 comp2(buff_out, buff_in, out_comp_row, one, two, three);
 
 		//read
-		read(buff_in, i, in_next_row,in, M);
+		read2(buff_in, i, in_next_row,in, M);
 
 		in_next_row = (in_next_row == 3) ? 0 : (in_next_row +1);
 
@@ -75,7 +75,7 @@ void foo_IP2 ( AXI_STREAM &in, uint* out, int* args) {
 
 		out_comp_row = (out_comp_row == 1) ? 0 :1;
 		//Write
-		write(i, buff_out, out_comp_row_write, out);
+		write2(i, buff_out, out_comp_row_write, out);
 	}
 
 	int out_comp_row_write = (out_comp_row == 1) ? 0 : 1;

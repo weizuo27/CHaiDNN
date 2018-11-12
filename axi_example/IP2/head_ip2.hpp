@@ -1,6 +1,6 @@
-#ifndef __HEAD_H__
-#define __HEAD_H__
-#include "/opt/Xilinx/Vivado/2018.2/include/gmp.h"
+#ifndef __HEAD_H2__
+#define __HEAD_H2__
+//#include "/opt/Xilinx/Vivado/2018.2/include/gmp.h"
 #include <ap_int.h>
 #include <ap_axi_sdata.h>
 #include <hls_stream.h>

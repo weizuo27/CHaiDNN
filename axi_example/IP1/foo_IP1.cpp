@@ -1,6 +1,6 @@
 #include "head_ip1.hpp"
 
-void comp(uint buff_out[2][N],uint buff_in[4][N], int out_comp_row, int one, int two, int three){
+void comp1(uint buff_out[2][N],uint buff_in[4][N], int out_comp_row, int one, int two, int three){
 	int j;
 	for(j=0; j < N; j++){
 	#pragma HLS UNROLL
@@ -8,7 +8,7 @@ void comp(uint buff_out[2][N],uint buff_in[4][N], int out_comp_row, int one, int
 									  + buff_in[two][j] + buff_in[three][j];
 	}
 }
-void read(uint buff_in[4][N], int i, int in_next_row, uint *in, int M){
+void read1(uint buff_in[4][N], int i, int in_next_row, uint *in, int M){
 	int j;
 if(i<M-3){
 	for(j = 0; j < N; j++){
@@ -18,13 +18,13 @@ if(i<M-3){
 }
 }
 
+void write1(int i, AXI_VALUE & tmp, uint buff_out[2][N], int out_comp_row_write, AXI_STREAM &out){
 //void write(int i, AXI_VALUE & tmp, uint buff_out[2][N], int out_comp_row_write, AXI_STREAM &out){
-void write(int i, AXI_VALUE & tmp, uint buff_out[2][N], int out_comp_row_write, AXI_STREAM &out){
 	int j;
 	if (i > 0){
 				for(j = 0; j < N; j++){
 	#pragma HLS PIPELINE
-					tmp = buff_out[out_comp_row_write][j];
+					tmp.data = buff_out[out_comp_row_write][j];
 					out.write(tmp);
 				}
 			}
@@ -61,10 +61,10 @@ void foo_IP1 ( uint *in, AXI_STREAM &out, int *args) {
 #pragma HLS DEPENDENCE variable=buff_in intra false
 #pragma HLS DEPENDENCE variable=buff_out intra false
 		//Compute
-		comp(buff_out,buff_in, out_comp_row, one, two, three);
+		comp1(buff_out,buff_in, out_comp_row, one, two, three);
 
 		//read
-		read(buff_in, i,in_next_row,in, M);
+		read1(buff_in, i,in_next_row,in, M);
 /*
 		if(i == 1){
 			printf("in_next_row %d,one %d, two %d, three %d\n", in_next_row, one, two, three);
@@ -83,15 +83,15 @@ void foo_IP1 ( uint *in, AXI_STREAM &out, int *args) {
 		out_comp_row = (out_comp_row == 1) ? 0 :1;
 
 		//Write
-		write(i, tmp, buff_out, out_comp_row_write, out);
+		write1(i, tmp, buff_out, out_comp_row_write, out);
 	}
 
 	int out_comp_row_write = out_comp_row == 1 ? 0 : 1;
 	//Final write
 	for(j = 0; j < N; j++){
 #pragma HLS PIPELINE
-		//tmp.data = buff_out[out_comp_row_write][j];
-		tmp = buff_out[out_comp_row_write][j];
+		tmp.data = buff_out[out_comp_row_write][j];
+		//tmp = buff_out[out_comp_row_write][j];
 		out.write(tmp);
 	}
 }

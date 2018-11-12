@@ -37,8 +37,8 @@ int main(){
 	//Unpack the output
 	for(i = 0; i < M-2; i++)
 		for(j = 0; j < N; j++){
-			//out_main[i*N + j] = out.read().data;
-			out_main[i*N + j] = out.read();
+			out_main[i*N + j] = out.read().data;
+			//out_main[i*N + j] = out.read();
 		}
 
 	//Compare the output
