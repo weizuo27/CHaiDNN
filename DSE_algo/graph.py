@@ -101,6 +101,8 @@ class layer:
         if self.type == "Convolution":
             cout, cin, kw, kh = map(int, (self.params[0].split("=")[1]).split("x"))
             S = int(self.params[1].split("=")[1])
+            padding = int(self.params[2].split("=")[1])
+            group = int(self.params[3].split("=")[1])
             #FIXME: what is the best way to pass in the parameters
 
             #TODO: Assumption: Now here we do not consider the warm-up phase of computation.
@@ -109,8 +111,11 @@ class layer:
             #We neglect the first row, and assume that one output row requires 4 input row.
             IP_latency = self.mappedIP.computeLatency(
                     [cout, cin, kw, kh],
+                    in_height, 
+                    in_width, 
                     out_width,
-                    S) 
+                    S, kh, hw, padding, group, 1) 
+
         elif self.type == "Pooling":
             PoolType = self.params[0].split("=")[1]
             N = int(self.params[1].split("=")[1])

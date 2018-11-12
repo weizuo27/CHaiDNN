@@ -1,4 +1,4 @@
-fileTitle = "ID, TYPE, BRAM, DSP, FF,  LUT, BW, Latency"
+fileTitle = ["ID", "TYPE", "BRAM", "DSP", "FF", "LUT", "BW", "Latency", "XI_KER_PROC", "XI_PIX_PROC", "XI_WEIGHTBUFF_DEPTH"]
 writeList =[fileTitle]
 IP_TYPE = "Convolution"
 
@@ -40,11 +40,14 @@ for ibuffersize in ibuffersize:
                         resource_list.append(line.replace(" ", "").split(":")[1]) 
 
                     LUT, FF, DSP, BRAM = resource_list
-                    writeList.append([ID, IP_TYPE, BRAM, DSP, FF, LUT, BW, Latency]) 
+                    writeList.append([ID, IP_TYPE, BRAM, DSP, FF, LUT, BW, Latency, str(ker), str(proc), str(wbuffersize)]) 
 
 #print writeList
 fw = open(fileName_w, 'w') 
 
 for l in writeList:
     fw.write(", ".join(l) + "\n")
+
+l = ["IP"+str(idx+1), "Pooling", "81", "34", "9475", "7511", "0", "7533", "1", "1", "1"]
+fw.write(", ".join(l) + "\n")
 fw.close()        
