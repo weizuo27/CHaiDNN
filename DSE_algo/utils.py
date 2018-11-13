@@ -39,8 +39,7 @@ def generateIPs(fileName):
     f = open(fileName, "r")
     next(f) #Skip the first line since the first line is just the name of each column
     for l in f:
-        IP_name, layer_type, BRAM, DSP, FF, LUT, BW, baseLat, 
-        XI_KER_PROC, XI_PIX_PROC, XI_WEIGHTBUFF_DEPTH
+        IP_name, layer_type, BRAM, DSP, FF, LUT, BW, baseLat, XI_KER_PROC, XI_PIX_PROC, XI_WEIGHTBUFF_DEPTH \
     = (l.replace(" ", "")).split(",")
         IP_inst = IP(IP_name, layer_type, map(int, [BRAM, DSP, FF, LUT, BW]), int(baseLat), 
                 [XI_KER_PROC, XI_PIX_PROC, XI_WEIGHTBUFF_DEPTH])

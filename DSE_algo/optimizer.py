@@ -32,6 +32,8 @@ i       """
             "Pooling" : 1
         }
         self.g = graph(app_fileName) #generate the graph from CHaiDNN output
+        self.g.drawGraph()
+        self.g.printNodeParameters()
         IPs = generateIPs(IP_fileName)
         self.IP_table = constructIPTable(IPs, BRAM_budget, DSP_budget, LUT_budget, FF_budget, BW_budget)
         self.rb = resourceILPBuilder(BRAM_budget, DSP_budget, FF_budget, LUT_budget, BW_budget) #Builder resource solver
@@ -48,7 +50,7 @@ i       """
         #2. Loop body
         firstIter = True
         oneIter = 0
-        #while(oneIter < 4): #For debugging purpose
+#while(oneIter < 1): #For debugging purpose
         while(-self.latency_lb+self.latency_ub> EPS):
             print oneIter, "iteration\n"
             self.rb.createProblem()
@@ -135,7 +137,8 @@ i       """
         #cannot directly iterate on original edges, since need to modify the graph
         pipeNode_list = []
         for (s_node, t_node) in self.g.G.edges():
-            if s_node.mappedIP != t_node.mappedIP: #Two layers are pipelinable
+            if s_node.mappedIP != t_node.mappedIP and \
+            (s_node.mappedIP != "Software" and t_node.mappedIP != "Software"): #Two layers are pipelinable
                 #The neg_latency is the difference between the source node finishes the whole layer
                 #and when it generates enough data to compute one layer output of the target node 
                 #,(which is the pipeline starting point of the target node)
@@ -186,6 +189,7 @@ i       """
         path = dict() # The dictionary, to record critical path to the node. Key: node. Value: list of nodes to represent the path
         noteList = self.g.topological_sort()
         for n in noteList:
+            print n.name
             max_starting = 0
             max_pred = None
             preds = list(self.g.G.predecessors(n))
@@ -208,6 +212,7 @@ i       """
             # better than lower-bound, update the lower-bound and the achieved solution
             # such that this solution does not need to be travelled again (like DP).
             endtime = startingTime[n] + n.latency
+            print n.latency, startingTime[n]
             if endtime > latency_Budget:
                 violation_path = [n]
                 if n.latency > latency_Budget:

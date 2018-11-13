@@ -26,40 +26,46 @@ class IP():
     #sepcified application dimensions
     def computeLatency(self, paramList, 
             in_height, in_width, 
-            out_height, out_width, S, 
+            out_height, out_width,
             ):
         """
         Based on the passed-in list, can compute the latency
         Args:
             paramList: The list of parameters representing the dimension of one layer
-            n_col: The number of output columns to compute
-            n_row: The number of output rows to compute
+                if type is Convolution, the list is [cout, cin, kw, kh, S, padding, group]
+                if type is Pool: list is [N, kh, S, P]
+            in_height: The input height
+            in_width : The input width
+            out_height: The output height
+            out_width: The output width
         Return:
             The latency
         """
         #FIXME: This needs to fill in the real computation later
         if self.type == "Convolution":
             #dcode the parameter:
-            cout, cin, kw, kh = paramList
+            cout, cin, kw, kh, S, padding, group = paramList
             XI_KER_PROC, XI_PIX_PROC, XI_WEIGHTBUFF_DEPTH = self.paramList
+
             lat = computeLatency(
-                    in_height,
-                    in_width, 
-                    out_height, 
-                    out_width,
-                    cout,
-                    cin, 
-                    S, kh, kw, padding,
-                    group, 
+                    int(in_height),
+                    int(in_width), 
+                    int(out_height), 
+                    int(out_width),
+                    int(cout/group),
+                    int(cin), 
+                    int(S), int(kh), int(kw), int(padding),
+                    int(1),  #group
                     1,
-                    XI_KER_PROC,
-                    XI_PIX_PROC,
-                    XI_WEIGHTBUFF_DEPTH
+                    int(XI_KER_PROC),
+                    int(XI_PIX_PROC),
+                    int(XI_WEIGHTBUFF_DEPTH)
                     )
 
-            return self.BaseLat * cout * cin * n_row * n_col
+            return lat
+            #return self.BaseLat * cout * cin * n_row * n_col
         elif self.type == "Pooling":
-            return self.BaseLat * n_col * n_row
+            return self.BaseLat * out_height
 
     def __str__(self):
         return "name: "+str(self.name)+" Type: "+str(self.type)+" BRAM: "+str(self.BRAM)+" DSP: "+ \

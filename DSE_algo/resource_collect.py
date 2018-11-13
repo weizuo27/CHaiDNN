@@ -2,15 +2,15 @@ fileTitle = ["ID", "TYPE", "BRAM", "DSP", "FF", "LUT", "BW", "Latency", "XI_KER_
 writeList =[fileTitle]
 IP_TYPE = "Convolution"
 
-ibuffersize=[512, 1024, 2048, 4096, 8192]
+ibuffersize=[2048, 4096, 8192]
 obufferArray=[512,1024,2048]
 wbufferArray=[512,1024]
 kelsize = [8,16]
 procsize = [8,16,32]
 
 idx = 0
-BW = str(0)
-Latency = str(0)
+BW = str(1)
+Latency = str(1)
 
 fileName_w = "IP_config_w"
 
@@ -48,6 +48,6 @@ fw = open(fileName_w, 'w')
 for l in writeList:
     fw.write(", ".join(l) + "\n")
 
-l = ["IP"+str(idx+1), "Pooling", "81", "34", "9475", "7511", "0", "7533", "1", "1", "1"]
+l = ["IP"+str(idx+1), "Pooling", "81", "34", "9475", "7511", "1", "279", "1", "1", "1"]
 fw.write(", ".join(l) + "\n")
 fw.close()        

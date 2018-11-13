@@ -1,5 +1,5 @@
 import matplotlib.pyplot as plt
-from copy import copy
+from copy import deepcopy
 import networkx as nx
 import cvxpy as cvx
 
@@ -12,6 +12,18 @@ class pipeNode:
         pipeNode.idx+=1
         self.latency = neg_latency
         self.lat_one_row = neg_latency
+
+class joinNode:
+    idx = 0
+    def __init__(self):
+        self.name = "joinNode" + str(joinNode.idx)
+        self.type = "joinNode"
+        self.mappedIP = None
+        joinNode.idx += 1
+        self.latency = 0
+        self.lat_one_row = 0
+    def computeLatencyOneRow(self, , fake2):
+        return self.lat_one_row
 
 class layer:
     """
@@ -79,14 +91,11 @@ class layer:
         """
         self.IP_id = None
 
-    def computeLatencyOneRow(self, prevLayer, pipelined):
+    def computeLatencyIPOneRow(self):
         """
-        The latency to compute one row
-        Args:
-            prevLayer: one previous layer
-            pipelined: Bool. Whether the previous layer and current layer are pipelined
+        The latency to compute one row using a mapped IP
         """
-        #print self.name, self.mappedIP
+
         assert (self.mappedIP is not None), self.name + " mapped IP is not decided,\
             so no way to compute the latency"
         #FIXME: If it is mapped to software, it should not be pipelined?
@@ -102,7 +111,7 @@ class layer:
             cout, cin, kw, kh = map(int, (self.params[0].split("=")[1]).split("x"))
             S = int(self.params[1].split("=")[1])
             padding = int(self.params[2].split("=")[1])
-            group = int(self.params[3].split("=")[1])
+            group = int(self.params[4].split("=")[1])
             #FIXME: what is the best way to pass in the parameters
 
             #TODO: Assumption: Now here we do not consider the warm-up phase of computation.
@@ -110,11 +119,11 @@ class layer:
             #to compute 11 input rows, but for the remaining rows,  it only need 4. 
             #We neglect the first row, and assume that one output row requires 4 input row.
             IP_latency = self.mappedIP.computeLatency(
-                    [cout, cin, kw, kh],
+                    [cout, cin, kw, kh, S, padding, group],
                     in_height, 
                     in_width, 
-                    out_width,
-                    S, kh, hw, padding, group, 1) 
+                    out_height, 
+                    out_width) 
 
         elif self.type == "Pooling":
             PoolType = self.params[0].split("=")[1]
@@ -123,9 +132,25 @@ class layer:
             S = int(self.params[3].split("=")[1])
             P = int(self.params[4].split("=")[1])
             IP_latency = self.mappedIP.computeLatency(
-                    [N,kh,S,P], out_width, S)
+                    [N,kh,S,P], 
+                    in_height, 
+                    in_width, 
+                    out_height, 
+                    out_width)
         else:
             assert 0, "This layer has unsupported type"
+
+    def computeLatencyOneRow(self, prevLayer, pipelined):
+        """
+        The latency to compute one row
+        Args:
+            prevLayer: one previous layer
+            pipelined: Bool. Whether the previous layer and current layer are pipelined
+        """
+        #print self.name, self.mappedIP
+        assert (self.mappedIP is not None), self.name + " mapped IP is not decided,\
+            so no way to compute the latency"
+        IP_latency = self.computeLatencyIPOneRow()
 
         if(prevLayer == None) or (not pipelined):
             self.lat_one_row = IP_latency
@@ -260,7 +285,10 @@ class graph:
             if bb in top_table:
                 for bbb in bottom_table[bb]:
                     for ttt in top_table[bb]:
-                        self.G.add_edge(ttt, bbb)
+                        self.G.add_edge(ttt, bbb) 
+
+        self.splitGroupNode()
+
     def __str__(self):
         retStr = " "
         for layer_type in self.layerQueue:
@@ -300,16 +328,67 @@ class graph:
     def printNodeLatency(self):
         for n in self.G.nodes:
             print n.name, " ", n.latency, " ", n.lat_one_row
+    def printNodeParameters(self):
+        for n in self.G.nodes:
+            if(n.type == "Convolution" or n.type == "Pooling"):
+                print n.name, " ", n.params, n.input_params, n.output_params
+
     def add_node(self, node):
         self.G.add_node(node)
         self.mapping[node] = node.name
 
     def topological_sort(self):
+        """
+        Return the list of the node with topological sorting
+        """
         return nx.topological_sort(self.G)
 
     def retriveOriginalGraph(self):
+        """
+        To resume the original graph which is constructed from the ChaiDNN output graph
+        """
         self.G.clear()
         self.G.add_edges_from(self.original_edges)
         self.G.add_nodes_from(self.original_nodes)
         for n in self.G.nodes:
             n.lat_one_row = None
+
+    def splitGroupNode(self):
+        """
+        When the node contains group, we want to split the original node into a subgraph, 
+        with one join node added at the top, one join node added at the bottom, 
+        and the original node is duplicated into group number of nodes, connecting to top join
+        and bottom join: bot-->[n1, n2, ..., ng] --> top
+
+        """
+        group_nodes = []
+        for n in self.G.nodes:
+            if n.type == "Convolution":
+                group = int(n.params[4].split("=")[1])
+                if group > 1:
+                    group_nodes.append(n)
+        for n in group_nodes:
+            group = int(n.params[4].split("=")[1])
+            n.input_params[1] /= group
+            n.output_params[1] /= group
+            #FIXME, later need to also update the parameters
+            bot = joinNode()
+            top = joinNode()
+            self.add_node(bot)
+            self.add_node(top)
+            for pred in list(self.G.predecessors(n)):
+                self.G.remove_edge(pred, n)
+                self.G.add_edge(pred, bot)
+            for succ in list(self.G.successors(n)):
+                self.G.remove_edge(n, succ)
+                self.G.add_edge(top, succ)
+            self.G.add_edge(bot, n)
+            self.G.add_edge(n, top)
+
+            for i in range(1, group):
+                n_new = deepcopy(n)
+                n_new.name = n_new.name + "_"+str(i)
+                self.G.add_node(n_new)
+                self.G.add_edge(bot, n_new)
+                self.G.add_edge(n_new, top)
+            n.name = n.name + "_0"
