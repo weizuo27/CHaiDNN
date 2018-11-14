@@ -34,7 +34,7 @@ i       """
         }
         self.g = graph(app_fileName) #generate the graph from CHaiDNN output
         self.g.drawGraph()
-        self.g.printNodeParameters()
+        #self.g.printNodeParameters()
         IPs = generateIPs(IP_fileName)
         self.IP_table = constructIPTable(IPs, BRAM_budget, DSP_budget, LUT_budget, FF_budget, BW_budget)
         self.rb = resourceILPBuilder(BRAM_budget, DSP_budget, FF_budget, LUT_budget, BW_budget) #Builder resource solver

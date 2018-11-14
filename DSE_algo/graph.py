@@ -26,7 +26,7 @@ class Node:
         self.latency = None
         self.mappedIP = None
 
-    def computeLatencyOneRow(self, prevLayer, pipelined, S):
+    def computeLatencyOneRow(self, prevLayer, pipelined, S=None):
         """
         To compute the latency for one row. It assigns the class attribute "lat_one_row"
         Args:
@@ -35,13 +35,13 @@ class Node:
             S: int. How many rows of preivous layers need to be computed 
             before the current layer can start
         """
-        assert (self.IP_latency is not None), self.name + "does not have the IP_latency"
+        assert (self.IP_latency is not None), self.name + " does not have the IP_latency"
 
         if(prevLayer == None) or (not pipelined):
             self.lat_one_row = self.IP_latency
         else:
             if self.lat_one_row == None:
-                self.lat_one_row = max(IP_latency, prevLayer.computeNRows(S))
+                self.lat_one_row = max(self.IP_latency, prevLayer.computeNRows(S))
             else:
                 self.lat_one_row = max(self.lat_one_row, prevLayer.computeNRows(S))
 
@@ -51,7 +51,7 @@ class pipeNode(Node):
     """
     idx = 0
     def __init__(self, neg_latency):
-        Node.__init__()
+        Node.__init__(self)
         self.name = "pipeNode" + str(pipeNode.idx)
         self.type = "pipeNode"
         pipeNode.idx+=1
@@ -63,7 +63,7 @@ class joinNode(Node):
     """
     idx = 0
     def __init__(self):
-        Node.__init__()
+        Node.__init__(self)
         self.name = "joinNode" + str(joinNode.idx)
         self.type = "joinNode"
         self.mappedIP = None
@@ -79,14 +79,13 @@ class sepNode(Node):
     """
     idx = 0
     def __init__(self):
-        Node.__init__()
+        Node.__init__(self)
         self.name = "sepNode" + str(sepNode.idx)
         self.type = "sepNode"
         self.mappedIP = None
         sepNode.idx += 1
         self.latency = 0
-
-    self.IP_latency = 0
+        self.IP_latency = 0
 
 class layer(Node):
     """
@@ -117,7 +116,7 @@ class layer(Node):
         Args: 
             line: the str that contains information of each layer
         """
-        Node.__init__()
+        Node.__init__(self)
         n_t = line.split(":")[0]
         self.name, self.type = n_t.split("-")
         self.lat_one_row = None
@@ -154,7 +153,7 @@ class layer(Node):
         """
         self.IP_id = None
 
-    def computeIPLatencyOneRow(self):
+    def computeLatencyOneRow(self, prevLayer, pipelined, S=None):
         """
         The latency to compute one row
         Args:
@@ -203,6 +202,7 @@ class layer(Node):
                     out_width)
         else:
             assert 0, "This layer has unsupported type"
+
 
         Node.computeLatencyOneRow(self, prevLayer, pipelined, S)
 #        if(prevLayer == None) or (not pipelined):
@@ -340,7 +340,7 @@ class graph:
                     for ttt in top_table[bb]:
                         self.G.add_edge(ttt, bbb) 
 
-#self.splitGroupNode()
+        self.splitGroupNode()
 
     def __str__(self):
         retStr = " "
@@ -374,8 +374,7 @@ class graph:
                 if len(predList) == 0:
                     n.computeLatencyOneRow(None, False)
                 for pred in predList:
-                    n.computeLatencyOneRow(pred, (pred.mappedIP != n.mappedIP))
-
+                    n.computeLatencyOneRow(pred, (self.isPipelined(pred, n)))
                 n.computeLatency()
             
     def printNodeLatency(self):
@@ -409,7 +408,46 @@ class graph:
     def isPipelined(self, s_node, t_node):
         """
         The function to check whether two nodes are pipelined
+        Args:
+            s_node: The source node 
+            t_node: The target node
+        Return:
+            bool: True if they are pipelined, False otherwise
         """
+        if s_node.type == "sepNode":
+            return False
+        if t_node.type == "joinNode":
+            return False
+
+        tmpPreIpTable = dict()
+        tmpSuccIpTable = dict()
+
+        if s_node.type == "joinNode": 
+        #Need to check whether any of the group IP is the same
+            for pred in self.G.predecessors(s_node):
+                if pred.mappedIP in tmpPreIpTable:
+                    return False
+                tmpPreIpTable[pred.mappedIP] = 1
+        else: #Assume the s_node is a layer node
+            tmpPreIpTable[s_node.mappedIP] = 1
+
+        if t_node.type == "sepNode":
+            for succ in self.G.successors(t_node):
+                if pred.mappedIP in tmpSuccIpTable:
+                    return False
+                tmpSuccIpTable[pred.mappedIP] = 1
+        else:
+             tmpSuccIpTable[t_node.mappedIP] = 1
+
+        for s in tmpPreIpTable:
+            if s in tmpSuccIpTable:
+                return False
+
+        for p in tmpSuccIpTable:
+            if p in tmpPreIpTable:
+                return False
+
+        return True
 
     def splitGroupNode(self):
         """
@@ -420,17 +458,20 @@ class graph:
 
         """
         group_nodes = []
+
         for n in self.G.nodes:
             if n.type == "Convolution":
+                print "split", n.name
                 group = int(n.params[4].split("=")[1])
                 if group > 1:
                     group_nodes.append(n)
+
         for n in group_nodes:
             group = int(n.params[4].split("=")[1])
             n.input_params[1] /= group
             n.output_params[1] /= group
-            #FIXME, later need to also update the parameters
-            bot = joinNode()
+            #FIXME, later need to also update the conv parameters
+            bot = sepNode()
             top = joinNode()
             self.add_node(bot)
             self.add_node(top)
@@ -446,7 +487,7 @@ class graph:
             for i in range(1, group):
                 n_new = deepcopy(n)
                 n_new.name = n_new.name + "_"+str(i)
-                self.G.add_node(n_new)
+                self.add_node(n_new)
                 self.G.add_edge(bot, n_new)
                 self.G.add_edge(n_new, top)
             n.name = n.name + "_0"
