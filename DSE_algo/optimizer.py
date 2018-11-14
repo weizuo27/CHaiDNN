@@ -29,6 +29,7 @@ i       """
         #Hard code the hardware supported layers
         self.hw_layers = {
             "Convolution": 1,
+            "Convolution_g": 1,
             "Pooling" : 1
         }
         self.g = graph(app_fileName) #generate the graph from CHaiDNN output

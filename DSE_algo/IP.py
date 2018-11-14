@@ -42,7 +42,7 @@ class IP():
             The latency
         """
         #FIXME: This needs to fill in the real computation later
-        if self.type == "Convolution":
+        if self.type == "Convolution" or self.type == "Convolution_g":
             #dcode the parameter:
             cout, cin, kw, kh, S, padding, group = paramList
             XI_KER_PROC, XI_PIX_PROC, XI_WEIGHTBUFF_DEPTH = self.paramList

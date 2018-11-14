@@ -14,6 +14,9 @@ class pipeNode:
         self.lat_one_row = neg_latency
 
 class joinNode:
+    """
+    The node to represent the join of branch
+    """
     idx = 0
     def __init__(self):
         self.name = "joinNode" + str(joinNode.idx)
@@ -22,8 +25,54 @@ class joinNode:
         joinNode.idx += 1
         self.latency = 0
         self.lat_one_row = 0
-    def computeLatencyOneRow(self, , fake2):
-        return self.lat_one_row
+
+    def computeLatencyOneRow(self, prevLayer, pipelined):
+        """
+        The latency to compute one row
+        Args:
+            prevLayer: one previous layer
+            pipelined: Bool. Whether the previous layer and current layer are pipelined
+        """
+        IP_latency = self.lat_one_row
+
+        if(prevLayer == None) or (not pipelined):
+            self.lat_one_row = IP_latency
+        else:
+            if self.lat_one_row == None:
+                self.lat_one_row = max(IP_latency, prevLayer.computeNRows(1))
+            else:
+                self.lat_one_row = max(self.lat_one_row, prevLayer.computeNRows(1))
+
+class sepNode:
+    """
+        The node to represent the start of branch
+    """
+    idx = 0
+
+    def __init__(self):
+        self.name = "sepNode" + str(sepNode.idx)
+        self.type = "sepNode"
+        self.mappedIP = None
+        sepNode.idx += 1
+        self.latency = 0
+        self.lat_one_row = 0
+
+    def computeLatencyOneRow(self, prevLayer, pipelined):
+        """
+        The latency to compute one row
+        Args:
+            prevLayer: one previous layer
+            pipelined: Bool. Whether the previous layer and current layer are pipelined
+        """
+        IP_latency = self.lat_one_row
+
+        if(prevLayer == None) or (not pipelined):
+            self.lat_one_row = IP_latency
+        else:
+            if self.lat_one_row == None:
+                self.lat_one_row = max(IP_latency, prevLayer.computeNRows(1))
+            else:
+                self.lat_one_row = max(self.lat_one_row, prevLayer.computeNRows(1))
 
 class layer:
     """
@@ -91,15 +140,17 @@ class layer:
         """
         self.IP_id = None
 
-    def computeLatencyIPOneRow(self):
+    def computeLatencyOneRow(self, prevLayer, pipelined):
         """
-        The latency to compute one row using a mapped IP
+        The latency to compute one row
+        Args:
+            prevLayer: one previous layer
+            pipelined: Bool. Whether the previous layer and current layer are pipelined
         """
-
         assert (self.mappedIP is not None), self.name + " mapped IP is not decided,\
             so no way to compute the latency"
-        #FIXME: If it is mapped to software, it should not be pipelined?
-        # So there is not point of computing one row
+
+
         if self.mappedIP == "Software":
             return
 
@@ -107,7 +158,7 @@ class layer:
         out_height, out_width = map(int, self.output_params[2:4])
 
         #Assumption: S < W, which is the case of most NN
-        if self.type == "Convolution":
+        if self.type == "Convolution"or self.type == "Convolution_g":
             cout, cin, kw, kh = map(int, (self.params[0].split("=")[1]).split("x"))
             S = int(self.params[1].split("=")[1])
             padding = int(self.params[2].split("=")[1])
@@ -140,17 +191,7 @@ class layer:
         else:
             assert 0, "This layer has unsupported type"
 
-    def computeLatencyOneRow(self, prevLayer, pipelined):
-        """
-        The latency to compute one row
-        Args:
-            prevLayer: one previous layer
-            pipelined: Bool. Whether the previous layer and current layer are pipelined
-        """
-        #print self.name, self.mappedIP
-        assert (self.mappedIP is not None), self.name + " mapped IP is not decided,\
-            so no way to compute the latency"
-        IP_latency = self.computeLatencyIPOneRow()
+#print "computeLatencyOneRow", self.name, self.mappedIP, prevLayer.name, pipelined, IP_latency
 
         if(prevLayer == None) or (not pipelined):
             self.lat_one_row = IP_latency
@@ -159,6 +200,7 @@ class layer:
                 self.lat_one_row = max(IP_latency, prevLayer.computeNRows(S))
             else:
                 self.lat_one_row = max(self.lat_one_row, prevLayer.computeNRows(S))
+
 
     def computeNRows(self, n):
         """
@@ -172,7 +214,7 @@ class layer:
             so no way to compute the latency of n rows"
         if self.mappedIP == "Software":
             return
-        assert (self.lat_one_row != None), "The lat_one_row is not computed, cannot compute \
+        assert (self.lat_one_row != None), "layer " + self.name + "'s lat_one_row is not computed, cannot compute \
         n rows"
         return self.lat_one_row * n
 
@@ -287,7 +329,7 @@ class graph:
                     for ttt in top_table[bb]:
                         self.G.add_edge(ttt, bbb) 
 
-        self.splitGroupNode()
+#self.splitGroupNode()
 
     def __str__(self):
         retStr = " "
@@ -330,7 +372,7 @@ class graph:
             print n.name, " ", n.latency, " ", n.lat_one_row
     def printNodeParameters(self):
         for n in self.G.nodes:
-            if(n.type == "Convolution" or n.type == "Pooling"):
+            if(n.type == "Convolution" or n.type == "Convolution_g" or n.type == "Pooling"):
                 print n.name, " ", n.params, n.input_params, n.output_params
 
     def add_node(self, node):
