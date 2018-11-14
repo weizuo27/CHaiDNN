@@ -74,7 +74,7 @@ int main()
 
 
 
-	int layerId=3;
+	int layerId=1;
 	int groupId=0;
 	load_args_pool(layerId,0,scala_pool_args);
 
@@ -130,6 +130,8 @@ int main()
 	scala_pool_args[16] = initialReadRows;
 	scala_pool_args[17] = inDDRPlaneStep;
     scala_pool_args[18] = outDDRPlaneStep;
+	scala_pool_args[19] = 0;
+    scala_pool_args[20] = 0;
 
 
 
@@ -162,26 +164,26 @@ int main()
 	
 
 
-	// for(int i=0;i<INDEPTH;i++)
-	// {
-	// 	if(out1_sol[i]!=outtest1[i] || out2_sol[i]!=outtest2[i])
-	// 	{
-	// 		ap_uint<128> par=out1_sol[i];
-	// 		ap_uint<128> par2=outtest1[i];
-	// 		printf("Addr %5d:",i);
-	// 		for(int c=0;c<16;c++)
-	// 		{
-	// 			printf("%02x ",(unsigned char) par.range(c*8+7,c*8) );
-	// 		}
-	// 		printf("\n");
-	// 		printf("Addr %5d:",i);
-	// 		for(int c=0;c<16;c++)
-	// 		{
-	// 			printf("%02x ",(unsigned char) par2.range(c*8+7,c*8) );
-	// 		}
-	// 		printf("\n");
-	// 	}
-	// }
+	 for(int i=0;i<INDEPTH;i++)
+	 {
+	 	if(out1[i]!=outtest1[i] || out2[i]!=outtest2[i])
+	 	{
+	 		ap_uint<128> par=out1[i];
+	 		ap_uint<128> par2=outtest1[i];
+	 		printf("Addr %5d:",i);
+	 		for(int c=0;c<16;c++)
+	 		{
+	 			printf("%02x ",(unsigned char) par.range(c*8+7,c*8) );
+	 		}
+	 		printf("\n");
+	 		printf("Addr %5d:",i);
+	 		for(int c=0;c<16;c++)
+	 		{
+	 			printf("%02x ",(unsigned char) par2.range(c*8+7,c*8) );
+	 		}
+	 		printf("\n");
+	 	}
+	 }
 
 	if(memcmp(outtest1,out1_sol, sizeof(char)*INBYTES)) 
 	printf("output 1 differ\n");

@@ -4,8 +4,8 @@
 #ifndef _TESTBENCH_DEFINE_H
 #define _TESTBENCH_DEFINE_H
 
-#include "../include/xi_conv_config.h"
-
+#include "../include/xi_conv_desc.h"
+#include "../include/maxpool_config.h"
 
 
 
@@ -17,12 +17,32 @@
 #define BIAS_BYTES 12288
 
 
+
 #define WEIGHT_DEPTH WEIGHT_BYTES/PLANE_PACK_SIZE
 #define INPUT_DEPTH INPUT_BYTES/PLANE_PACK_SIZE
 #define OUTPUT_DEPTH OUTPUT_BYTES/PLANE_PACK_SIZE
 #define BIAS_DEPTH BIAS_BYTES/PLANE_PACK_SIZE
 
+
+#define INBYTES 290400
+#define INDEPTH INBYTES/16
+
 #define DATA_FILE_PATH "/home/xliu79/Research/2018Fall/model_args/AlexOneRow/"
+
+void load_args_pool
+(
+    int layerIdx,
+    int groupIdx,
+    int *scalar_args
+);
+
+void load_pool_input
+(
+	int layerId,
+	int groupId,
+	GMEM_MAXPOOLTYPE in[INDEPTH],
+	GMEM_MAXPOOLTYPE out[INDEPTH]
+);
 
 void save_answer(
     char* filename,
@@ -61,6 +81,26 @@ void load_data
     gmem_outputtype* output2,
     gmem_inputtype_layer1* istg_out1,
     gmem_inputtype_layer1* istg_out2
+);
+
+
+void streamToMem(
+    int height,
+    int width,
+    int depthBy16,
+    hls::stream< ap_uint<128> > &stream,
+    ap_uint<128>* mem,
+    int offset
+);
+
+
+void memToStream(
+    int height,
+    int width,
+    int depthBy16,
+    hls::stream< ap_uint<128> > &stream,
+    ap_uint<128>* mem,
+    int offset
 );
 
 
