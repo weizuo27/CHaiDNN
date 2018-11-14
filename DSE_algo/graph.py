@@ -3,78 +3,92 @@ from copy import deepcopy
 import networkx as nx
 import cvxpy as cvx
 
-class pipeNode:
+class Node:
+    """
+    The base class of node in the graph
+    Attrs:
+        lat_one_row : int. The latency(cycles) to compute one row
+        name: Str. The name of the node
+        type: Str. The type of the node:
+            if it is a layer, it can be differnt layer type
+            if it is pipeNode,
+            if it is joinNode/sepNode
+        IP_latency: The latency of compute one row only considering the current IP.
+              The real latency for one row can be bigger than this if IPs are pipelined,
+              and the bottleneck is not the current layer
+        latency: The overall latency to compute this node
+    """
+    def __init__(self):
+        self.lat_one_row = None
+        self.name = None
+        self.type = None
+        self.IP_latency = None
+        self.latency = None
+        self.mappedIP = None
+
+    def computeLatencyOneRow(self, prevLayer, pipelined, S):
+        """
+        To compute the latency for one row. It assigns the class attribute "lat_one_row"
+        Args:
+            prevLayer: the previous layer of the current layer
+            pipelined: Whether these two layers are pipelined
+            S: int. How many rows of preivous layers need to be computed 
+            before the current layer can start
+        """
+        assert (self.IP_latency is not None), self.name + "does not have the IP_latency"
+
+        if(prevLayer == None) or (not pipelined):
+            self.lat_one_row = self.IP_latency
+        else:
+            if self.lat_one_row == None:
+                self.lat_one_row = max(IP_latency, prevLayer.computeNRows(S))
+            else:
+                self.lat_one_row = max(self.lat_one_row, prevLayer.computeNRows(S))
+
+class pipeNode(Node):
+    """
+    The node inserted to account for the pipeline structure
+    """
     idx = 0
     def __init__(self, neg_latency):
+        Node.__init__()
         self.name = "pipeNode" + str(pipeNode.idx)
         self.type = "pipeNode"
-        self.mappedIP = None
         pipeNode.idx+=1
         self.latency = neg_latency
-        self.lat_one_row = neg_latency
-
-class joinNode:
+ 
+class joinNode(Node):
     """
     The node to represent the join of branch
     """
     idx = 0
     def __init__(self):
+        Node.__init__()
         self.name = "joinNode" + str(joinNode.idx)
         self.type = "joinNode"
         self.mappedIP = None
         joinNode.idx += 1
         self.latency = 0
-        self.lat_one_row = 0
 
-    def computeLatencyOneRow(self, prevLayer, pipelined):
-        """
-        The latency to compute one row
-        Args:
-            prevLayer: one previous layer
-            pipelined: Bool. Whether the previous layer and current layer are pipelined
-        """
-        IP_latency = self.lat_one_row
+    def computeIPLatencyOneRow(self):
+        self.IP_latency = 0
 
-        if(prevLayer == None) or (not pipelined):
-            self.lat_one_row = IP_latency
-        else:
-            if self.lat_one_row == None:
-                self.lat_one_row = max(IP_latency, prevLayer.computeNRows(1))
-            else:
-                self.lat_one_row = max(self.lat_one_row, prevLayer.computeNRows(1))
-
-class sepNode:
+class sepNode(Node):
     """
         The node to represent the start of branch
     """
     idx = 0
-
     def __init__(self):
+        Node.__init__()
         self.name = "sepNode" + str(sepNode.idx)
         self.type = "sepNode"
         self.mappedIP = None
         sepNode.idx += 1
         self.latency = 0
-        self.lat_one_row = 0
 
-    def computeLatencyOneRow(self, prevLayer, pipelined):
-        """
-        The latency to compute one row
-        Args:
-            prevLayer: one previous layer
-            pipelined: Bool. Whether the previous layer and current layer are pipelined
-        """
-        IP_latency = self.lat_one_row
+    self.IP_latency = 0
 
-        if(prevLayer == None) or (not pipelined):
-            self.lat_one_row = IP_latency
-        else:
-            if self.lat_one_row == None:
-                self.lat_one_row = max(IP_latency, prevLayer.computeNRows(1))
-            else:
-                self.lat_one_row = max(self.lat_one_row, prevLayer.computeNRows(1))
-
-class layer:
+class layer(Node):
     """
     The class to discribe attributes relate to layers
     Attrs:
@@ -103,6 +117,7 @@ class layer:
         Args: 
             line: the str that contains information of each layer
         """
+        Node.__init__()
         n_t = line.split(":")[0]
         self.name, self.type = n_t.split("-")
         self.lat_one_row = None
@@ -133,14 +148,13 @@ class layer:
         """
         self.output_params = map(int,line.split("x")) #[batch, channel, height, width]
 
-    #FIXME: Need to implement the following functions
     def assign_IP(self, sol):
         """
         Assign the IP that is mapped to this layer
         """
         self.IP_id = None
 
-    def computeLatencyOneRow(self, prevLayer, pipelined):
+    def computeIPLatencyOneRow(self):
         """
         The latency to compute one row
         Args:
@@ -149,7 +163,6 @@ class layer:
         """
         assert (self.mappedIP is not None), self.name + " mapped IP is not decided,\
             so no way to compute the latency"
-
 
         if self.mappedIP == "Software":
             return
@@ -169,7 +182,7 @@ class layer:
             #E.g., a convolution. Stride =4, kh =11. For the first output row, it needs
             #to compute 11 input rows, but for the remaining rows,  it only need 4. 
             #We neglect the first row, and assume that one output row requires 4 input row.
-            IP_latency = self.mappedIP.computeLatency(
+            self.IP_latency= self.mappedIP.computeLatency(
                     [cout, cin, kw, kh, S, padding, group],
                     in_height, 
                     in_width, 
@@ -182,7 +195,7 @@ class layer:
             kw = kh = int(self.params[2].split("=")[1])
             S = int(self.params[3].split("=")[1])
             P = int(self.params[4].split("=")[1])
-            IP_latency = self.mappedIP.computeLatency(
+            self.IP_latency = self.mappedIP.computeLatency(
                     [N,kh,S,P], 
                     in_height, 
                     in_width, 
@@ -191,16 +204,14 @@ class layer:
         else:
             assert 0, "This layer has unsupported type"
 
-#print "computeLatencyOneRow", self.name, self.mappedIP, prevLayer.name, pipelined, IP_latency
-
-        if(prevLayer == None) or (not pipelined):
-            self.lat_one_row = IP_latency
-        else:
-            if self.lat_one_row == None:
-                self.lat_one_row = max(IP_latency, prevLayer.computeNRows(S))
-            else:
-                self.lat_one_row = max(self.lat_one_row, prevLayer.computeNRows(S))
-
+        Node.computeLatencyOneRow(self, prevLayer, pipelined, S)
+#        if(prevLayer == None) or (not pipelined):
+#            self.lat_one_row = IP_latency
+#        else:
+#            if self.lat_one_row == None:
+#                self.lat_one_row = max(IP_latency, prevLayer.computeNRows(S))
+#            else:
+#                self.lat_one_row = max(self.lat_one_row, prevLayer.computeNRows(S))
 
     def computeNRows(self, n):
         """
@@ -394,6 +405,11 @@ class graph:
         self.G.add_nodes_from(self.original_nodes)
         for n in self.G.nodes:
             n.lat_one_row = None
+
+    def isPipelined(self, s_node, t_node):
+        """
+        The function to check whether two nodes are pipelined
+        """
 
     def splitGroupNode(self):
         """
