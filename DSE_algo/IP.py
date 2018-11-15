@@ -45,6 +45,8 @@ class IP():
         if self.type == "Convolution" or self.type == "Convolution_g":
             #dcode the parameter:
             cout, cin, kw, kh, S, padding, group = paramList
+            print "cout, cin, kw, kh, S, padding, group ", \
+            cout, cin, kw, kh, S, padding, group 
             XI_KER_PROC, XI_PIX_PROC, XI_WEIGHTBUFF_DEPTH = self.paramList
 
             lat = computeLatency(
@@ -62,6 +64,7 @@ class IP():
                     int(XI_WEIGHTBUFF_DEPTH)
                     )
 
+            print "estimate lat is ", lat
             return lat
             #return self.BaseLat * cout * cin * n_row * n_col
         elif self.type == "Pooling":

@@ -1,6 +1,8 @@
 from resourceILPBuilder import resourceILPBuilder
 from graph import graph
 from graph import pipeNode
+from graph import joinNode
+from graph import sepNode
 from utils import *
 from copy import deepcopy
 import itertools
@@ -25,7 +27,7 @@ class optimizer:
                 key: layer_type; value: The list of IPs of that type
             IPReuseTable: The dictionary to describe that for each IP, which layer(s) are using it
                 key: IP; Value: The list of layers that use it, in the topological sorted order
-i       """
+        """
         #Hard code the hardware supported layers
         self.hw_layers = {
             "Convolution": 1,
@@ -33,8 +35,6 @@ i       """
             "Pooling" : 1
         }
         self.g = graph(app_fileName) #generate the graph from CHaiDNN output
-        self.g.drawGraph()
-        #self.g.printNodeParameters()
         IPs = generateIPs(IP_fileName)
         self.IP_table = constructIPTable(IPs, BRAM_budget, DSP_budget, LUT_budget, FF_budget, BW_budget)
         self.rb = resourceILPBuilder(BRAM_budget, DSP_budget, FF_budget, LUT_budget, BW_budget) #Builder resource solver
@@ -71,11 +71,11 @@ i       """
             #assign the mapping result
             self.assignMappingResult()
             #Now update the latency since the IPs are assigned
-            print(self.g)
-            #self.g.drawGraph()
             self.g.computeLatency()
             #add nodes to factor in pipeline
             self.addPipelineNodes()
+            #self.g.drawGraph()
+            #self.g.drawGraph()
             self.g.printNodeLatency()
             #fill-in the IPReuseTable:
             self.IPReuseTable = dict()
@@ -126,7 +126,6 @@ i       """
         #FIXME: Actually this may add redundant edges
         for IP in self.IPReuseTable:
             for (s, t) in itertools.combinations(self.IPReuseTable[IP], 2):
-                print s.name, t.name
                 self.g.G.add_edge(s,t)
 
     def addPipelineNodes(self):
@@ -138,13 +137,35 @@ i       """
         #cannot directly iterate on original edges, since need to modify the graph
         pipeNode_list = []
         for (s_node, t_node) in self.g.G.edges():
-            if s_node.mappedIP != t_node.mappedIP and \
-            (s_node.mappedIP != "Software" and t_node.mappedIP != "Software"): #Two layers are pipelinable
+            if self.g.isPipelined(s_node, t_node):
+            #if s_node.mappedIP != t_node.mappedIP and \
+            #(s_node.mappedIP != "Software" and t_node.mappedIP != "Software"): #Two layers are pipelinable
                 #The neg_latency is the difference between the source node finishes the whole layer
                 #and when it generates enough data to compute one layer output of the target node 
                 #,(which is the pipeline starting point of the target node)
                 #print s_node.name, s_node.latency, s_node.pipelinedLatency
-                neg_latency = -s_node.latency + t_node.lat_one_row
+
+                #If it is the join node, the way to calculate the pipeline latency is different
+                neg_latency = 0
+                s_latency = 0
+                t_latency_one_row = 0
+
+#                if(s_node.type == "joinNode"): 
+#                    for n in self.g.G.predecessors(s_node):
+#                        s_latency = max(s_latency, n.latency)
+#                else:
+#print "s_node", s_node.name, s_node.latency
+#                print "t_node", t_node.name, t_node.lat_one_row
+                s_latency = s_node.latency
+
+#                if(t_node.type == "sepNode"):
+#                    for n in self.g.G.successors(t_node):
+#                        t_latency_one_row = max(t_latency_one_row, n.lat_one_row)
+#                else:
+                t_latency_one_row = t_node.lat_one_row
+
+                neg_latency = -s_latency + t_latency_one_row
+
                 if(neg_latency < 0):
                     node = pipeNode(neg_latency)
                     pipeNode_list.append([node, s_node, t_node])
@@ -190,7 +211,6 @@ i       """
         path = dict() # The dictionary, to record critical path to the node. Key: node. Value: list of nodes to represent the path
         noteList = self.g.topological_sort()
         for n in noteList:
-            print n.name
             max_starting = 0
             max_pred = None
             preds = list(self.g.G.predecessors(n))
@@ -213,14 +233,12 @@ i       """
             # better than lower-bound, update the lower-bound and the achieved solution
             # such that this solution does not need to be travelled again (like DP).
             endtime = startingTime[n] + n.latency
-            print n.latency, startingTime[n]
             if endtime > latency_Budget:
                 violation_path = [n]
                 if n.latency > latency_Budget:
                     return "failed", violation_path
                 for m in path[n][-2::-1]:
-                    print m.name
-                    if m.type == "pipeNode":
+                    if m.type == "pipeNode" or m.type == "sepNode" or m.type == "joinNode":
                         continue
                     violation_path += [m]
                     if endtime - startingTime[m] > latency_Budget:

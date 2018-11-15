@@ -14,7 +14,11 @@ def constructIPTable(IPs, BRAM_budget, DSP_budget, FF_budget, LUT_budget, BW_bud
     IP_table = dict()
 
     for ip in IPs:
-        #print(IP)
+        # TODO: currently the number of IPs is calculated as: if only this IP is instantiated, what is the number
+        # An optimization is, assume the smallest IP of each category is generated once, and the number of IPs of each
+        # Category. E.g., 1 smallest Pool and 1 smallest Conv have to be instantiated for functionality. So the number
+        # of Pools should be (total_resource - smallest_conv_resource)/pool_resource. This should reduce the number
+        # of variables
         IP_num = min(BRAM_budget/ip.BRAM, DSP_budget/ip.DSP, FF_budget/ip.FF, LUT_budget/ip.LUT, BW_budget/ip.BW)
         IP_type = ip.type
         #IP_table[IP_type] = [ip] * IP_num if IP_type not in IP_table else IP_table[IP_type] + [ip] * IP_num

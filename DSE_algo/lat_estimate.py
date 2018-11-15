@@ -73,7 +73,6 @@ def straddleFactorCount(scalar_conv_args, inDepth, filter_size, group_flag):
     n_inbuff_depth = FEEDING_BUFF_DEPTH
 
     while(not exp1):
-        print "bb"
         comp_planes = inp_planes/ strad_fact
         exp1 =  (((comp_planes/4)*fsz2) <=  (n_inbuff_depth/2))
         exp2 =  ((comp_planes*fsz2) <= XI_WEIGHTBUFF_DEPTH)
@@ -136,7 +135,6 @@ def computeLatency (
 
     AXILATENCY = 2
     latLoadKernelsEn_fz=scalar_conv_args[92]*AXILATENCY
-    print "latLoadKernelsEn_fz", latLoadKernelsEn_fz
 
     ker_loop_cnt=scalar_conv_args[62]
 
@@ -169,10 +167,26 @@ def computeLatency (
 
     return ProcInputBuff_fd
 
-conv_inp_height = 20 
-conv_inp_width = 20
-conv_out_height = 18
-conv_out_width = 18
+#conv_inp_height = 16 
+#conv_inp_width = 16
+#conv_out_height = 14
+#conv_out_width = 14
+#conv_out_planes =  2
+#conv_inp_planes = 2
+#conv_stride = 1 
+#conv_filter_height = 3
+#conv_filter_width = 3
+#conv_pad = 0
+#conv_group = 1
+#rowStep = 1
+#XI_KER_PROC = 8
+#XI_PIX_PROC = 8
+#XI_WEIGHTBUFF_DEPTH = 512
+
+conv_inp_height = 18 
+conv_inp_width = 18
+conv_out_height = 16
+conv_out_width = 16
 conv_out_planes =  1
 conv_inp_planes = 1
 conv_stride = 1 
@@ -203,4 +217,4 @@ aa = computeLatency(
     XI_WEIGHTBUFF_DEPTH
     )
 
-print conv_out_height/rowStep *  aa * 4
+print aa, aa*conv_out_height/rowStep

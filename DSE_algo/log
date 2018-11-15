@@ -1,106 +1,165 @@
+bb
+latLoadKernelsEn_fz 18
+138 2484
 0 iteration
 
 Academic license - for non-commercial use only
 ('status:', 'optimal')
-('optimal value', 3.0)
+('optimal value', 4.0)
 Convolution :
-mapping 0 0 conv1_IP10 1.0
-mapping 0 1 conv1_IP11 0.0
+mapping 0 0 conv1_IP10 -0.0
+mapping 0 1 conv1_IP11 -0.0
 mapping 0 2 conv1_IP12 0.0
-mapping 0 3 conv1_IP13 0.0
-mapping 0 4 conv1_IP20 0.0
-mapping 0 5 conv1_IP21 0.0
+mapping 0 3 conv1_IP13 1.0
+mapping 0 4 conv1_IP20 -0.0
+mapping 0 5 conv1_IP21 -0.0
 mapping 0 6 conv1_IP30 0.0
 
 
-mapping 1 0 conv2_IP10 0.0
-mapping 1 1 conv2_IP11 0.0
-mapping 1 2 conv2_IP12 1.0
-mapping 1 3 conv2_IP13 0.0
-mapping 1 4 conv2_IP20 0.0
-mapping 1 5 conv2_IP21 0.0
-mapping 1 6 conv2_IP30 0.0
+mapping 1 0 conv2_0_IP10 1.0
+mapping 1 1 conv2_0_IP11 -0.0
+mapping 1 2 conv2_0_IP12 -0.0
+mapping 1 3 conv2_0_IP13 0.0
+mapping 1 4 conv2_0_IP20 0.0
+mapping 1 5 conv2_0_IP21 0.0
+mapping 1 6 conv2_0_IP30 0.0
 
 
-mapping 2 0 conv3_IP10 0.0
+mapping 2 0 conv3_IP10 -0.0
 mapping 2 1 conv3_IP11 0.0
-mapping 2 2 conv3_IP12 0.0
-mapping 2 3 conv3_IP13 0.0
-mapping 2 4 conv3_IP20 0.0
-mapping 2 5 conv3_IP21 1.0
+mapping 2 2 conv3_IP12 1.0
+mapping 2 3 conv3_IP13 -0.0
+mapping 2 4 conv3_IP20 -0.0
+mapping 2 5 conv3_IP21 -0.0
 mapping 2 6 conv3_IP30 0.0
 
 
-resource 0 1.0
-resource 1 0.0
-resource 2 1.0
-resource 3 0.0
-resource 4 0.0
-resource 5 1.0
-resource 6 0.0
- Convolution: conv1 assigned IP: IP10 conv2 assigned IP: IP12 conv3 assigned IP: IP21 
+mapping 3 0 conv2_1_IP10 -0.0
+mapping 3 1 conv2_1_IP11 1.0
+mapping 3 2 conv2_1_IP12 -0.0
+mapping 3 3 conv2_1_IP13 -0.0
+mapping 3 4 conv2_1_IP20 -0.0
+mapping 3 5 conv2_1_IP21 -0.0
+mapping 3 6 conv2_1_IP30 0.0
 
-{}
-conv1 comuteOneRow  360
-conv2 comuteOneRow  360
-conv3 comuteOneRow  360
-pipeNode1   -6120   -6120
-pipeNode0   -5400   -5400
-conv2   5760   360
-conv1   6480   360
-conv3   5040   360
+
+resource 0 1.0
+resource 1 1.0
+resource 2 1.0
+resource 3 1.0
+resource 4 -0.0
+resource 5 -0.0
+resource 6 0.0
+ Convolution: conv1 assigned IP: IP13 conv2_0 assigned IP: IP10 conv3 assigned IP: IP12 conv2_1 assigned IP: IP11 
+
+bb
+latLoadKernelsEn_fz 18
+bb
+latLoadKernelsEn_fz 18
+bb
+latLoadKernelsEn_fz 18
+bb
+latLoadKernelsEn_fz 18
+addPipelineNodes
+joinNode0 conv3 -2070
+conv1 sepNode0 -3174
+joinNode0   0   0
+conv1   3312   184
+pipeNode1   -3174   None
+pipeNode0   -2070   None
+sepNode0   0   184
+conv2_1   2208   138
+conv3   1932   138
+conv2_0   2208   138
+conv1
+3312 0.0
+pipeNode1
+-3174 3312.0
+sepNode0
+0 138.0
+conv2_1
+2208 138.0
+conv2_0
+2208 138.0
+joinNode0
+0 2346.0
+pipeNode0
+-2070 2346.0
+conv3
+1932 276.0
 scheduling success
-new_ub 5760.0 new_lb 0 new target, 2880.0
+new_ub 2208.0 new_lb 0 new target, 1104.0
 1 iteration
 
 ('status:', 'optimal')
-('optimal value', 3.0)
+('optimal value', 4.0)
 Convolution :
-mapping 0 0 conv1_IP10 1.0
-mapping 0 1 conv1_IP11 0.0
+mapping 0 0 conv1_IP10 -0.0
+mapping 0 1 conv1_IP11 -0.0
 mapping 0 2 conv1_IP12 0.0
-mapping 0 3 conv1_IP13 0.0
-mapping 0 4 conv1_IP20 0.0
-mapping 0 5 conv1_IP21 0.0
+mapping 0 3 conv1_IP13 1.0
+mapping 0 4 conv1_IP20 -0.0
+mapping 0 5 conv1_IP21 -0.0
 mapping 0 6 conv1_IP30 0.0
 
 
-mapping 1 0 conv2_IP10 0.0
-mapping 1 1 conv2_IP11 0.0
-mapping 1 2 conv2_IP12 1.0
-mapping 1 3 conv2_IP13 0.0
-mapping 1 4 conv2_IP20 0.0
-mapping 1 5 conv2_IP21 0.0
-mapping 1 6 conv2_IP30 0.0
+mapping 1 0 conv2_0_IP10 1.0
+mapping 1 1 conv2_0_IP11 -0.0
+mapping 1 2 conv2_0_IP12 -0.0
+mapping 1 3 conv2_0_IP13 0.0
+mapping 1 4 conv2_0_IP20 0.0
+mapping 1 5 conv2_0_IP21 0.0
+mapping 1 6 conv2_0_IP30 0.0
 
 
-mapping 2 0 conv3_IP10 0.0
+mapping 2 0 conv3_IP10 -0.0
 mapping 2 1 conv3_IP11 0.0
-mapping 2 2 conv3_IP12 0.0
-mapping 2 3 conv3_IP13 0.0
-mapping 2 4 conv3_IP20 0.0
-mapping 2 5 conv3_IP21 1.0
+mapping 2 2 conv3_IP12 1.0
+mapping 2 3 conv3_IP13 -0.0
+mapping 2 4 conv3_IP20 -0.0
+mapping 2 5 conv3_IP21 -0.0
 mapping 2 6 conv3_IP30 0.0
 
 
-resource 0 1.0
-resource 1 0.0
-resource 2 1.0
-resource 3 0.0
-resource 4 0.0
-resource 5 1.0
-resource 6 0.0
- Convolution: conv1 assigned IP: IP10 conv2 assigned IP: IP12 conv3 assigned IP: IP21 
+mapping 3 0 conv2_1_IP10 -0.0
+mapping 3 1 conv2_1_IP11 1.0
+mapping 3 2 conv2_1_IP12 -0.0
+mapping 3 3 conv2_1_IP13 -0.0
+mapping 3 4 conv2_1_IP20 -0.0
+mapping 3 5 conv2_1_IP21 -0.0
+mapping 3 6 conv2_1_IP30 0.0
 
-{}
-conv1 comuteOneRow  360
-conv2 comuteOneRow  360
-conv3 comuteOneRow  360
-pipeNode3   -6120   -6120
-pipeNode2   -5400   -5400
-conv2   5760   360
-conv1   6480   360
-conv3   5040   360
+
+resource 0 1.0
+resource 1 1.0
+resource 2 1.0
+resource 3 1.0
+resource 4 -0.0
+resource 5 -0.0
+resource 6 0.0
+ Convolution: conv1 assigned IP: IP13 conv2_0 assigned IP: IP10 conv3 assigned IP: IP12 conv2_1 assigned IP: IP11 
+
+bb
+latLoadKernelsEn_fz 18
+bb
+latLoadKernelsEn_fz 18
+bb
+latLoadKernelsEn_fz 18
+bb
+latLoadKernelsEn_fz 18
+addPipelineNodes
+joinNode0 conv3 -2070
+conv1 sepNode0 -3174
+joinNode0   0   0
+pipeNode2   -2070   None
+conv1   3312   184
+conv2_0   2208   138
+conv2_1   2208   138
+conv3   1932   138
+pipeNode3   -3174   None
+sepNode0   0   184
+conv1
+3312 0.0
 scheduling failed
 Violation path
 conv1 -->
@@ -113,47 +172,67 @@ mapping 0 0 conv1_IP10 0.0
 mapping 0 1 conv1_IP11 0.0
 mapping 0 2 conv1_IP12 0.0
 mapping 0 3 conv1_IP13 0.0
-mapping 0 4 conv1_IP20 1.0
-mapping 0 5 conv1_IP21 0.0
+mapping 0 4 conv1_IP20 0.0
+mapping 0 5 conv1_IP21 1.0
 mapping 0 6 conv1_IP30 0.0
 
 
-mapping 1 0 conv2_IP10 1.0
-mapping 1 1 conv2_IP11 -0.0
-mapping 1 2 conv2_IP12 -0.0
-mapping 1 3 conv2_IP13 0.0
-mapping 1 4 conv2_IP20 -0.0
-mapping 1 5 conv2_IP21 -0.0
-mapping 1 6 conv2_IP30 0.0
+mapping 1 0 conv2_0_IP10 0.0
+mapping 1 1 conv2_0_IP11 0.0
+mapping 1 2 conv2_0_IP12 0.0
+mapping 1 3 conv2_0_IP13 1.0
+mapping 1 4 conv2_0_IP20 0.0
+mapping 1 5 conv2_0_IP21 0.0
+mapping 1 6 conv2_0_IP30 0.0
 
 
 mapping 2 0 conv3_IP10 0.0
-mapping 2 1 conv3_IP11 1.0
-mapping 2 2 conv3_IP12 -0.0
-mapping 2 3 conv3_IP13 -0.0
-mapping 2 4 conv3_IP20 -0.0
-mapping 2 5 conv3_IP21 -0.0
+mapping 2 1 conv3_IP11 0.0
+mapping 2 2 conv3_IP12 1.0
+mapping 2 3 conv3_IP13 0.0
+mapping 2 4 conv3_IP20 0.0
+mapping 2 5 conv3_IP21 0.0
 mapping 2 6 conv3_IP30 0.0
 
 
-resource 0 1.0
-resource 1 1.0
-resource 2 0.0
-resource 3 0.0
-resource 4 1.0
-resource 5 -0.0
-resource 6 0.0
- Convolution: conv1 assigned IP: IP20 conv2 assigned IP: IP10 conv3 assigned IP: IP11 
+mapping 3 0 conv2_1_IP10 0.0
+mapping 3 1 conv2_1_IP11 0.0
+mapping 3 2 conv2_1_IP12 0.0
+mapping 3 3 conv2_1_IP13 0.0
+mapping 3 4 conv2_1_IP20 0.0
+mapping 3 5 conv2_1_IP21 1.0
+mapping 3 6 conv2_1_IP30 0.0
 
-{}
-conv1 comuteOneRow  270
-conv2 comuteOneRow  320
-conv3 comuteOneRow  320
-pipeNode4   -4800   -4800
-pipeNode5   -4540   -4540
-conv2   5120   320
-conv1   4860   270
-conv3   4480   320
+
+resource 0 0.0
+resource 1 0.0
+resource 2 1.0
+resource 3 1.0
+resource 4 0.0
+resource 5 1.0
+resource 6 0.0
+ Convolution: conv1 assigned IP: IP21 conv2_0 assigned IP: IP13 conv3 assigned IP: IP12 conv2_1 assigned IP: IP21 
+
+bb
+latLoadKernelsEn_fz 18
+bb
+latLoadKernelsEn_fz 18
+bb
+latLoadKernelsEn_fz 18
+bb
+latLoadKernelsEn_fz 18
+addPipelineNodes
+joinNode0 conv3 -2070
+joinNode0   0   0
+conv1   3240   180
+conv2_0   2208   138
+conv2_1   1920   120
+conv3   1932   138
+pipeNode4   -2070   None
+sepNode0   0   0
+conv1 conv2_1
+conv1
+3240 0.0
 scheduling failed
 Violation path
 conv1 -->
@@ -171,13 +250,13 @@ mapping 0 5 conv1_IP21 0.0
 mapping 0 6 conv1_IP30 1.0
 
 
-mapping 1 0 conv2_IP10 0.0
-mapping 1 1 conv2_IP11 0.0
-mapping 1 2 conv2_IP12 0.0
-mapping 1 3 conv2_IP13 0.0
-mapping 1 4 conv2_IP20 0.0
-mapping 1 5 conv2_IP21 0.0
-mapping 1 6 conv2_IP30 1.0
+mapping 1 0 conv2_0_IP10 0.0
+mapping 1 1 conv2_0_IP11 0.0
+mapping 1 2 conv2_0_IP12 0.0
+mapping 1 3 conv2_0_IP13 0.0
+mapping 1 4 conv2_0_IP20 0.0
+mapping 1 5 conv2_0_IP21 0.0
+mapping 1 6 conv2_0_IP30 1.0
 
 
 mapping 2 0 conv3_IP10 0.0
@@ -189,6 +268,15 @@ mapping 2 5 conv3_IP21 0.0
 mapping 2 6 conv3_IP30 1.0
 
 
+mapping 3 0 conv2_1_IP10 0.0
+mapping 3 1 conv2_1_IP11 0.0
+mapping 3 2 conv2_1_IP12 0.0
+mapping 3 3 conv2_1_IP13 0.0
+mapping 3 4 conv2_1_IP20 0.0
+mapping 3 5 conv2_1_IP21 0.0
+mapping 3 6 conv2_1_IP30 1.0
+
+
 resource 0 0.0
 resource 1 0.0
 resource 2 0.0
@@ -196,74 +284,108 @@ resource 3 0.0
 resource 4 0.0
 resource 5 0.0
 resource 6 1.0
- Convolution: conv1 assigned IP: IP30 conv2 assigned IP: IP30 conv3 assigned IP: IP30 
+ Convolution: conv1 assigned IP: IP30 conv2_0 assigned IP: IP30 conv3 assigned IP: IP30 conv2_1 assigned IP: IP30 
 
-{}
-conv1 comuteOneRow  180
-conv2 comuteOneRow  160
-conv3 comuteOneRow  140
-conv2   2560   160
-conv1   3240   180
-conv3   1960   140
-conv1 conv2
+bb
+latLoadKernelsEn_fz 18
+bb
+latLoadKernelsEn_fz 18
+bb
+latLoadKernelsEn_fz 18
+bb
+latLoadKernelsEn_fz 18
+addPipelineNodes
+joinNode0   0   0
+conv1   3312   184
+conv2_0   2944   184
+conv2_1   2944   184
+conv3   2576   184
+sepNode0   0   0
+conv1 conv2_1
+conv1 conv2_0
 conv1 conv3
-conv2 conv3
+conv2_1 conv2_0
+conv2_1 conv3
+conv2_0 conv3
+conv1
+3312 0.0
 scheduling failed
 Violation path
 conv1 -->
 4 iteration
 
-new_ub 5760.0 new_lb 2880.0 new target, 4320.0
+new_ub 2208.0 new_lb 1104.0 new target, 1656.0
 5 iteration
 
 ('status:', 'optimal')
-('optimal value', 3.0)
+('optimal value', 4.0)
 Convolution :
-mapping 0 0 conv1_IP10 1.0
-mapping 0 1 conv1_IP11 0.0
+mapping 0 0 conv1_IP10 -0.0
+mapping 0 1 conv1_IP11 -0.0
 mapping 0 2 conv1_IP12 0.0
-mapping 0 3 conv1_IP13 0.0
-mapping 0 4 conv1_IP20 0.0
-mapping 0 5 conv1_IP21 0.0
+mapping 0 3 conv1_IP13 1.0
+mapping 0 4 conv1_IP20 -0.0
+mapping 0 5 conv1_IP21 -0.0
 mapping 0 6 conv1_IP30 0.0
 
 
-mapping 1 0 conv2_IP10 0.0
-mapping 1 1 conv2_IP11 0.0
-mapping 1 2 conv2_IP12 1.0
-mapping 1 3 conv2_IP13 0.0
-mapping 1 4 conv2_IP20 0.0
-mapping 1 5 conv2_IP21 0.0
-mapping 1 6 conv2_IP30 0.0
+mapping 1 0 conv2_0_IP10 1.0
+mapping 1 1 conv2_0_IP11 -0.0
+mapping 1 2 conv2_0_IP12 -0.0
+mapping 1 3 conv2_0_IP13 0.0
+mapping 1 4 conv2_0_IP20 0.0
+mapping 1 5 conv2_0_IP21 0.0
+mapping 1 6 conv2_0_IP30 0.0
 
 
-mapping 2 0 conv3_IP10 0.0
+mapping 2 0 conv3_IP10 -0.0
 mapping 2 1 conv3_IP11 0.0
-mapping 2 2 conv3_IP12 0.0
-mapping 2 3 conv3_IP13 0.0
-mapping 2 4 conv3_IP20 0.0
-mapping 2 5 conv3_IP21 1.0
+mapping 2 2 conv3_IP12 1.0
+mapping 2 3 conv3_IP13 -0.0
+mapping 2 4 conv3_IP20 -0.0
+mapping 2 5 conv3_IP21 -0.0
 mapping 2 6 conv3_IP30 0.0
 
 
-resource 0 1.0
-resource 1 0.0
-resource 2 1.0
-resource 3 0.0
-resource 4 0.0
-resource 5 1.0
-resource 6 0.0
- Convolution: conv1 assigned IP: IP10 conv2 assigned IP: IP12 conv3 assigned IP: IP21 
+mapping 3 0 conv2_1_IP10 -0.0
+mapping 3 1 conv2_1_IP11 1.0
+mapping 3 2 conv2_1_IP12 -0.0
+mapping 3 3 conv2_1_IP13 -0.0
+mapping 3 4 conv2_1_IP20 -0.0
+mapping 3 5 conv2_1_IP21 -0.0
+mapping 3 6 conv2_1_IP30 0.0
 
-{}
-conv1 comuteOneRow  360
-conv2 comuteOneRow  360
-conv3 comuteOneRow  360
-pipeNode7   -6120   -6120
-conv2   5760   360
-conv1   6480   360
-conv3   5040   360
-pipeNode6   -5400   -5400
+
+resource 0 1.0
+resource 1 1.0
+resource 2 1.0
+resource 3 1.0
+resource 4 -0.0
+resource 5 -0.0
+resource 6 0.0
+ Convolution: conv1 assigned IP: IP13 conv2_0 assigned IP: IP10 conv3 assigned IP: IP12 conv2_1 assigned IP: IP11 
+
+bb
+latLoadKernelsEn_fz 18
+bb
+latLoadKernelsEn_fz 18
+bb
+latLoadKernelsEn_fz 18
+bb
+latLoadKernelsEn_fz 18
+addPipelineNodes
+joinNode0 conv3 -2070
+conv1 sepNode0 -3174
+joinNode0   0   0
+conv1   3312   184
+pipeNode6   -3174   None
+pipeNode5   -2070   None
+conv2_0   2208   138
+conv2_1   2208   138
+conv3   1932   138
+sepNode0   0   184
+conv1
+3312 0.0
 scheduling failed
 Violation path
 conv1 -->
@@ -276,47 +398,67 @@ mapping 0 0 conv1_IP10 0.0
 mapping 0 1 conv1_IP11 0.0
 mapping 0 2 conv1_IP12 0.0
 mapping 0 3 conv1_IP13 0.0
-mapping 0 4 conv1_IP20 1.0
-mapping 0 5 conv1_IP21 0.0
+mapping 0 4 conv1_IP20 0.0
+mapping 0 5 conv1_IP21 1.0
 mapping 0 6 conv1_IP30 0.0
 
 
-mapping 1 0 conv2_IP10 1.0
-mapping 1 1 conv2_IP11 -0.0
-mapping 1 2 conv2_IP12 -0.0
-mapping 1 3 conv2_IP13 0.0
-mapping 1 4 conv2_IP20 -0.0
-mapping 1 5 conv2_IP21 -0.0
-mapping 1 6 conv2_IP30 0.0
+mapping 1 0 conv2_0_IP10 0.0
+mapping 1 1 conv2_0_IP11 0.0
+mapping 1 2 conv2_0_IP12 0.0
+mapping 1 3 conv2_0_IP13 1.0
+mapping 1 4 conv2_0_IP20 0.0
+mapping 1 5 conv2_0_IP21 0.0
+mapping 1 6 conv2_0_IP30 0.0
 
 
 mapping 2 0 conv3_IP10 0.0
-mapping 2 1 conv3_IP11 1.0
-mapping 2 2 conv3_IP12 -0.0
-mapping 2 3 conv3_IP13 -0.0
-mapping 2 4 conv3_IP20 -0.0
-mapping 2 5 conv3_IP21 -0.0
+mapping 2 1 conv3_IP11 0.0
+mapping 2 2 conv3_IP12 1.0
+mapping 2 3 conv3_IP13 0.0
+mapping 2 4 conv3_IP20 0.0
+mapping 2 5 conv3_IP21 0.0
 mapping 2 6 conv3_IP30 0.0
 
 
-resource 0 1.0
-resource 1 1.0
-resource 2 0.0
-resource 3 0.0
-resource 4 1.0
-resource 5 -0.0
-resource 6 0.0
- Convolution: conv1 assigned IP: IP20 conv2 assigned IP: IP10 conv3 assigned IP: IP11 
+mapping 3 0 conv2_1_IP10 0.0
+mapping 3 1 conv2_1_IP11 0.0
+mapping 3 2 conv2_1_IP12 0.0
+mapping 3 3 conv2_1_IP13 0.0
+mapping 3 4 conv2_1_IP20 0.0
+mapping 3 5 conv2_1_IP21 1.0
+mapping 3 6 conv2_1_IP30 0.0
 
-{}
-conv1 comuteOneRow  270
-conv2 comuteOneRow  320
-conv3 comuteOneRow  320
-pipeNode9   -4540   -4540
-pipeNode8   -4800   -4800
-conv2   5120   320
-conv1   4860   270
-conv3   4480   320
+
+resource 0 0.0
+resource 1 0.0
+resource 2 1.0
+resource 3 1.0
+resource 4 0.0
+resource 5 1.0
+resource 6 0.0
+ Convolution: conv1 assigned IP: IP21 conv2_0 assigned IP: IP13 conv3 assigned IP: IP12 conv2_1 assigned IP: IP21 
+
+bb
+latLoadKernelsEn_fz 18
+bb
+latLoadKernelsEn_fz 18
+bb
+latLoadKernelsEn_fz 18
+bb
+latLoadKernelsEn_fz 18
+addPipelineNodes
+joinNode0 conv3 -2070
+joinNode0   0   0
+conv1   3240   180
+pipeNode7   -2070   None
+conv2_0   2208   138
+conv2_1   1920   120
+conv3   1932   138
+sepNode0   0   0
+conv1 conv2_1
+conv1
+3240 0.0
 scheduling failed
 Violation path
 conv1 -->
@@ -334,13 +476,13 @@ mapping 0 5 conv1_IP21 0.0
 mapping 0 6 conv1_IP30 1.0
 
 
-mapping 1 0 conv2_IP10 0.0
-mapping 1 1 conv2_IP11 0.0
-mapping 1 2 conv2_IP12 0.0
-mapping 1 3 conv2_IP13 0.0
-mapping 1 4 conv2_IP20 0.0
-mapping 1 5 conv2_IP21 0.0
-mapping 1 6 conv2_IP30 1.0
+mapping 1 0 conv2_0_IP10 0.0
+mapping 1 1 conv2_0_IP11 0.0
+mapping 1 2 conv2_0_IP12 0.0
+mapping 1 3 conv2_0_IP13 0.0
+mapping 1 4 conv2_0_IP20 0.0
+mapping 1 5 conv2_0_IP21 0.0
+mapping 1 6 conv2_0_IP30 1.0
 
 
 mapping 2 0 conv3_IP10 0.0
@@ -352,6 +494,15 @@ mapping 2 5 conv3_IP21 0.0
 mapping 2 6 conv3_IP30 1.0
 
 
+mapping 3 0 conv2_1_IP10 0.0
+mapping 3 1 conv2_1_IP11 0.0
+mapping 3 2 conv2_1_IP12 0.0
+mapping 3 3 conv2_1_IP13 0.0
+mapping 3 4 conv2_1_IP20 0.0
+mapping 3 5 conv2_1_IP21 0.0
+mapping 3 6 conv2_1_IP30 1.0
+
+
 resource 0 0.0
 resource 1 0.0
 resource 2 0.0
@@ -359,76 +510,108 @@ resource 3 0.0
 resource 4 0.0
 resource 5 0.0
 resource 6 1.0
- Convolution: conv1 assigned IP: IP30 conv2 assigned IP: IP30 conv3 assigned IP: IP30 
+ Convolution: conv1 assigned IP: IP30 conv2_0 assigned IP: IP30 conv3 assigned IP: IP30 conv2_1 assigned IP: IP30 
 
-{}
-conv1 comuteOneRow  180
-conv2 comuteOneRow  160
-conv3 comuteOneRow  140
-conv2   2560   160
-conv1   3240   180
-conv3   1960   140
-conv1 conv2
+bb
+latLoadKernelsEn_fz 18
+bb
+latLoadKernelsEn_fz 18
+bb
+latLoadKernelsEn_fz 18
+bb
+latLoadKernelsEn_fz 18
+addPipelineNodes
+joinNode0   0   0
+conv1   3312   184
+conv2_0   2944   184
+conv2_1   2944   184
+conv3   2576   184
+sepNode0   0   0
+conv1 conv2_1
+conv1 conv2_0
 conv1 conv3
-conv2 conv3
+conv2_1 conv2_0
+conv2_1 conv3
+conv2_0 conv3
 conv1
+3312 0.0
 scheduling failed
 Violation path
-conv2 -->
 conv1 -->
 8 iteration
 
-new_ub 5760.0 new_lb 4320.0 new target, 5040.0
+new_ub 2208.0 new_lb 1656.0 new target, 1932.0
 9 iteration
 
 ('status:', 'optimal')
-('optimal value', 3.0)
+('optimal value', 4.0)
 Convolution :
-mapping 0 0 conv1_IP10 1.0
-mapping 0 1 conv1_IP11 0.0
+mapping 0 0 conv1_IP10 -0.0
+mapping 0 1 conv1_IP11 -0.0
 mapping 0 2 conv1_IP12 0.0
-mapping 0 3 conv1_IP13 0.0
-mapping 0 4 conv1_IP20 0.0
-mapping 0 5 conv1_IP21 0.0
+mapping 0 3 conv1_IP13 1.0
+mapping 0 4 conv1_IP20 -0.0
+mapping 0 5 conv1_IP21 -0.0
 mapping 0 6 conv1_IP30 0.0
 
 
-mapping 1 0 conv2_IP10 0.0
-mapping 1 1 conv2_IP11 0.0
-mapping 1 2 conv2_IP12 1.0
-mapping 1 3 conv2_IP13 0.0
-mapping 1 4 conv2_IP20 0.0
-mapping 1 5 conv2_IP21 0.0
-mapping 1 6 conv2_IP30 0.0
+mapping 1 0 conv2_0_IP10 1.0
+mapping 1 1 conv2_0_IP11 -0.0
+mapping 1 2 conv2_0_IP12 -0.0
+mapping 1 3 conv2_0_IP13 0.0
+mapping 1 4 conv2_0_IP20 0.0
+mapping 1 5 conv2_0_IP21 0.0
+mapping 1 6 conv2_0_IP30 0.0
 
 
-mapping 2 0 conv3_IP10 0.0
+mapping 2 0 conv3_IP10 -0.0
 mapping 2 1 conv3_IP11 0.0
-mapping 2 2 conv3_IP12 0.0
-mapping 2 3 conv3_IP13 0.0
-mapping 2 4 conv3_IP20 0.0
-mapping 2 5 conv3_IP21 1.0
+mapping 2 2 conv3_IP12 1.0
+mapping 2 3 conv3_IP13 -0.0
+mapping 2 4 conv3_IP20 -0.0
+mapping 2 5 conv3_IP21 -0.0
 mapping 2 6 conv3_IP30 0.0
 
 
-resource 0 1.0
-resource 1 0.0
-resource 2 1.0
-resource 3 0.0
-resource 4 0.0
-resource 5 1.0
-resource 6 0.0
- Convolution: conv1 assigned IP: IP10 conv2 assigned IP: IP12 conv3 assigned IP: IP21 
+mapping 3 0 conv2_1_IP10 -0.0
+mapping 3 1 conv2_1_IP11 1.0
+mapping 3 2 conv2_1_IP12 -0.0
+mapping 3 3 conv2_1_IP13 -0.0
+mapping 3 4 conv2_1_IP20 -0.0
+mapping 3 5 conv2_1_IP21 -0.0
+mapping 3 6 conv2_1_IP30 0.0
 
-{}
-conv1 comuteOneRow  360
-conv2 comuteOneRow  360
-conv3 comuteOneRow  360
-pipeNode11   -6120   -6120
-conv2   5760   360
-conv1   6480   360
-conv3   5040   360
-pipeNode10   -5400   -5400
+
+resource 0 1.0
+resource 1 1.0
+resource 2 1.0
+resource 3 1.0
+resource 4 -0.0
+resource 5 -0.0
+resource 6 0.0
+ Convolution: conv1 assigned IP: IP13 conv2_0 assigned IP: IP10 conv3 assigned IP: IP12 conv2_1 assigned IP: IP11 
+
+bb
+latLoadKernelsEn_fz 18
+bb
+latLoadKernelsEn_fz 18
+bb
+latLoadKernelsEn_fz 18
+bb
+latLoadKernelsEn_fz 18
+addPipelineNodes
+joinNode0 conv3 -2070
+conv1 sepNode0 -3174
+joinNode0   0   0
+conv1   3312   184
+conv2_0   2208   138
+conv2_1   2208   138
+conv3   1932   138
+pipeNode9   -3174   None
+sepNode0   0   184
+pipeNode8   -2070   None
+conv1
+3312 0.0
 scheduling failed
 Violation path
 conv1 -->
@@ -441,106 +624,71 @@ mapping 0 0 conv1_IP10 0.0
 mapping 0 1 conv1_IP11 0.0
 mapping 0 2 conv1_IP12 0.0
 mapping 0 3 conv1_IP13 0.0
-mapping 0 4 conv1_IP20 1.0
-mapping 0 5 conv1_IP21 0.0
+mapping 0 4 conv1_IP20 0.0
+mapping 0 5 conv1_IP21 1.0
 mapping 0 6 conv1_IP30 0.0
 
 
-mapping 1 0 conv2_IP10 1.0
-mapping 1 1 conv2_IP11 -0.0
-mapping 1 2 conv2_IP12 -0.0
-mapping 1 3 conv2_IP13 0.0
-mapping 1 4 conv2_IP20 -0.0
-mapping 1 5 conv2_IP21 -0.0
-mapping 1 6 conv2_IP30 0.0
+mapping 1 0 conv2_0_IP10 0.0
+mapping 1 1 conv2_0_IP11 0.0
+mapping 1 2 conv2_0_IP12 0.0
+mapping 1 3 conv2_0_IP13 1.0
+mapping 1 4 conv2_0_IP20 0.0
+mapping 1 5 conv2_0_IP21 0.0
+mapping 1 6 conv2_0_IP30 0.0
 
 
 mapping 2 0 conv3_IP10 0.0
-mapping 2 1 conv3_IP11 1.0
-mapping 2 2 conv3_IP12 -0.0
-mapping 2 3 conv3_IP13 -0.0
-mapping 2 4 conv3_IP20 -0.0
-mapping 2 5 conv3_IP21 -0.0
-mapping 2 6 conv3_IP30 0.0
-
-
-resource 0 1.0
-resource 1 1.0
-resource 2 0.0
-resource 3 0.0
-resource 4 1.0
-resource 5 -0.0
-resource 6 0.0
- Convolution: conv1 assigned IP: IP20 conv2 assigned IP: IP10 conv3 assigned IP: IP11 
-
-{}
-conv1 comuteOneRow  270
-conv2 comuteOneRow  320
-conv3 comuteOneRow  320
-pipeNode12   -4800   -4800
-conv2   5120   320
-conv1   4860   270
-conv3   4480   320
-pipeNode13   -4540   -4540
-scheduling failed
-Violation path
-conv2 -->
-11 iteration
-
-('status:', 'optimal')
-('optimal value', 2.0)
-Convolution :
-mapping 0 0 conv1_IP10 0.0
-mapping 0 1 conv1_IP11 0.0
-mapping 0 2 conv1_IP12 0.0
-mapping 0 3 conv1_IP13 0.0
-mapping 0 4 conv1_IP20 1.0
-mapping 0 5 conv1_IP21 0.0
-mapping 0 6 conv1_IP30 0.0
-
-
-mapping 1 0 conv2_IP10 0.0
-mapping 1 1 conv2_IP11 0.0
-mapping 1 2 conv2_IP12 0.0
-mapping 1 3 conv2_IP13 0.0
-mapping 1 4 conv2_IP20 1.0
-mapping 1 5 conv2_IP21 -0.0
-mapping 1 6 conv2_IP30 0.0
-
-
-mapping 2 0 conv3_IP10 0.0
-mapping 2 1 conv3_IP11 1.0
-mapping 2 2 conv3_IP12 0.0
+mapping 2 1 conv3_IP11 0.0
+mapping 2 2 conv3_IP12 1.0
 mapping 2 3 conv3_IP13 0.0
-mapping 2 4 conv3_IP20 -0.0
-mapping 2 5 conv3_IP21 -0.0
+mapping 2 4 conv3_IP20 0.0
+mapping 2 5 conv3_IP21 0.0
 mapping 2 6 conv3_IP30 0.0
+
+
+mapping 3 0 conv2_1_IP10 0.0
+mapping 3 1 conv2_1_IP11 0.0
+mapping 3 2 conv2_1_IP12 0.0
+mapping 3 3 conv2_1_IP13 0.0
+mapping 3 4 conv2_1_IP20 0.0
+mapping 3 5 conv2_1_IP21 1.0
+mapping 3 6 conv2_1_IP30 0.0
 
 
 resource 0 0.0
-resource 1 1.0
-resource 2 0.0
-resource 3 0.0
-resource 4 1.0
-resource 5 -0.0
-resource 6 -0.0
- Convolution: conv1 assigned IP: IP20 conv2 assigned IP: IP20 conv3 assigned IP: IP11 
+resource 1 0.0
+resource 2 1.0
+resource 3 1.0
+resource 4 0.0
+resource 5 1.0
+resource 6 0.0
+ Convolution: conv1 assigned IP: IP21 conv2_0 assigned IP: IP13 conv3 assigned IP: IP12 conv2_1 assigned IP: IP21 
 
-{}
-conv1 comuteOneRow  270
-conv2 comuteOneRow  240
-conv3 comuteOneRow  280
-pipeNode14   -3560   -3560
-conv2   3840   240
-conv1   4860   270
-conv3   3920   280
-conv1 conv2
+bb
+latLoadKernelsEn_fz 18
+bb
+latLoadKernelsEn_fz 18
+bb
+latLoadKernelsEn_fz 18
+bb
+latLoadKernelsEn_fz 18
+addPipelineNodes
+joinNode0 conv3 -2070
+joinNode0   0   0
+conv1   3240   180
+conv2_0   2208   138
+conv2_1   1920   120
+conv3   1932   138
+sepNode0   0   0
+pipeNode10   -2070   None
+conv1 conv2_1
 conv1
+3240 0.0
 scheduling failed
 Violation path
-conv2 -->
 conv1 -->
-12 iteration
+11 iteration
 
 ('status:', 'optimal')
 ('optimal value', 1.0)
@@ -554,13 +702,13 @@ mapping 0 5 conv1_IP21 0.0
 mapping 0 6 conv1_IP30 1.0
 
 
-mapping 1 0 conv2_IP10 0.0
-mapping 1 1 conv2_IP11 0.0
-mapping 1 2 conv2_IP12 0.0
-mapping 1 3 conv2_IP13 0.0
-mapping 1 4 conv2_IP20 0.0
-mapping 1 5 conv2_IP21 0.0
-mapping 1 6 conv2_IP30 1.0
+mapping 1 0 conv2_0_IP10 0.0
+mapping 1 1 conv2_0_IP11 0.0
+mapping 1 2 conv2_0_IP12 0.0
+mapping 1 3 conv2_0_IP13 0.0
+mapping 1 4 conv2_0_IP20 0.0
+mapping 1 5 conv2_0_IP21 0.0
+mapping 1 6 conv2_0_IP30 1.0
 
 
 mapping 2 0 conv3_IP10 0.0
@@ -572,6 +720,15 @@ mapping 2 5 conv3_IP21 0.0
 mapping 2 6 conv3_IP30 1.0
 
 
+mapping 3 0 conv2_1_IP10 0.0
+mapping 3 1 conv2_1_IP11 0.0
+mapping 3 2 conv2_1_IP12 0.0
+mapping 3 3 conv2_1_IP13 0.0
+mapping 3 4 conv2_1_IP20 0.0
+mapping 3 5 conv2_1_IP21 0.0
+mapping 3 6 conv2_1_IP30 1.0
+
+
 resource 0 0.0
 resource 1 0.0
 resource 2 0.0
@@ -579,193 +736,187 @@ resource 3 0.0
 resource 4 0.0
 resource 5 0.0
 resource 6 1.0
- Convolution: conv1 assigned IP: IP30 conv2 assigned IP: IP30 conv3 assigned IP: IP30 
+ Convolution: conv1 assigned IP: IP30 conv2_0 assigned IP: IP30 conv3 assigned IP: IP30 conv2_1 assigned IP: IP30 
 
-{}
-conv1 comuteOneRow  180
-conv2 comuteOneRow  160
-conv3 comuteOneRow  140
-conv2   2560   160
-conv1   3240   180
-conv3   1960   140
-conv1 conv2
+bb
+latLoadKernelsEn_fz 18
+bb
+latLoadKernelsEn_fz 18
+bb
+latLoadKernelsEn_fz 18
+bb
+latLoadKernelsEn_fz 18
+addPipelineNodes
+joinNode0   0   0
+conv1   3312   184
+conv2_0   2944   184
+conv2_1   2944   184
+conv3   2576   184
+sepNode0   0   0
+conv1 conv2_1
+conv1 conv2_0
 conv1 conv3
-conv2 conv3
+conv2_1 conv2_0
+conv2_1 conv3
+conv2_0 conv3
 conv1
+3312 0.0
 scheduling failed
 Violation path
-conv2 -->
 conv1 -->
+12 iteration
+
+new_ub 2208.0 new_lb 1932.0 new target, 2070.0
 13 iteration
 
-new_ub 5760.0 new_lb 5040.0 new target, 5400.0
+('status:', 'optimal')
+('optimal value', 4.0)
+Convolution :
+mapping 0 0 conv1_IP10 -0.0
+mapping 0 1 conv1_IP11 -0.0
+mapping 0 2 conv1_IP12 0.0
+mapping 0 3 conv1_IP13 1.0
+mapping 0 4 conv1_IP20 -0.0
+mapping 0 5 conv1_IP21 -0.0
+mapping 0 6 conv1_IP30 0.0
+
+
+mapping 1 0 conv2_0_IP10 1.0
+mapping 1 1 conv2_0_IP11 -0.0
+mapping 1 2 conv2_0_IP12 -0.0
+mapping 1 3 conv2_0_IP13 0.0
+mapping 1 4 conv2_0_IP20 0.0
+mapping 1 5 conv2_0_IP21 0.0
+mapping 1 6 conv2_0_IP30 0.0
+
+
+mapping 2 0 conv3_IP10 -0.0
+mapping 2 1 conv3_IP11 0.0
+mapping 2 2 conv3_IP12 1.0
+mapping 2 3 conv3_IP13 -0.0
+mapping 2 4 conv3_IP20 -0.0
+mapping 2 5 conv3_IP21 -0.0
+mapping 2 6 conv3_IP30 0.0
+
+
+mapping 3 0 conv2_1_IP10 -0.0
+mapping 3 1 conv2_1_IP11 1.0
+mapping 3 2 conv2_1_IP12 -0.0
+mapping 3 3 conv2_1_IP13 -0.0
+mapping 3 4 conv2_1_IP20 -0.0
+mapping 3 5 conv2_1_IP21 -0.0
+mapping 3 6 conv2_1_IP30 0.0
+
+
+resource 0 1.0
+resource 1 1.0
+resource 2 1.0
+resource 3 1.0
+resource 4 -0.0
+resource 5 -0.0
+resource 6 0.0
+ Convolution: conv1 assigned IP: IP13 conv2_0 assigned IP: IP10 conv3 assigned IP: IP12 conv2_1 assigned IP: IP11 
+
+bb
+latLoadKernelsEn_fz 18
+bb
+latLoadKernelsEn_fz 18
+bb
+latLoadKernelsEn_fz 18
+bb
+latLoadKernelsEn_fz 18
+addPipelineNodes
+joinNode0 conv3 -2070
+conv1 sepNode0 -3174
+pipeNode12   -3174   None
+joinNode0   0   0
+conv1   3312   184
+pipeNode11   -2070   None
+conv2_0   2208   138
+conv2_1   2208   138
+conv3   1932   138
+sepNode0   0   184
+conv1
+3312 0.0
+scheduling failed
+Violation path
+conv1 -->
 14 iteration
 
 ('status:', 'optimal')
 ('optimal value', 3.0)
 Convolution :
-mapping 0 0 conv1_IP10 1.0
+mapping 0 0 conv1_IP10 0.0
 mapping 0 1 conv1_IP11 0.0
 mapping 0 2 conv1_IP12 0.0
 mapping 0 3 conv1_IP13 0.0
 mapping 0 4 conv1_IP20 0.0
-mapping 0 5 conv1_IP21 0.0
+mapping 0 5 conv1_IP21 1.0
 mapping 0 6 conv1_IP30 0.0
 
 
-mapping 1 0 conv2_IP10 0.0
-mapping 1 1 conv2_IP11 0.0
-mapping 1 2 conv2_IP12 1.0
-mapping 1 3 conv2_IP13 0.0
-mapping 1 4 conv2_IP20 0.0
-mapping 1 5 conv2_IP21 0.0
-mapping 1 6 conv2_IP30 0.0
+mapping 1 0 conv2_0_IP10 0.0
+mapping 1 1 conv2_0_IP11 0.0
+mapping 1 2 conv2_0_IP12 0.0
+mapping 1 3 conv2_0_IP13 1.0
+mapping 1 4 conv2_0_IP20 0.0
+mapping 1 5 conv2_0_IP21 0.0
+mapping 1 6 conv2_0_IP30 0.0
 
 
 mapping 2 0 conv3_IP10 0.0
 mapping 2 1 conv3_IP11 0.0
-mapping 2 2 conv3_IP12 0.0
+mapping 2 2 conv3_IP12 1.0
 mapping 2 3 conv3_IP13 0.0
 mapping 2 4 conv3_IP20 0.0
-mapping 2 5 conv3_IP21 1.0
+mapping 2 5 conv3_IP21 0.0
 mapping 2 6 conv3_IP30 0.0
 
 
-resource 0 1.0
+mapping 3 0 conv2_1_IP10 0.0
+mapping 3 1 conv2_1_IP11 0.0
+mapping 3 2 conv2_1_IP12 0.0
+mapping 3 3 conv2_1_IP13 0.0
+mapping 3 4 conv2_1_IP20 0.0
+mapping 3 5 conv2_1_IP21 1.0
+mapping 3 6 conv2_1_IP30 0.0
+
+
+resource 0 0.0
 resource 1 0.0
 resource 2 1.0
-resource 3 0.0
+resource 3 1.0
 resource 4 0.0
 resource 5 1.0
 resource 6 0.0
- Convolution: conv1 assigned IP: IP10 conv2 assigned IP: IP12 conv3 assigned IP: IP21 
+ Convolution: conv1 assigned IP: IP21 conv2_0 assigned IP: IP13 conv3 assigned IP: IP12 conv2_1 assigned IP: IP21 
 
-{}
-conv1 comuteOneRow  360
-conv2 comuteOneRow  360
-conv3 comuteOneRow  360
-pipeNode15   -5400   -5400
-conv2   5760   360
-conv1   6480   360
-conv3   5040   360
-pipeNode16   -6120   -6120
+bb
+latLoadKernelsEn_fz 18
+bb
+latLoadKernelsEn_fz 18
+bb
+latLoadKernelsEn_fz 18
+bb
+latLoadKernelsEn_fz 18
+addPipelineNodes
+joinNode0 conv3 -2070
+joinNode0   0   0
+conv1   3240   180
+conv2_0   2208   138
+conv2_1   1920   120
+conv3   1932   138
+sepNode0   0   0
+pipeNode13   -2070   None
+conv1 conv2_1
+conv1
+3240 0.0
 scheduling failed
 Violation path
 conv1 -->
 15 iteration
 
 ('status:', 'optimal')
-('optimal value', 3.0)
-Convolution :
-mapping 0 0 conv1_IP10 0.0
-mapping 0 1 conv1_IP11 0.0
-mapping 0 2 conv1_IP12 0.0
-mapping 0 3 conv1_IP13 0.0
-mapping 0 4 conv1_IP20 1.0
-mapping 0 5 conv1_IP21 0.0
-mapping 0 6 conv1_IP30 0.0
-
-
-mapping 1 0 conv2_IP10 1.0
-mapping 1 1 conv2_IP11 -0.0
-mapping 1 2 conv2_IP12 -0.0
-mapping 1 3 conv2_IP13 0.0
-mapping 1 4 conv2_IP20 -0.0
-mapping 1 5 conv2_IP21 -0.0
-mapping 1 6 conv2_IP30 0.0
-
-
-mapping 2 0 conv3_IP10 0.0
-mapping 2 1 conv3_IP11 1.0
-mapping 2 2 conv3_IP12 -0.0
-mapping 2 3 conv3_IP13 -0.0
-mapping 2 4 conv3_IP20 -0.0
-mapping 2 5 conv3_IP21 -0.0
-mapping 2 6 conv3_IP30 0.0
-
-
-resource 0 1.0
-resource 1 1.0
-resource 2 0.0
-resource 3 0.0
-resource 4 1.0
-resource 5 -0.0
-resource 6 0.0
- Convolution: conv1 assigned IP: IP20 conv2 assigned IP: IP10 conv3 assigned IP: IP11 
-
-{}
-conv1 comuteOneRow  270
-conv2 comuteOneRow  320
-conv3 comuteOneRow  320
-pipeNode18   -4540   -4540
-conv2   5120   320
-conv1   4860   270
-conv3   4480   320
-pipeNode17   -4800   -4800
-pipeNode18
-conv1
-scheduling failed
-Violation path
-conv2 -->
-conv1 -->
-16 iteration
-
-('status:', 'optimal')
-('optimal value', 2.0)
-Convolution :
-mapping 0 0 conv1_IP10 0.0
-mapping 0 1 conv1_IP11 0.0
-mapping 0 2 conv1_IP12 0.0
-mapping 0 3 conv1_IP13 0.0
-mapping 0 4 conv1_IP20 1.0
-mapping 0 5 conv1_IP21 0.0
-mapping 0 6 conv1_IP30 0.0
-
-
-mapping 1 0 conv2_IP10 0.0
-mapping 1 1 conv2_IP11 0.0
-mapping 1 2 conv2_IP12 0.0
-mapping 1 3 conv2_IP13 0.0
-mapping 1 4 conv2_IP20 1.0
-mapping 1 5 conv2_IP21 -0.0
-mapping 1 6 conv2_IP30 0.0
-
-
-mapping 2 0 conv3_IP10 1.0
-mapping 2 1 conv3_IP11 0.0
-mapping 2 2 conv3_IP12 0.0
-mapping 2 3 conv3_IP13 0.0
-mapping 2 4 conv3_IP20 -0.0
-mapping 2 5 conv3_IP21 -0.0
-mapping 2 6 conv3_IP30 0.0
-
-
-resource 0 1.0
-resource 1 0.0
-resource 2 0.0
-resource 3 0.0
-resource 4 1.0
-resource 5 -0.0
-resource 6 -0.0
- Convolution: conv1 assigned IP: IP20 conv2 assigned IP: IP20 conv3 assigned IP: IP10 
-
-{}
-conv1 comuteOneRow  270
-conv2 comuteOneRow  240
-conv3 comuteOneRow  280
-conv2   3840   240
-conv1   4860   270
-conv3   3920   280
-pipeNode19   -3560   -3560
-conv1 conv2
-conv1
-scheduling failed
-Violation path
-conv2 -->
-conv1 -->
-17 iteration
-
-('status:', 'optimal')
 ('optimal value', 1.0)
 Convolution :
 mapping 0 0 conv1_IP10 0.0
@@ -777,13 +928,13 @@ mapping 0 5 conv1_IP21 0.0
 mapping 0 6 conv1_IP30 1.0
 
 
-mapping 1 0 conv2_IP10 0.0
-mapping 1 1 conv2_IP11 0.0
-mapping 1 2 conv2_IP12 0.0
-mapping 1 3 conv2_IP13 0.0
-mapping 1 4 conv2_IP20 0.0
-mapping 1 5 conv2_IP21 0.0
-mapping 1 6 conv2_IP30 1.0
+mapping 1 0 conv2_0_IP10 0.0
+mapping 1 1 conv2_0_IP11 0.0
+mapping 1 2 conv2_0_IP12 0.0
+mapping 1 3 conv2_0_IP13 0.0
+mapping 1 4 conv2_0_IP20 0.0
+mapping 1 5 conv2_0_IP21 0.0
+mapping 1 6 conv2_0_IP30 1.0
 
 
 mapping 2 0 conv3_IP10 0.0
@@ -795,6 +946,15 @@ mapping 2 5 conv3_IP21 0.0
 mapping 2 6 conv3_IP30 1.0
 
 
+mapping 3 0 conv2_1_IP10 0.0
+mapping 3 1 conv2_1_IP11 0.0
+mapping 3 2 conv2_1_IP12 0.0
+mapping 3 3 conv2_1_IP13 0.0
+mapping 3 4 conv2_1_IP20 0.0
+mapping 3 5 conv2_1_IP21 0.0
+mapping 3 6 conv2_1_IP30 1.0
+
+
 resource 0 0.0
 resource 1 0.0
 resource 2 0.0
@@ -802,132 +962,110 @@ resource 3 0.0
 resource 4 0.0
 resource 5 0.0
 resource 6 1.0
- Convolution: conv1 assigned IP: IP30 conv2 assigned IP: IP30 conv3 assigned IP: IP30 
+ Convolution: conv1 assigned IP: IP30 conv2_0 assigned IP: IP30 conv3 assigned IP: IP30 conv2_1 assigned IP: IP30 
 
-{}
-conv1 comuteOneRow  180
-conv2 comuteOneRow  160
-conv3 comuteOneRow  140
-conv2   2560   160
-conv1   3240   180
-conv3   1960   140
-conv1 conv2
+bb
+latLoadKernelsEn_fz 18
+bb
+latLoadKernelsEn_fz 18
+bb
+latLoadKernelsEn_fz 18
+bb
+latLoadKernelsEn_fz 18
+addPipelineNodes
+joinNode0   0   0
+conv1   3312   184
+conv2_0   2944   184
+conv2_1   2944   184
+conv3   2576   184
+sepNode0   0   0
+conv1 conv2_1
+conv1 conv2_0
 conv1 conv3
-conv2 conv3
+conv2_1 conv2_0
+conv2_1 conv3
+conv2_0 conv3
 conv1
+3312 0.0
 scheduling failed
 Violation path
-conv2 -->
 conv1 -->
-18 iteration
+16 iteration
 
-new_ub 5760.0 new_lb 5400.0 new target, 5580.0
-19 iteration
+new_ub 2208.0 new_lb 2070.0 new target, 2139.0
+17 iteration
 
 ('status:', 'optimal')
-('optimal value', 3.0)
+('optimal value', 4.0)
 Convolution :
-mapping 0 0 conv1_IP10 1.0
-mapping 0 1 conv1_IP11 0.0
+mapping 0 0 conv1_IP10 -0.0
+mapping 0 1 conv1_IP11 -0.0
 mapping 0 2 conv1_IP12 0.0
-mapping 0 3 conv1_IP13 0.0
-mapping 0 4 conv1_IP20 0.0
-mapping 0 5 conv1_IP21 0.0
+mapping 0 3 conv1_IP13 1.0
+mapping 0 4 conv1_IP20 -0.0
+mapping 0 5 conv1_IP21 -0.0
 mapping 0 6 conv1_IP30 0.0
 
 
-mapping 1 0 conv2_IP10 0.0
-mapping 1 1 conv2_IP11 0.0
-mapping 1 2 conv2_IP12 1.0
-mapping 1 3 conv2_IP13 0.0
-mapping 1 4 conv2_IP20 0.0
-mapping 1 5 conv2_IP21 0.0
-mapping 1 6 conv2_IP30 0.0
+mapping 1 0 conv2_0_IP10 1.0
+mapping 1 1 conv2_0_IP11 -0.0
+mapping 1 2 conv2_0_IP12 -0.0
+mapping 1 3 conv2_0_IP13 0.0
+mapping 1 4 conv2_0_IP20 0.0
+mapping 1 5 conv2_0_IP21 0.0
+mapping 1 6 conv2_0_IP30 0.0
 
 
-mapping 2 0 conv3_IP10 0.0
+mapping 2 0 conv3_IP10 -0.0
 mapping 2 1 conv3_IP11 0.0
-mapping 2 2 conv3_IP12 0.0
-mapping 2 3 conv3_IP13 0.0
-mapping 2 4 conv3_IP20 0.0
-mapping 2 5 conv3_IP21 1.0
-mapping 2 6 conv3_IP30 0.0
-
-
-resource 0 1.0
-resource 1 0.0
-resource 2 1.0
-resource 3 0.0
-resource 4 0.0
-resource 5 1.0
-resource 6 0.0
- Convolution: conv1 assigned IP: IP10 conv2 assigned IP: IP12 conv3 assigned IP: IP21 
-
-{}
-conv1 comuteOneRow  360
-conv2 comuteOneRow  360
-conv3 comuteOneRow  360
-pipeNode20   -5400   -5400
-conv2   5760   360
-conv1   6480   360
-conv3   5040   360
-pipeNode21   -6120   -6120
-scheduling failed
-Violation path
-conv1 -->
-20 iteration
-
-('status:', 'optimal')
-('optimal value', 3.0)
-Convolution :
-mapping 0 0 conv1_IP10 0.0
-mapping 0 1 conv1_IP11 0.0
-mapping 0 2 conv1_IP12 0.0
-mapping 0 3 conv1_IP13 0.0
-mapping 0 4 conv1_IP20 1.0
-mapping 0 5 conv1_IP21 0.0
-mapping 0 6 conv1_IP30 0.0
-
-
-mapping 1 0 conv2_IP10 1.0
-mapping 1 1 conv2_IP11 -0.0
-mapping 1 2 conv2_IP12 -0.0
-mapping 1 3 conv2_IP13 0.0
-mapping 1 4 conv2_IP20 -0.0
-mapping 1 5 conv2_IP21 -0.0
-mapping 1 6 conv2_IP30 0.0
-
-
-mapping 2 0 conv3_IP10 0.0
-mapping 2 1 conv3_IP11 1.0
-mapping 2 2 conv3_IP12 -0.0
+mapping 2 2 conv3_IP12 1.0
 mapping 2 3 conv3_IP13 -0.0
 mapping 2 4 conv3_IP20 -0.0
 mapping 2 5 conv3_IP21 -0.0
 mapping 2 6 conv3_IP30 0.0
 
 
+mapping 3 0 conv2_1_IP10 -0.0
+mapping 3 1 conv2_1_IP11 1.0
+mapping 3 2 conv2_1_IP12 -0.0
+mapping 3 3 conv2_1_IP13 -0.0
+mapping 3 4 conv2_1_IP20 -0.0
+mapping 3 5 conv2_1_IP21 -0.0
+mapping 3 6 conv2_1_IP30 0.0
+
+
 resource 0 1.0
 resource 1 1.0
-resource 2 0.0
-resource 3 0.0
-resource 4 1.0
+resource 2 1.0
+resource 3 1.0
+resource 4 -0.0
 resource 5 -0.0
 resource 6 0.0
- Convolution: conv1 assigned IP: IP20 conv2 assigned IP: IP10 conv3 assigned IP: IP11 
+ Convolution: conv1 assigned IP: IP13 conv2_0 assigned IP: IP10 conv3 assigned IP: IP12 conv2_1 assigned IP: IP11 
 
-{}
-conv1 comuteOneRow  270
-conv2 comuteOneRow  320
-conv3 comuteOneRow  320
-pipeNode23   -4540   -4540
-pipeNode22   -4800   -4800
-conv2   5120   320
-conv1   4860   270
-conv3   4480   320
-scheduling success
-new_ub 5120.0 new_lb 5400.0 new target, 5260.0
-The achieved latency is  5120.0
-mapping
- Convolution: conv1 assigned IP: IP20 conv2 assigned IP: IP10 conv3 assigned IP: IP11 
+bb
+latLoadKernelsEn_fz 18
+bb
+latLoadKernelsEn_fz 18
+bb
+latLoadKernelsEn_fz 18
+bb
+latLoadKernelsEn_fz 18
+addPipelineNodes
+joinNode0 conv3 -2070
+conv1 sepNode0 -3174
+joinNode0   0   0
+conv1   3312   184
+conv2_0   2208   138
+conv2_1   2208   138
+conv3   1932   138
+pipeNode15   -3174   None
+sepNode0   0   184
+pipeNode14   -2070   None
+conv1
+3312 0.0
+scheduling failed
+Violation path
+conv1 -->
+18 iteration
 

@@ -25,8 +25,23 @@ class Node:
         self.IP_latency = None
         self.latency = None
         self.mappedIP = None
+        #FIXME:  The current method of including the group structure is not working!
+        self.real_latency = None
 
-    def computeLatencyOneRow(self, prevLayer, pipelined, S=None):
+    def computeLatency(self):
+        self.latency = 0
+
+    def computeNRows(self, n):
+        """
+        return the latency of the compute n rows
+        Args:
+            n: int. The number of rows to compute
+        return:
+            the latency to compute n rows
+        """
+        return self.lat_one_row * n
+
+    def computeLatencyOneRow(self, prevLayer, pipelined, S, sepNodeTable):
         """
         To compute the latency for one row. It assigns the class attribute "lat_one_row"
         Args:
@@ -41,8 +56,12 @@ class Node:
             self.lat_one_row = self.IP_latency
         else:
             if self.lat_one_row == None:
+                print "self.name, self.IP_latency, prevLayer.name, prevLayer.computeNRows(S)", \
+                self.name, self.IP_latency, prevLayer.name, prevLayer.computeNRows(S)
                 self.lat_one_row = max(self.IP_latency, prevLayer.computeNRows(S))
             else:
+                print "self.name, self.IP_latency, prevLayer.name, prevLayer.computeNRows(S)", \
+                self.name, self.IP_latency, prevLayer.name, prevLayer.computeNRows(S)
                 self.lat_one_row = max(self.lat_one_row, prevLayer.computeNRows(S))
 
 class pipeNode(Node):
@@ -69,8 +88,6 @@ class joinNode(Node):
         self.mappedIP = None
         joinNode.idx += 1
         self.latency = 0
-
-    def computeIPLatencyOneRow(self):
         self.IP_latency = 0
 
 class sepNode(Node):
@@ -78,6 +95,7 @@ class sepNode(Node):
         The node to represent the start of branch
     """
     idx = 0
+
     def __init__(self):
         Node.__init__(self)
         self.name = "sepNode" + str(sepNode.idx)
@@ -86,6 +104,30 @@ class sepNode(Node):
         sepNode.idx += 1
         self.latency = 0
         self.IP_latency = 0
+
+    def computeLatencyOneRow(self, prevLayer, pipelined, S, sepNodeTable):
+        jNode, group_node_list = sepNodeTable[self]
+        max_latency_one_row = 0
+        for n in group_node_list:
+            n.computeLatencyOneRow(None, False, None, None) #This effective assigns the IP_latency
+            max_latency_one_row = max(max_latency_one_row, n.IP_latency)
+            #clear all the group node latency
+            n.latency = 0
+            n.IP_latency = 0
+            n.lat_one_row = 0
+
+        self.IP_latency = max_latency_one_row
+        S = int(n.params[1].split("=")[1])
+        out_height, out_width = map(int, n.output_params[2:4])
+        Node.computeLatencyOneRow(self, prevLayer, pipelined, S, sepNodeTable) #This assigns the lat_one_row
+
+        #Set the latency of the join node
+        jNode.lat_one_row = self.lat_one_row
+        jNode.latency = out_height * jNode.lat_one_row
+
+        #clear the latency of the sep node
+        self.latency = 0
+
 
 class layer(Node):
     """
@@ -105,6 +147,7 @@ class layer(Node):
         lat_one_row: The latency to compute one output row
         latency: The total latency to compute this layer
         start_time: The time stamp that the layer start execution
+        sepNodeTable = dict() # sepNode : (joinNode, [group nodes])
     Methods:
         set_input_params: Set input dimentions
         set_output_params: set output related parameters, e.g., dimensions
@@ -153,7 +196,7 @@ class layer(Node):
         """
         self.IP_id = None
 
-    def computeLatencyOneRow(self, prevLayer, pipelined, S=None):
+    def computeLatencyOneRow(self, prevLayer, pipelined, S, sepNodeTable):
         """
         The latency to compute one row
         Args:
@@ -204,7 +247,7 @@ class layer(Node):
             assert 0, "This layer has unsupported type"
 
 
-        Node.computeLatencyOneRow(self, prevLayer, pipelined, S)
+        Node.computeLatencyOneRow(self, prevLayer, pipelined, S, sepNodeTable)
 #        if(prevLayer == None) or (not pipelined):
 #            self.lat_one_row = IP_latency
 #        else:
@@ -242,6 +285,7 @@ class layer(Node):
         out_height, out_width = map(int, self.output_params[2:4])
 
         self.latency = self.computeNRows(out_height)
+        
 
     def set_start_time(self, timeStamp):
         """
@@ -361,9 +405,18 @@ class graph:
         """
         For each node in the graph, compute the latency and pipelined latency
         """
-        print self.SWMapping
         node_list = self.topological_sort()
+        foundSepNode = False
         for n in node_list:
+            if(foundSepNode):
+                if n != jNode:
+                    continue
+                else:
+                    foundSepNode = False
+                    continue
+            if n.type == "sepNode":
+                foundSepNode = True
+                jNode = self.sepNodeTable[n][0]
             #If a layer is mapped to software
             if n.name in self.SWMapping: 
                 n.set_IP("Software")
@@ -372,11 +425,12 @@ class graph:
             else:
                 predList = list(self.G.predecessors(n))
                 if len(predList) == 0:
-                    n.computeLatencyOneRow(None, False)
+                    n.computeLatencyOneRow(None, False, None, self.sepNodeTable)
                 for pred in predList:
-                    n.computeLatencyOneRow(pred, (self.isPipelined(pred, n)))
-                n.computeLatency()
-            
+                    n.computeLatencyOneRow(pred, (self.isPipelined(pred, n)), None, self.sepNodeTable)
+                if(n.type != "sepNode"):
+                    n.computeLatency()
+
     def printNodeLatency(self):
         for n in self.G.nodes:
             print n.name, " ", n.latency, " ", n.lat_one_row
@@ -414,9 +468,14 @@ class graph:
         Return:
             bool: True if they are pipelined, False otherwise
         """
+
         if s_node.type == "sepNode":
             return False
         if t_node.type == "joinNode":
+            return False
+        if s_node.mappedIP is not None and s_node.mappedIP == "Software":
+            return False
+        if t_node.mappedIP is not None and t_node.mappedIP == "Software":
             return False
 
         tmpPreIpTable = dict()
@@ -431,13 +490,15 @@ class graph:
         else: #Assume the s_node is a layer node
             tmpPreIpTable[s_node.mappedIP] = 1
 
+
         if t_node.type == "sepNode":
             for succ in self.G.successors(t_node):
-                if pred.mappedIP in tmpSuccIpTable:
+                if succ.mappedIP in tmpSuccIpTable:
                     return False
-                tmpSuccIpTable[pred.mappedIP] = 1
+                tmpSuccIpTable[succ.mappedIP] = 1
         else:
              tmpSuccIpTable[t_node.mappedIP] = 1
+
 
         for s in tmpPreIpTable:
             if s in tmpSuccIpTable:
@@ -457,11 +518,12 @@ class graph:
         and bottom join: bot-->[n1, n2, ..., ng] --> top
 
         """
+
+        self.sepNodeTable = dict() # sepNode : (joinNode, [group nodes])
         group_nodes = []
 
         for n in self.G.nodes:
             if n.type == "Convolution":
-                print "split", n.name
                 group = int(n.params[4].split("=")[1])
                 if group > 1:
                     group_nodes.append(n)
@@ -484,10 +546,16 @@ class graph:
             self.G.add_edge(bot, n)
             self.G.add_edge(n, top)
 
+            group_node_list = [n]
             for i in range(1, group):
                 n_new = deepcopy(n)
+                self.layerQueue[n_new.type].append(n_new)
                 n_new.name = n_new.name + "_"+str(i)
                 self.add_node(n_new)
+                group_node_list.append(n_new)
                 self.G.add_edge(bot, n_new)
                 self.G.add_edge(n_new, top)
             n.name = n.name + "_0"
+
+            #fill in the node list
+            self.sepNodeTable[bot] = (top, group_node_list)
