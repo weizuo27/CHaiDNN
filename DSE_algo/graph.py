@@ -3,6 +3,7 @@ import matplotlib.pyplot as plt
 from copy import deepcopy
 import networkx as nx
 import cvxpy as cvx
+from IP import softwareIP
 
 class pipeNode:
     """

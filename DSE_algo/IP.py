@@ -75,6 +75,6 @@ class IP():
         str(self.DSP)+" FF: "+str(self.FF)+" LUT: "+str(self.LUT)
 
 class softwareIP:
-    def __init__(name):
+    def __init__(self, name):
         self.type = "Software"
         self.name = name

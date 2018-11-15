@@ -166,6 +166,8 @@ class resourceILPBuilder():
                 print "\n"
             for j, res in enumerate(self.resourceVariables[layer_type]):
                 print "resource", j, res.value
+
+
 #rb = resourceILPBuilder(BRAM_budget, DSP_budget, FF_budget, LUT_budget, BW_budget)
 #rb.createVs(IP_table, conv_queue)
 #rb.createConstraints()

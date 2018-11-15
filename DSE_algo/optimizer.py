@@ -90,8 +90,16 @@ class optimizer:
                 print "new_ub", self.latency_ub, "new_lb", self.latency_lb, "new target,", self.new_latency_target
             else: #Failed
                 print "scheduling", status
-                printViolationPath(ret)
-                self.updateResourceILPBuilder(ret)
+                endTime, vioPath = ret
+                printViolationPath(vioPath)
+                #However, if the new solution is better than the achieved solution, we still can 
+                # update the ub and the achieved solution
+                if endTime < self.latency_achieved:
+                    self.latency_ub = endTime
+                    self.latency_achieved = endTime
+                    self.mapping_solution = deepcopy(self.g)
+                    self.new_latency_target = (self.latency_ub + self.latency_lb)/2
+                self.updateResourceILPBuilder(vioPath)
             self.g.retriveOriginalGraph()
             oneIter += 1
         if self.latency_achieved == None:
@@ -207,6 +215,7 @@ class optimizer:
         startingTime = dict() # The dictionary. Key: node. Value: Starting time stamp
         path = dict() # The dictionary, to record critical path to the node. Key: node. Value: list of nodes to represent the path
         noteList = self.g.topological_sort()
+        status = "undecided"
         for n in noteList:
             max_starting = 0
             max_pred = None
@@ -230,18 +239,26 @@ class optimizer:
             # better than lower-bound, update the lower-bound and the achieved solution
             # such that this solution does not need to be travelled again (like DP).
             endtime = startingTime[n] + n.latency
-            if endtime > latency_Budget:
-                violation_path = [n]
-                if n.latency > latency_Budget:
-                    return "failed", violation_path
-                for m in path[n][-2::-1]:
-                    if m.type == "pipeNode":
-                        continue
-                    violation_path += [m]
-                    if endtime - startingTime[m] > latency_Budget:
-                        return "failed", violation_path
+            if status == "undecided":
+                if endtime > latency_Budget:
+                    violation_path = [n]
+                    if n.latency > latency_Budget:
+                        status = "failed"
+                    else:
+                        for m in path[n][-2::-1]:
+                            if m.type == "pipeNode":
+                                continue
+                            violation_path += [m]
+                            if endtime - startingTime[m] > latency_Budget:
+                                status = "failed"
+                                break
+            if endtime >= self.latency_achieved:
+                break
         #if succeed, return the optimal latency
-        return "success", endtime
+        if status == "undecided":
+            return "success", endtime
+        else:
+            return status, [endtime, violation_path]
 
     def updateResourceILPBuilder(self, violation_path):
         """

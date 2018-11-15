@@ -11,7 +11,34 @@ def constructIPTable(IPs, BRAM_budget, DSP_budget, FF_budget, LUT_budget, BW_bud
     return: 
         IP_table: The dictionary. Key is the IP_type. Value is a list of IP * (number of IPs that can fit into the FPGA)
     '''
+    #NOTE: Assume ALL the IPs in the table, the types appear in the the application.
+    #Namely, there is no type of the IP that cannot be used in the application
+
     IP_table = dict()
+
+    minResourceIP = dict() #The minimum resource for each IP. key: IP_type. value [BRAM, DSP, FF, LUT, BW]
+
+    for ip in IPs:
+        if ip.type not in minResourceIP:
+            minResourceIP[ip.type] = [ip.BRAM, ip.DSP, ip.FF, ip.LUT, ip.BW]
+        else:
+            minBRAM, minDSP, minFF, minLUT, minBW = minResourceIP[ip.type]
+            minResourceIP[ip.type] = [min(minBRAM, ip.BRAM), min(minDSP, ip.DSP), min(minFF, ip.FF), min(minLUT, ip.LUT), min(minBW, ip.BW)]
+
+    minBRAM_total = 0;
+    minDSP_total = 0;
+    minFF_total = 0;
+    minLUT_total = 0;
+    minBW_total = 0;
+    
+    for t in minResourceIP:
+        minBRAM_total += minResourceIP[t][0]
+        minDSP_total += minResourceIP[t][1]
+        minFF_total += minResourceIP[t][2]
+        minLUT_total += minResourceIP[t][3]
+        minBW_total += minResourceIP[t][4]
+    
+    print minBRAM_total, minDSP_total, minFF_total, minLUT_total, minBRAM_total
 
     for ip in IPs:
         # TODO: currently the number of IPs is calculated as: if only this IP is instantiated, what is the number
@@ -19,7 +46,13 @@ def constructIPTable(IPs, BRAM_budget, DSP_budget, FF_budget, LUT_budget, BW_bud
         # Category. E.g., 1 smallest Pool and 1 smallest Conv have to be instantiated for functionality. So the number
         # of Pools should be (total_resource - smallest_conv_resource)/pool_resource. This should reduce the number
         # of variables
-        IP_num = min(BRAM_budget/ip.BRAM, DSP_budget/ip.DSP, FF_budget/ip.FF, LUT_budget/ip.LUT, BW_budget/ip.BW)
+        BRAM_budget_local = BRAM_budget - (minBRAM_total - minResourceIP[ip.type][0])
+        DSP_budget_local = DSP_budget - (minDSP_total - minResourceIP[ip.type][1])
+        FF_budget_local = FF_budget - (minFF_total - minResourceIP[ip.type][2])
+        LUT_budget_local = LUT_budget - (minLUT_total - minResourceIP[ip.type][3])
+        BW_budget_local = BW_budget - (minBW_total - minResourceIP[ip.type][4])
+
+        IP_num = min(BRAM_budget_local/ip.BRAM, DSP_budget_local/ip.DSP, FF_budget_local/ip.FF, LUT_budget_local/ip.LUT, BW_budget_local/ip.BW)
         IP_type = ip.type
         #IP_table[IP_type] = [ip] * IP_num if IP_type not in IP_table else IP_table[IP_type] + [ip] * IP_num
         for i in range(IP_num):
