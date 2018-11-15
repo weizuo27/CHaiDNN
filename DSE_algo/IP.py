@@ -73,3 +73,8 @@ class IP():
     def __str__(self):
         return "name: "+str(self.name)+" Type: "+str(self.type)+" BRAM: "+str(self.BRAM)+" DSP: "+ \
         str(self.DSP)+" FF: "+str(self.FF)+" LUT: "+str(self.LUT)
+
+class softwareIP:
+    def __init__(name):
+        self.type = "Software"
+        self.name = name

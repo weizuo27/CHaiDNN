@@ -1,8 +1,6 @@
 from resourceILPBuilder import resourceILPBuilder
 from graph import graph
 from graph import pipeNode
-from graph import joinNode
-from graph import sepNode
 from utils import *
 from copy import deepcopy
 import itertools
@@ -75,7 +73,6 @@ class optimizer:
             #add nodes to factor in pipeline
             self.addPipelineNodes()
             #self.g.drawGraph()
-            #self.g.drawGraph()
             self.g.printNodeLatency()
             #fill-in the IPReuseTable:
             self.IPReuseTable = dict()
@@ -112,7 +109,7 @@ class optimizer:
         """
         nodes_list = self.g.topological_sort()
         for node in nodes_list:
-            if node.mappedIP is None or node.mappedIP == "Software":
+            if node.__class__.__name__ != "layer":
                  continue
             if node.mappedIP not in self.IPReuseTable:
                self.IPReuseTable[node.mappedIP] = []
@@ -137,7 +134,7 @@ class optimizer:
         #cannot directly iterate on original edges, since need to modify the graph
         pipeNode_list = []
         for (s_node, t_node) in self.g.G.edges():
-            if self.g.isPipelined(s_node, t_node):
+            if isPipelined(s_node, t_node):
             #if s_node.mappedIP != t_node.mappedIP and \
             #(s_node.mappedIP != "Software" and t_node.mappedIP != "Software"): #Two layers are pipelinable
                 #The neg_latency is the difference between the source node finishes the whole layer
@@ -238,7 +235,7 @@ class optimizer:
                 if n.latency > latency_Budget:
                     return "failed", violation_path
                 for m in path[n][-2::-1]:
-                    if m.type == "pipeNode" or m.type == "sepNode" or m.type == "joinNode":
+                    if m.type == "pipeNode":
                         continue
                     violation_path += [m]
                     if endtime - startingTime[m] > latency_Budget:

@@ -56,3 +56,18 @@ def printViolationPath(vioPath):
     for i in vioPath:
         print i.name, "-->"
         
+def isPipelined(s_node, t_node):
+    """
+    The function to check whether two nodes are pipelined
+    Args:
+        s_node: The source node 
+        t_node: The target node
+    Return:
+        bool: True if they are pipelined, False otherwise
+    """
+
+    if s_node.mappedIP.type == "Software":
+        return False
+    if t_node.mappedIP.type == "Software":
+        return False
+    return s_node.mappedIP != t_node.mappedIP
