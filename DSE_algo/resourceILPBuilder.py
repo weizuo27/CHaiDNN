@@ -1,6 +1,7 @@
 import matplotlib.pyplot as plt
 import networkx as nx
 import cvxpy as cvx
+from utils import *
 
 
 class resourceILPBuilder():
@@ -114,6 +115,19 @@ class resourceILPBuilder():
         self.constraints.append(exp_FF <= self.FF_budget)
         self.constraints.append(exp_LUT <= self.LUT_budget)
         self.constraints.append(exp_BW <= self.BW_budget)
+
+        #4. The IP specific resource constraints
+        for layer_type in self.mappingVariables:
+            queue = layerQueue[layer_type]
+            IP_queue = IP_table[layer_type]
+            for i in range(len(queue)):
+                for j in range(len(IP_queue)):
+                    #FIXME: Now it is hard-coded !!!!
+                    if queue[i].type == "Convolution" or queue[i].type == "Convolution_g":
+                        resourceConstraints = resourceConstr(queue[i], IP_queue[j])
+                        #print resourceConstraints
+                        self.constraints.append(self.mappingVariables[layer_type][i][j] <= float(IP_queue[j].paramList[2]) / resourceConstraints[0]) #XI_IBUFF_DEPTH 
+                        self.constraints.append(self.mappingVariables[layer_type][i][j] <= float(IP_queue[j].paramList[3]) / resourceConstraints[1]) #XI_OBUFF_DEPTH 
 
     def addViolationPaths(self, violation_path, layerQueue, IP_table):
         """

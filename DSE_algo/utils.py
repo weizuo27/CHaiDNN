@@ -1,4 +1,5 @@
 from IP import IP
+import math
 from copy import deepcopy
 def constructIPTable(IPs, BRAM_budget, DSP_budget, FF_budget, LUT_budget, BW_budget):
     '''
@@ -76,10 +77,10 @@ def generateIPs(fileName):
     f = open(fileName, "r")
     next(f) #Skip the first line since the first line is just the name of each column
     for l in f:
-        IP_name, layer_type, BRAM, DSP, FF, LUT, BW, baseLat, XI_KER_PROC, XI_PIX_PROC, XI_WEIGHTBUFF_DEPTH \
-    = (l.replace(" ", "")).split(",")
+        IP_name, layer_type, BRAM, DSP, FF, LUT, BW, baseLat, XI_KER_PROC, XI_PIX_PROC, \
+        XI_IBUFF_DEPTH, XI_OBUFF_DEPTH, XI_WEIGHTBUFF_DEPTH  = (l.replace(" ", "")).split(",")
         IP_inst = IP(IP_name, layer_type, map(int, [BRAM, DSP, FF, LUT, BW]), int(baseLat), 
-                [XI_KER_PROC, XI_PIX_PROC, XI_WEIGHTBUFF_DEPTH])
+                [XI_KER_PROC, XI_PIX_PROC, XI_IBUFF_DEPTH, XI_OBUFF_DEPTH, XI_WEIGHTBUFF_DEPTH])
         IPs.append(IP_inst)
     f.close()
     return IPs
@@ -104,3 +105,28 @@ def isPipelined(s_node, t_node):
     if t_node.mappedIP.type == "Software":
         return False
     return s_node.mappedIP != t_node.mappedIP
+
+def resourceConstr(layer, ip):
+    """
+        Function to generate CHaiDNN specific constraints about the buffer size.
+        The following must be satisified for correct functionality
+        
+        inWidth*ceil(indepth/32)*(filterheight+stride) < XI_ISTGBUFFDEPTH*2
+        outWidth*ceil(outdepth/32) < XI_OSTGBUFFDEPTH*2
+    """
+
+    assert(layer.type == "Convolution" or layer.type == "Convolution_g"), "Unsupported layer type"
+
+    const = [] 
+    in_depth, in_height, in_width = map(int, layer.input_params[1:4])
+    out_depth, out_height, out_width = map(int, layer.output_params[1:4])
+    cout, cin, kw, kh = map(int, (layer.params[0].split("=")[1]).split("x"))
+    S = int(layer.params[1].split("=")[1])
+
+    #FIXME: This 32 may need to be changed later, should not be fixed
+    const.append(math.ceil(in_width * math.ceil(float(in_depth)/32) * (kh + S) / 2))
+    const.append(math.ceil(out_width * math.ceil(float(out_depth)/32) /2))
+
+    return const
+    
+

@@ -1,9 +1,9 @@
-fileTitle = ["ID", "TYPE", "BRAM", "DSP", "FF", "LUT", "BW", "Latency", "XI_KER_PROC", "XI_PIX_PROC", "XI_WEIGHTBUFF_DEPTH"]
+fileTitle = ["ID", "TYPE", "BRAM", "DSP", "FF", "LUT", "BW", "Latency", "XI_KER_PROC", "XI_PIX_PROC", "XI_IBUFF_DEPTH", "XI_OBUFF_DEPTH", "XI_WEIGHTBUFF_DEPTH"]
 writeList =[fileTitle]
 IP_TYPE1 = "Convolution"
 IP_TYPE2 = "Convolution_g"
 
-ibufferArray=[2048, 4096, 8192]
+ibufferArray=[512, 1024, 2048, 4096, 8192]
 obufferArray=[512,1024,2048]
 wbufferArray=[512,1024]
 kelsize = [8,16]
@@ -42,7 +42,7 @@ for ibuffersize in ibufferArray:
                         resource_list.append(line.replace(" ", "").split(":")[1]) 
 
                     LUT, FF, DSP, BRAM = resource_list
-                    writeList.append([ID, IP_TYPE1, BRAM, DSP, FF, LUT, BW, Latency, str(ker), str(proc), str(wbuffersize)]) 
+                    writeList.append([ID, IP_TYPE1, BRAM, DSP, FF, LUT, BW, Latency, str(ker), str(proc), str(ibuffersize), str(obuffersize), str(wbuffersize)]) 
 
 
 for ibuffersize in ibufferArray:
@@ -72,13 +72,13 @@ for ibuffersize in ibufferArray:
 
                     LUT, FF, DSP, BRAM = resource_list
                     writeList.append([ID, IP_TYPE2, str(int(BRAM)*2), str(int(DSP)*2), str(int(FF)*2), str(int(LUT)*2), str(int(BW)*2), str(int(Latency)*2),\
-                            str(int(ker) * 2), str(proc*2), str(wbuffersize *2)]) 
+                            str(int(ker) * 2), str(proc*2), str(ibuffersize * 2), str(obuffersize * 2), str(wbuffersize *2)]) 
 #print writeList
 fw = open(fileName_w, 'w') 
 
 for l in writeList:
     fw.write(", ".join(l) + "\n")
 
-l = ["IP"+str(idx+1), "Pooling", "81", "34", "9475", "7511", "1", "279", "1", "1", "1"]
+l = ["IP"+str(idx+1), "Pooling", "81", "34", "9475", "7511", "1", "279", "1", "1", "1", "1", "1"]
 fw.write(", ".join(l) + "\n")
 fw.close()        

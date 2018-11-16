@@ -45,9 +45,9 @@ class IP():
         if self.type == "Convolution" or self.type == "Convolution_g":
             #dcode the parameter:
             cout, cin, kw, kh, S, padding, group = paramList
-            print "cout, cin, kw, kh, S, padding, group ", \
-            cout, cin, kw, kh, S, padding, group 
-            XI_KER_PROC, XI_PIX_PROC, XI_WEIGHTBUFF_DEPTH = self.paramList
+
+            XI_KER_PROC, XI_PIX_PROC, XI_IBUFF_DEPTH, \
+            XI_OBUFF_DEPTH, XI_WEIGHTBUFF_DEPTH = self.paramList
 
             lat = computeLatency(
                     int(in_height),
