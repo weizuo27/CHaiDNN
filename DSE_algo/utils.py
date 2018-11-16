@@ -117,7 +117,6 @@ def resourceConstr(layer, ip):
 
     assert(layer.type == "Convolution" or layer.type == "Convolution_g"), "Unsupported layer type"
 
-    const = [] 
     in_depth, in_height, in_width = map(int, layer.input_params[1:4])
     out_depth, out_height, out_width = map(int, layer.output_params[1:4])
     cout, cin, kw, kh = map(int, (layer.params[0].split("=")[1]).split("x"))
@@ -129,4 +128,5 @@ def resourceConstr(layer, ip):
 
     return const
     
+
 

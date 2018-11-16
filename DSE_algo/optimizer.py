@@ -25,6 +25,7 @@ class optimizer:
                 key: layer_type; value: The list of IPs of that type
             IPReuseTable: The dictionary to describe that for each IP, which layer(s) are using it
                 key: IP; Value: The list of layers that use it, in the topological sorted order
+            latency_table: Dictionary. Key: the latency, value: the list of violation paths that achieves the latency
         """
         #Hard code the hardware supported layers
         self.hw_layers = {
@@ -49,6 +50,7 @@ class optimizer:
         #2. Loop body
         firstIter = True
         oneIter = 0
+        self.latency_table = dict()
 #while(oneIter < 1): #For debugging purpose
         while(-self.latency_lb+self.latency_ub> EPS):
             print oneIter, "iteration\n"
@@ -61,6 +63,12 @@ class optimizer:
                 self.rb.violation_constraints = []
                 self.new_latency_target = (self.latency_lb + self.latency_ub)/2 
                 print "new_ub", self.latency_ub, "new_lb", self.latency_lb, "new target,", self.new_latency_target
+                #re-add in the violation constraints
+                print "Re add the violation paths"
+                for lat in self.latency_table:
+                    if lat > self.new_latency_target:
+                        for violation_path in self.latency_table[lat]:
+                            self.rb.addViolationPaths(violation_path, self.g.layerQueue, self.IP_table)
                 firstIter = False
                 oneIter += 1
                 continue
@@ -73,8 +81,9 @@ class optimizer:
             #add nodes to factor in pipeline
             self.addPipelineNodes()
             #self.g.drawGraph()
-            self.g.printNodeLatency()
+            #self.g.printNodeLatency()
             #fill-in the IPReuseTable:
+            print(self.g)
             self.IPReuseTable = dict()
             self.constructIPReuseTable()
             #add the the edges to factor in the IP reuse
@@ -90,8 +99,13 @@ class optimizer:
                 print "new_ub", self.latency_ub, "new_lb", self.latency_lb, "new target,", self.new_latency_target
             else: #Failed
                 print "scheduling", status
-                endTime, vioPath = ret
+                endTime, vioPath, vioLat = ret
                 printViolationPath(vioPath)
+                #update the latency_table
+                if vioLat in self.latency_table:
+                    self.latency_table[vioLat].append(vioPath)
+                else:
+                    self.latency_table[vioLat] = [vioPath]
                 #However, if the new solution is better than the achieved solution, we still can 
                 # update the ub and the achieved solution
                 if endTime < self.latency_achieved:
@@ -244,6 +258,7 @@ class optimizer:
                     violation_path = [n]
                     if n.latency > latency_Budget:
                         status = "failed"
+                        violate_latency = n.latency
                     else:
                         for m in path[n][-2::-1]:
                             if m.type == "pipeNode":
@@ -251,6 +266,7 @@ class optimizer:
                             violation_path += [m]
                             if endtime - startingTime[m] > latency_Budget:
                                 status = "failed"
+                                violate_latency = endtime-startingTime[m]
                                 break
             if endtime >= self.latency_achieved:
                 break
@@ -258,7 +274,7 @@ class optimizer:
         if status == "undecided":
             return "success", endtime
         else:
-            return status, [endtime, violation_path]
+            return status, [endtime, violation_path, violate_latency]
 
     def updateResourceILPBuilder(self, violation_path):
         """

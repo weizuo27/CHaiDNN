@@ -64,7 +64,6 @@ class IP():
                     int(XI_WEIGHTBUFF_DEPTH)
                     )
 
-            print "estimate lat is ", lat
             return lat
             #return self.BaseLat * cout * cin * n_row * n_col
         elif self.type == "Pooling":

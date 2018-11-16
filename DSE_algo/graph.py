@@ -129,14 +129,12 @@ class layer:
             self.lat_one_row = self.IP_latency
         else:
             for prevLayer in prevLayers:
-                print "prevLayer ", prevLayer.name, "current layer ", self.name, "isPipelined ", isPipelined(prevLayer, self)
                 if not isPipelined(prevLayer, self):
                     self.lat_one_row = self.IP_latency
                 elif self.lat_one_row == None:
                     self.lat_one_row = max(self.IP_latency, prevLayer.computeNRows(S))
                 else:
                     self.lat_one_row = max(self.lat_one_row, prevLayer.computeNRows(S))
-                print self.lat_one_row
 
     def computeNRows(self, n):
         """

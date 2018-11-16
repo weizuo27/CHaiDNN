@@ -169,17 +169,21 @@ class resourceILPBuilder():
         """
         self.prob.solve(solver = "GUROBI")
         return self.prob.status == "optimal"
-    def printSolution(self):
+    def printSolution(self, level = 1):
+        """
+            Level of the detail level of the solution
+        """
         print("status:", self.prob.status)
         print("optimal value", self.prob.value)
-        for layer_type in self.mappingVariables:
-            print layer_type, ":"
-            for i, row in enumerate(self.mappingVariables[layer_type]):
-                for j, elem in enumerate(row):
-                    print "mapping", i, j, elem.name(), elem.value
-                print "\n"
-            for j, res in enumerate(self.resourceVariables[layer_type]):
-                print "resource", j, res.value
+        if(level > 1):
+            for layer_type in self.mappingVariables:
+                print layer_type, ":"
+                for i, row in enumerate(self.mappingVariables[layer_type]):
+                    for j, elem in enumerate(row):
+                        print "mapping", i, j, elem.name(), elem.value
+                    print "\n"
+                for j, res in enumerate(self.resourceVariables[layer_type]):
+                    print "resource", j, res.value
 
 
 #rb = resourceILPBuilder(BRAM_budget, DSP_budget, FF_budget, LUT_budget, BW_budget)
