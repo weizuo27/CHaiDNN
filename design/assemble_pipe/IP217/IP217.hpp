@@ -1,4 +1,4 @@
-#include "maxpool_config.h"
+#include "IP217_config.h"
 #include <ap_int.h>
 
 
@@ -9,7 +9,11 @@
 #define PRINT_OUTPUT_LINEBUFFER 0
 #define PRINT_INPUT_INDEX 0
 #define DBG_INFO 0
-template<class indata, int DPACK>
+#define PRINT_OUTPUT_DDR_ADDR 0
+
+namespace IP217{
+
+template< int DPACK>
 void ReadInBuffer_Pooling(
     GMEM_MAXPOOLTYPE* inMem1,
     GMEM_MAXPOOLTYPE* inMem2,
@@ -17,7 +21,7 @@ void ReadInBuffer_Pooling(
     hls::stream< GMEM_MAXPOOLTYPE > &inStream2,
     sRowIdx_t startRow,
     sRowIdx_t endRow,
-    uPlnIdx_t depth, 
+    uPlnIdxPool_t depth, 
     uRowIdx_t inHeight,
     uRowIdx_t inWidth,
     uPixelIdx_t planePackNum,
@@ -40,52 +44,52 @@ void ReadInBuffer_Pooling(
     inLineBuffAddr_t pixelsTotal;
 
 
-    if(startRowSat > endRowSat)
-        pixelsTotal =  0;
-    else
-        pixelsTotal = (endRowSat-startRowSat)* inWidth;
+    if(startRowSat > endRowSat) startRowSat=endRowSat;
+ 
 
-    ap_uint<16> ddrAddressOffset=startRowSat*inWidth;
-    inLineBuffAddr_t lineBufferAddressOffset=startRowSat*inWidth*planePackNum;
 
-    
-     
-    for( uPlnIdx_t depthIdx=0; depthIdx < depth; depthIdx+=DPACK )
+
+    for(sRowIdx_t startRowIdx=startRowSat;startRowIdx<endRowSat;startRowIdx++)
     {
-        ap_uint<16> ddrAddress=ddrAddressOffset;
-        inLineBuffAddr_t lineBufferAddress=lineBufferAddressOffset;
+        ap_uint<16> ddrAddressOffset=startRowIdx*inWidth;
+        inLineBuffAddr_t lineBufferAddressOffset=startRowIdx*inWidth*planePackNum;
 
-        for(ap_uint<16> pixelIdx=0; pixelIdx < pixelsTotal; pixelIdx++,ddrAddress++, lineBufferAddress+=planePackNum)
+        for( uPlnIdxPool_t depthIdx=0; depthIdx < depth; depthIdx+=DPACK )
         {
-            #pragma HLS pipeline
-            #pragma HLS dependence variable=lineBuffer1 intra false
-			#pragma HLS dependence variable=lineBuffer2 intra false
+            ap_uint<16> ddrAddress=ddrAddressOffset;
+            inLineBuffAddr_t lineBufferAddress=lineBufferAddressOffset;
+            for(ap_uint<16> pixelIdx=0; pixelIdx < inWidth; pixelIdx++,ddrAddress++, lineBufferAddress+=planePackNum)
+            {
+                #pragma HLS pipeline
+                #pragma HLS dependence variable=lineBuffer1 intra false
+                #pragma HLS dependence variable=lineBuffer2 intra false
 
-            GMEM_MAXPOOLTYPE temp1, temp2;
-            if(inStreamFlag)
-            {
-                inStream1>>temp1;
-                inStream2>>temp2;
+                GMEM_MAXPOOLTYPE temp1, temp2;
+                if(inStreamFlag)
+                {
+                    inStream1>>temp1;
+                    inStream2>>temp2;
+                }
+                else
+                {
+                    temp1=inMem1[ddrAddress];
+                    temp2=inMem2[ddrAddress];
+                }
+                
+                for(int i=0;i<DPACK;i++)
+                {
+                #pragma HLS unroll
+                    lineBuffer1[i][lineBufferAddress]=temp1.range(i*8+7,i*8);
+                }
+                for(int i=0;i<DPACK;i++)
+                {
+                #pragma HLS unroll
+                    lineBuffer2[i][lineBufferAddress]=temp2.range(i*8+7,i*8);
+                }
             }
-            else
-            {
-                temp1=inMem1[ddrAddress];
-                temp2=inMem2[ddrAddress];
-            }
-            
-            for(int i=0;i<DPACK;i++)
-            {
-            #pragma HLS unroll
-                lineBuffer1[i][lineBufferAddress]=temp1.range(i*8+7,i*8);
-            }
-            for(int i=0;i<DPACK;i++)
-            {
-            #pragma HLS unroll
-                lineBuffer2[i][lineBufferAddress]=temp2.range(i*8+7,i*8);
-            }
+            ddrAddressOffset+=ddrPlaneStep;
+            lineBufferAddressOffset++;
         }
-        ddrAddressOffset+=ddrPlaneStep;
-        lineBufferAddressOffset++;
     }
 #if PRINT_INPUT_LINEBUFFER
     for(int i=0;i<IN_LINE_BUFFER_SIZE;i++)
@@ -99,7 +103,7 @@ void ReadInBuffer_Pooling(
 }
 
 //* quick design output lineBuffer mode
-template<class outdata, int DPACK>
+template< int DPACK>
 void WriteOutBuffer_Pooling(
     GMEM_MAXPOOLTYPE* outMem1,
     GMEM_MAXPOOLTYPE* outMem2,
@@ -138,9 +142,10 @@ void WriteOutBuffer_Pooling(
 
     ap_uint<32> lineBufferAddressOffset=startRowSat*outWidth*planePackNum; // it is a rounding address
 
+    
+     
 
-
-    for( uPlnIdx_t depthIdx=0; depthIdx < depth; depthIdx+=DPACK ) 
+    for( uPlnIdxPool_t depthIdx=0; depthIdx < depth; depthIdx+=DPACK ) 
     {
         ap_uint<32> ddrAddress=ddrAddressOffset;
         outLineBuffAddr_t lineBufferAddress=lineBufferAddressOffset;
@@ -161,15 +166,13 @@ void WriteOutBuffer_Pooling(
             {
                 temp2.range(i*8+7,i*8)=lineBuffer2[i][lineBufferAddress];
             }
-                if(ddrAddress==0) 
-                {
-                    printf("%d %d %d %d\n", (int) startRowSat, (int) (endRowSat),(int) ddrAddressOffset , (int) lineBufferAddressOffset);
-                                for(int c=0;c<16;c++)
-                    {
-                        printf("%02x ",(unsigned char) temp1.range(c*8+7,c*8) );
-                    }
-                    printf("\n");
-                }
+            #if PRINT_OUTPUT_DDR_ADDR
+                printf("Addr:%6d, Pix[%2d %2d], PlanIdx%2d\n",
+                (int) ddrAddress, 
+                (int) (ddrAddress%(outWidth*outHeight)/outWidth),
+                (int) (ddrAddress%(outWidth*outHeight)%outWidth),
+                (int) (ddrAddress/(outWidth*outHeight)) );
+            #endif
             if(outStreamFlag)
             {
                 outStream1<<temp1;
@@ -196,7 +199,27 @@ void WriteOutBuffer_Pooling(
     #endif
 }
 
-
+template< int DPACK> 
+void bypassFunc(
+    hls::stream< ap_uint<128> > & inStream1,
+    hls::stream< ap_uint<128> > & inStream2,
+    hls::stream< ap_uint<128> > & outStream1,
+    hls::stream< ap_uint<128> > & outStream2,
+    int bypassRun
+)
+{
+    printf("bypassing Number: %d\n", bypassRun);
+    for(int i=0;i<bypassRun;i++)
+        {
+        #pragma HLS pipeline
+            ap_uint<128> temp1;
+            ap_uint<128> temp2;
+            inStream1>>temp1;
+            inStream2>>temp2;
+            outStream1<<temp1;
+            outStream2<<temp2;
+        }
+}
 
 //* this one is designed specifically for row by row output
 template<int DPACK>
@@ -212,7 +235,7 @@ uRowIdx_t outWidth,
 uRowIdx_t outHeight,
 uRowIdx_t inWidth,
 uRowIdx_t inHeight,
-uPlnIdx_t planes,
+uPlnIdxPool_t planes,
 uDimPool_t poolWinH,
 uDimPool_t poolWinW,
 uDimPool_t poolStrideH,
@@ -270,7 +293,7 @@ uPixelIdx_t planePackNum
     ap_int<24> sum2[DPACK];
 #pragma HLS ARRAY_PARTITION variable=sum2 complete dim=1
 
-    for(uPlnIdx_t planeIdx=0; planeIdx<planes; planeIdx+=DPACK)
+    for(uPlnIdxPool_t planeIdx=0; planeIdx<planes; planeIdx+=DPACK)
     {
         ap_int<10> inRowIdx=inStartRow;
         ap_int<10> inColIdx=-wPad;
@@ -445,188 +468,183 @@ uPixelIdx_t planePackNum
 
 
 
-template<class in_data_t, class out_data_t, int DPACK>
-void PoolingLayerLineBuffer
-(
-    GMEM_MAXPOOLTYPE* inMem1,
-    GMEM_MAXPOOLTYPE* inMem2,
-    hls::stream< GMEM_MAXPOOLTYPE > &inStream1,
-    hls::stream< GMEM_MAXPOOLTYPE > &inStream2,
-    GMEM_MAXPOOLTYPE* outMem1,
-    GMEM_MAXPOOLTYPE* outMem2,
-    hls::stream< GMEM_MAXPOOLTYPE > &outStream1,
-    hls::stream< GMEM_MAXPOOLTYPE > &outStream2,
-    int* scalarPoolArgs
-)
-{
+// template<class in_data_t, class out_data_t, int DPACK>
+// void PoolingLayerLineBuffer
+// (
+//     GMEM_MAXPOOLTYPE* inMem1,
+//     GMEM_MAXPOOLTYPE* inMem2,
+//     hls::stream< GMEM_MAXPOOLTYPE > &inStream1,
+//     hls::stream< GMEM_MAXPOOLTYPE > &inStream2,
+//     GMEM_MAXPOOLTYPE* outMem1,
+//     GMEM_MAXPOOLTYPE* outMem2,
+//     hls::stream< GMEM_MAXPOOLTYPE > &outStream1,
+//     hls::stream< GMEM_MAXPOOLTYPE > &outStream2,
+//     int* scalarPoolArgs
+// )
+// {
 
 
-    ap_int<8> outBuffer1[DPACK][OUT_LINE_BUFFER_SIZE];
-    ap_int<8> outBuffer2[DPACK][OUT_LINE_BUFFER_SIZE];
+//     ap_int<8> outBuffer1[DPACK][OUT_LINE_BUFFER_SIZE];
+//     ap_int<8> outBuffer2[DPACK][OUT_LINE_BUFFER_SIZE];
 
-#pragma HLS array_partition variable=outBuffer1 dim=1 complete
-#pragma HLS array_partition variable=outBuffer2 dim=1 complete
+// #pragma HLS array_partition variable=outBuffer1 dim=1 complete
+// #pragma HLS array_partition variable=outBuffer2 dim=1 complete
 
-#pragma HLS resource variable=ourBuffer1 core=RAM_S2P_BRAM
-#pragma HLS resource variable=ourBuffer2 core=RAM_S2P_BRAM
+// #pragma HLS resource variable=ourBuffer1 core=RAM_S2P_BRAM
+// #pragma HLS resource variable=ourBuffer2 core=RAM_S2P_BRAM
 
-    ap_int<8> inBuffer1[DPACK][IN_LINE_BUFFER_SIZE];
-    ap_int<8> inBuffer2[DPACK][IN_LINE_BUFFER_SIZE];
+//     ap_int<8> inBuffer1[DPACK][IN_LINE_BUFFER_SIZE];
+//     ap_int<8> inBuffer2[DPACK][IN_LINE_BUFFER_SIZE];
 
-#pragma HLS array_partition variable=inBuffer1 dim=1 complete
-#pragma HLS array_partition variable=inBuffer2 dim=1 complete
-#pragma HLS resource variable=inBuffer1 core=RAM_S2P_BRAM
-#pragma HLS resource variable=inBuffer2 core=RAM_S2P_BRAM
+// #pragma HLS array_partition variable=inBuffer1 dim=1 complete
+// #pragma HLS array_partition variable=inBuffer2 dim=1 complete
+// #pragma HLS resource variable=inBuffer1 core=RAM_S2P_BRAM
+// #pragma HLS resource variable=inBuffer2 core=RAM_S2P_BRAM
 
-    int scalar_pool_args[32];
-    for(int i=0;i<32;i++)
-    {
-        scalar_pool_args[i]=scalarPoolArgs[i];
-    }
+//     int scalar_pool_args[32];
+//     for(int i=0;i<32;i++)
+//     {
+//         scalar_pool_args[i]=scalarPoolArgs[i];
+//     }
 
-    uRowIdx_t in_h        	= (uRowIdx_t)scalar_pool_args[0];
-	uRowIdx_t in_w        	= (short)scalar_pool_args[1];
-	uRowIdx_t out_h       	= (short)scalar_pool_args[2];
-	uRowIdx_t out_w      	= (short)scalar_pool_args[3];
-	uPlnIdx_t n_planes    	= (short)scalar_pool_args[4];
-	uDimPool_t ps_h	  	    = (short)scalar_pool_args[5];
-	uDimPool_t ps_w	  	    = (short)scalar_pool_args[6];
-	uDimPool_t pwin_h	  	= (short)scalar_pool_args[7];
-	uDimPool_t pwin_w	  	= (short)scalar_pool_args[8];
-	bool avg_pool	= (unsigned char)scalar_pool_args[9];
-	uDimPool_t pad	    = (unsigned char)scalar_pool_args[10];
-	ap_uint<8> one_by_diviser	= (unsigned char)scalar_pool_args[11];
-	bool conv3ds	= (bool)scalar_pool_args[12];
-	bool relu		= (bool)scalar_pool_args[13];
-	ap_uint<5> outshift	= (ap_uint<5>)scalar_pool_args[14];
-    uRowIdx_t rowStep = (uRowIdx_t) scalar_pool_args[15];
-    uRowIdx_t initialReadRows = (uRowIdx_t) scalar_pool_args[16];
-    ap_uint<32> inDDRPlaneStep= (ap_uint<32> ) scalar_pool_args[17];
-    ap_uint<32> outDDRPlaneStep= (ap_uint<32> ) scalar_pool_args[18];
+//     uRowIdx_t in_h        	= (uRowIdx_t)scalar_pool_args[0];
+// 	uRowIdx_t in_w        	= (short)scalar_pool_args[1];
+// 	uRowIdx_t out_h       	= (short)scalar_pool_args[2];
+// 	uRowIdx_t out_w      	= (short)scalar_pool_args[3];
+// 	uPlnIdxPool_t n_planes    	= (short)scalar_pool_args[4];
+// 	uDimPool_t ps_h	  	    = (short)scalar_pool_args[5];
+// 	uDimPool_t ps_w	  	    = (short)scalar_pool_args[6];
+// 	uDimPool_t pwin_h	  	= (short)scalar_pool_args[7];
+// 	uDimPool_t pwin_w	  	= (short)scalar_pool_args[8];
+// 	bool avg_pool	= (unsigned char)scalar_pool_args[9];
+// 	uDimPool_t pad	    = (unsigned char)scalar_pool_args[10];
+// 	ap_uint<8> one_by_diviser	= (unsigned char)scalar_pool_args[11];
+// 	bool conv3ds	= (bool)scalar_pool_args[12];
+// 	bool relu		= (bool)scalar_pool_args[13];
+// 	ap_uint<5> outshift	= (ap_uint<5>)scalar_pool_args[14];
+//     uRowIdx_t rowStep = (uRowIdx_t) scalar_pool_args[15];
+//     uRowIdx_t initialReadRows = (uRowIdx_t) scalar_pool_args[16];
+//     ap_uint<32> inDDRPlaneStep= (ap_uint<32> ) scalar_pool_args[17];
+//     ap_uint<32> outDDRPlaneStep= (ap_uint<32> ) scalar_pool_args[18];
 
-    bool inStreamFlag= scalar_pool_args[19];
-    bool outStreamFlag= scalar_pool_args[20];
+//     bool inStreamFlag= scalar_pool_args[19];
+//     bool outStreamFlag= scalar_pool_args[20];
 
-    sPlnPackIdx_t planePackNum;
-    if(n_planes%16)
-        planePackNum= (n_planes>>4)+1;
-    else
-        planePackNum= n_planes>>4;
+//     sPlnPackIdx_t planePackNum;
+//     if(n_planes%16)
+//         planePackNum= (n_planes>>4)+1;
+//     else
+//         planePackNum= n_planes>>4;
 
 
-    sRowIdx_t readStartRow= 0;
-    sRowIdx_t inStartRow=-pad;
+//     sRowIdx_t readStartRow= 0;
+//     sRowIdx_t inStartRow=-pad;
 
-    uRowIdx_t inRowStep= rowStep*ps_h;
+//     uRowIdx_t inRowStep= rowStep*ps_h;
     
    
 
-    //** first tiling readin*//
-    ReadInBuffer_Pooling<in_data_t,16>
-    (
-        inMem1,
-        inMem2,
-        inStream1,
-        inStream2,
-        readStartRow,
-        readStartRow+initialReadRows,
-        n_planes,
-        in_h,
-        in_w,
-        planePackNum,
-        inDDRPlaneStep,
-        inBuffer1,
-        inBuffer2,
-        inStreamFlag
-    );
-    readStartRow+=initialReadRows;
+//     //** first tiling readin*//
+//     ReadInBuffer_Pooling<16>
+//     (
+//         inMem1,
+//         inMem2,
+//         inStream1,
+//         inStream2,
+//         readStartRow,
+//         readStartRow+initialReadRows,
+//         n_planes,
+//         in_h,
+//         in_w,
+//         planePackNum,
+//         inDDRPlaneStep,
+//         inBuffer1,
+//         inBuffer2,
+//         inStreamFlag
+//     );
+//     readStartRow+=initialReadRows;
 
-    sRowIdx_t writeStartRow=-rowStep;
+//     sRowIdx_t writeStartRow=-rowStep;
 
-    for(uRowIdx_t outStartRow=0, outEndRow=rowStep; outStartRow<out_h;
-            outStartRow+=rowStep)
-    {
-#pragma HLS dependence variable=inBuffer2 intra false
-#pragma HLS dependence variable=inBuffer1 intra false
-#pragma HLS dependence variable=outBuffer1 intra false
-#pragma HLS dependence variable=outBuffer2 intra false
+//     for(uRowIdx_t outStartRow=0, outEndRow=rowStep; outStartRow<out_h;
+//             outStartRow+=rowStep)
+//     {
+// #pragma HLS dependence variable=inBuffer2 intra false
+// #pragma HLS dependence variable=inBuffer1 intra false
+// #pragma HLS dependence variable=outBuffer1 intra false
+// #pragma HLS dependence variable=outBuffer2 intra false
         
-        ProcessPoolingRow<DPACK>(
-        inBuffer1,inBuffer2,
-        outBuffer1,outBuffer2,
-        outStartRow,
-        outStartRow+rowStep,
-        inStartRow,
-        out_w,
-        out_h,
-        in_w,
-        in_h,
-        n_planes,
-        pwin_h,
-        pwin_w,
-        ps_h,
-        ps_w,
-        one_by_diviser,
-        outshift,
-        pad,
-        avg_pool,
-        planePackNum
-        );
-        inStartRow+=inRowStep;
+//         ProcessPoolingRow<DPACK>(
+//         inBuffer1,inBuffer2,
+//         outBuffer1,outBuffer2,
+//         outStartRow,
+//         outStartRow+rowStep,
+//         inStartRow,
+//         out_w,
+//         out_h,
+//         in_w,
+//         in_h,
+//         n_planes,
+//         pwin_h,
+//         pwin_w,
+//         ps_h,
+//         ps_w,
+//         one_by_diviser,
+//         outshift,
+//         pad,
+//         avg_pool,
+//         planePackNum
+//         );
+//         inStartRow+=inRowStep;
 
 
-        WriteOutBuffer_Pooling<out_data_t,DPACK>
-        (
-            outMem1,outMem2,
-            outStream1,
-            outStream2,
-            writeStartRow,writeStartRow+rowStep, n_planes,out_h,out_w,
-            planePackNum,outDDRPlaneStep,outBuffer1,outBuffer2,
-            outStreamFlag
-        );
-        writeStartRow+=rowStep;
+//         WriteOutBuffer_Pooling<DPACK>
+//         (
+//             outMem1,outMem2,
+//             outStream1,
+//             outStream2,
+//             writeStartRow,writeStartRow+rowStep, n_planes,out_h,out_w,
+//             planePackNum,outDDRPlaneStep,outBuffer1,outBuffer2,
+//             outStreamFlag
+//         );
+//         writeStartRow+=rowStep;
             
-        ReadInBuffer_Pooling<in_data_t,DPACK>
-        (
-        inMem1,
-        inMem2,
-        inStream1,
-        inStream2,
-            readStartRow,
-            readStartRow+inRowStep,
-            n_planes,
-            in_h,
-            in_w,
-            planePackNum,
-            inDDRPlaneStep,
-            inBuffer1,
-            inBuffer2,
-            inStreamFlag
-        );    
-        readStartRow+=inRowStep;
-    }
+//         ReadInBuffer_Pooling<DPACK>
+//         (
+//         inMem1,
+//         inMem2,
+//         inStream1,
+//         inStream2,
+//             readStartRow,
+//             readStartRow+inRowStep,
+//             n_planes,
+//             in_h,
+//             in_w,
+//             planePackNum,
+//             inDDRPlaneStep,
+//             inBuffer1,
+//             inBuffer2,
+//             inStreamFlag
+//         );    
+//         readStartRow+=inRowStep;
+//     }
 
-    WriteOutBuffer_Pooling<out_data_t,DPACK>
-    (
+//     WriteOutBuffer_Pooling<DPACK>
+//     (
         
-        outMem1,outMem2,
-        outStream1,
-        outStream2,
-        writeStartRow,writeStartRow+rowStep, n_planes,out_h,out_w,
-        planePackNum,outDDRPlaneStep,outBuffer1,outBuffer2,
-        outStreamFlag
-    );
+//         outMem1,outMem2,
+//         outStream1,
+//         outStream2,
+//         writeStartRow,writeStartRow+rowStep, n_planes,out_h,out_w,
+//         planePackNum,outDDRPlaneStep,outBuffer1,outBuffer2,
+//         outStreamFlag
+//     );
+// }
 
 
-    
 
 
 }
-
-
-
-
-
 
 #undef DBG_INFO
 

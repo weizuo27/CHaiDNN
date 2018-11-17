@@ -46,9 +46,9 @@ PROJ_PATH   := ..
 DIET_CHAI_Z	     ?= 0
 DIET_CHAI_ZUPLUS ?= 0
 
-CONV_ENABLE   ?= 1
+CONV_ENABLE   ?= 0
 POOL_ENABLE   ?= 1
-DECONV_ENABLE ?= 1
+DECONV_ENABLE ?= 0
 
 ifeq (${DIET_CHAI_Z}, 1)
 	POOL_ENABLE   := 0
@@ -68,7 +68,7 @@ CONV_INC_DIRS   := include src
 POOL_INC_DIRS   := include src
 DECONV_INC_DIRS := include src
 CONV_INCS       := ${CONV_INC_DIRS:%=-I${SRC_PATH}/conv_pipe/%}
-POOL_INCS       := ${POOL_INC_DIRS:%=-I${SRC_PATH}/pool/%}
+POOL_INCS       := ${POOL_INC_DIRS:%=-I${SRC_PATH}/pool_pipe/%}
 DECONV_INCS     := ${DECONV_INC_DIRS:%=-I${SRC_PATH}/deconv/%}
 # Below path must have absolute path
 CONV_SCRIPTS_PATH := $(shell pwd)/${PROJ_PATH}/conv_pipe/scripts
@@ -133,8 +133,8 @@ xi_convolution_top.o: ${SRC_PATH}/conv_pipe/src/xi_convolution_top.cpp
 	${CC} ${SDSFLAGS} ${CFLAGS} ${CONV_FLAGS} -sds-hw XiConvolutionTop ${SRC_PATH}/conv_pipe/src/xi_convolution_top.cpp -clkid ${CLOCK_ID} \
 	                                                  -hls-tcl ${CONV_SCRIPTS_PATH}/config_core.tcl -sds-end -fPIC $< -o $@
 
-pooling_layer_dp_2xio_top.o: ${SRC_PATH}/pool/src/pooling_layer_dp_2xio_top.cpp
-	${CC} ${SDSFLAGS} ${CFLAGS} -sds-hw PoolTop ${SRC_PATH}/pool/src/pooling_layer_dp_2xio_top.cpp -clkid ${CLOCK_ID} -sds-end -fPIC $< -o $@
+pooling_layer_dp_2xio_top.o: ${SRC_PATH}/pool_pipe/src/pooling_layer_dp_2xio_top.cpp
+	${CC} ${SDSFLAGS} ${CFLAGS} -sds-hw PoolTop ${SRC_PATH}/pool_pipe/src/pooling_layer_dp_2xio_top.cpp -clkid ${CLOCK_ID} -sds-end -fPIC $< -o $@
 
 xi_deconv_top.o: ${SRC_PATH}/deconv/src/xi_deconv_top.cpp
 	${CC} ${SDSFLAGS} ${CFLAGS} -sds-hw XiDeconvTop ${SRC_PATH}/deconv/src/xi_deconv_top.cpp -clkid ${CLOCK_ID} -sds-end -fPIC $< -o $@
@@ -144,7 +144,7 @@ dnn_wrapper.o: ${WRAPPER_PATH}/dnn_wrapper.cpp
 
 
 ${LIBRARY}: ${REQ_LIBS}
-	${CC} ${SDSFLAGS} ${CONV_FLAGS} -shared $^ -o $@
+	${CC} ${SDSFLAGS} ${CONV_FLAGS} -mno-bitstream -shared $^ -o $@
 
 # Copy lib to SD_Card dir
 copy:

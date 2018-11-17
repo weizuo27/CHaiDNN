@@ -19,7 +19,7 @@ IFLAG += -D__SIM_DDS__
 IFLAG += -D__DSP48E1__
 IFLAG += -g 
 CFLAG += -fPIC 
-# CFLAG += -fsanitize=address
+CFLAG += -fsanitize=address
 CC      = g++
 GCOV += #-fprofile-arcs -ftest-coverage
 

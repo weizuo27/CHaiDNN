@@ -112,8 +112,22 @@ void PoolTop_Gold(GMEM_MAXPOOLTYPE *in1, GMEM_MAXPOOLTYPE *in2, GMEM_MAXPOOLTYPE
 //	int *scalar_pool_args
 //);
 
-#undef GMEM_ELEMENT
-#undef GMEM_SHIFT_CNT
+void PoolingLayerLineBuffer
+(
+    GMEM_MAXPOOLTYPE* inMem1,
+    GMEM_MAXPOOLTYPE* inMem2,
+    hls::stream< GMEM_MAXPOOLTYPE > &inStream1,
+    hls::stream< GMEM_MAXPOOLTYPE > &inStream2,
+    GMEM_MAXPOOLTYPE* outMem1,
+    GMEM_MAXPOOLTYPE* outMem2,
+    hls::stream< GMEM_MAXPOOLTYPE > &outStream1,
+    hls::stream< GMEM_MAXPOOLTYPE > &outStream2,
+    int* scalarPoolArgs
+);
+
+
+#undef GMEM_ELEMENT   
+
 
 #define STREAMIN
 #define STREAMOUT
