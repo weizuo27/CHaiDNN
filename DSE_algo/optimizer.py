@@ -36,9 +36,16 @@ class optimizer:
         self.g = graph(app_fileName) #generate the graph from CHaiDNN output
         IPs = generateIPs(IP_fileName)
         self.IP_table = constructIPTable(IPs, BRAM_budget, DSP_budget, LUT_budget, FF_budget, BW_budget)
+        #IP_table_per_layer: The dictionary to record the IP can be used per layer.
+        #   Key: The layer. Value: list of length IP_table[layer.type]. Each element is either 0 or 1.
+        #   0 means that IP is not used for this layer, 1 otherwise.
+        IP_table_per_layer = genIPTablePerLayer(self.IP_table, self.g.layerQueue, self.hw_layers)
         self.rb = resourceILPBuilder(BRAM_budget, DSP_budget, FF_budget, LUT_budget, BW_budget) #Builder resource solver
+
+        #print self.IP_table
+        print IP_table_per_layer
         #solve the problem
-        self.rb.createVs(self.IP_table, self.g.layerQueue, self.hw_layers)
+        self.rb.createVs(self.IP_table, IP_table_per_layer, self.g.layerQueue, self.hw_layers)
         self.rb.createConstraints(self.IP_table, self.g.layerQueue)
 
         # Now starting the loop
@@ -205,7 +212,7 @@ class optimizer:
                 node = self.g.layerQueue[layer_type][layer_idx]
                 for ip_idx in range(len(variables[layer_idx])):
                     #print layer_type, layer_idx, ip_idx, variables[layer_idx][ip_idx].value  #If the mapping result is True, then we set the mapping
-                    if (variables[layer_idx][ip_idx].value > 0.5 ): #If the mapping result is True, then we set the mapping
+                    if (hasattr(variables[layer_idx][ip_idx], 'value') and variables[layer_idx][ip_idx].value > 0.5 ): #If the mapping result is True, then we set the mapping
                         node.set_IP(self.IP_table[layer_type][ip_idx]) 
 
     def scheduling(self, latency_Budget):

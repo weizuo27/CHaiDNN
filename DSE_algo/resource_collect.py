@@ -4,6 +4,7 @@ IP_TYPE1 = "Convolution"
 IP_TYPE2 = "Convolution_g"
 
 ibufferArray=[512, 1024, 2048, 4096, 8192]
+#ibufferArray=[2048, 4096, 8192]
 obufferArray=[512,1024,2048]
 wbufferArray=[512,1024]
 kelsize = [8,16]

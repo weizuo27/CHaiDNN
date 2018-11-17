@@ -32,32 +32,27 @@ class resourceILPBuilder():
         self.violation_constraints = []
         self.resourceVariables = dict()
 
-    def createVs(self, IP_table, IP_table_per_layer, layerQueue, hw_supported_layers):
+    def createVs(self, IP_table, layerQueue, hw_supported_layers):
         """
         create all variables of the problem.
         Args:
             layerQueue: The dicionary. Key: the layer type. Value: The list of layers in the NN, that is that type
             IP_table: The dictionary. Key: The layer type. Value: The candidate IPs fall into that category
-            IP_table_per_layer: The dictionary to record the IP can be used per layer.
-                Key: The layer. Value: list of length IP_table[layer.type]. Each element is either 0 or 1.
-                    0 means that IP is not used for this layer, 1 otherwise.
+
         """
         #1. create the mapping B_ij: i-th layer maps to j-th IP
         for layer_type in layerQueue:
             if layer_type in hw_supported_layers:
                 queue = layerQueue[layer_type] #The queue of the layer_type
-                IP_queue = IP_table[layer_type]
+                IPs = IP_table[layer_type] #The IPs available for the layer type
+
                 self.mappingVariables[layer_type] = dict()
                 mapping_vars = []
 
                 for i in queue: #Traverse the queue to add the varible
-                    IPs = IP_table_per_layer[i] #The IPs available for the layer type
                     row = []
-                    for j in range(len(IPs)):
-                        if IPs[j] == 1:
-                            row.append(cvx.Variable(boolean=True, name=i.name + "_" + IP_queue[j].name))
-                        else:
-                            row.append(0.0)
+                    for j in IPs:
+                        row.append(cvx.Variable(boolean=True, name=i.name + "_" + j.name))
                     mapping_vars.append(row)
                 self.mappingVariables[layer_type] = mapping_vars
 
@@ -120,6 +115,19 @@ class resourceILPBuilder():
         self.constraints.append(exp_FF <= self.FF_budget)
         self.constraints.append(exp_LUT <= self.LUT_budget)
         self.constraints.append(exp_BW <= self.BW_budget)
+
+        #4. The IP specific resource constraints
+        for layer_type in self.mappingVariables:
+            queue = layerQueue[layer_type]
+            IP_queue = IP_table[layer_type]
+            for i in range(len(queue)):
+                for j in range(len(IP_queue)):
+                    #FIXME: Now it is hard-coded !!!!
+                    if queue[i].type == "Convolution" or queue[i].type == "Convolution_g":
+                        resourceConstraints = resourceConstr(queue[i], IP_queue[j])
+                        #print resourceConstraints
+                        self.constraints.append(self.mappingVariables[layer_type][i][j] <= float(IP_queue[j].paramList[2]) / resourceConstraints[0]) #XI_IBUFF_DEPTH 
+                        self.constraints.append(self.mappingVariables[layer_type][i][j] <= float(IP_queue[j].paramList[3]) / resourceConstraints[1]) #XI_OBUFF_DEPTH 
 
     def addViolationPaths(self, violation_path, layerQueue, IP_table):
         """

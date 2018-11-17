@@ -108,12 +108,21 @@ def isPipelined(s_node, t_node):
 
 def resourceConstr(layer, ip):
     """
-        Function to generate CHaiDNN specific constraints about the buffer size.
-        The following must be satisified for correct functionality
-        
-        inWidth*ceil(indepth/32)*(filterheight+stride) < XI_ISTGBUFFDEPTH*2
-        outWidth*ceil(outdepth/32) < XI_OSTGBUFFDEPTH*2
-    """
+    Function to generate CHaiDNN specific constraints about the buffer size.
+    The following must be satisified for correct functionality
+    
+    (1) inWidth*ceil(indepth/32)*(filterheight+stride) < XI_ISTGBUFFDEPTH*2
+    (2) outWidth*ceil(outdepth/32) < XI_OSTGBUFFDEPTH*2
+
+    Args:
+        layer: layer class. one layer in the application
+        ip: The IP class. One IP
+
+    Return:
+        const. The list of constraints. Currently only two elements:
+            The lower bound of XI_ISTGBUFFDEPTH and XI_OSTGBUFFDEPTH
+    """ 
+    #FIXME: This is hard-coded for one type of IP only. Should be modified
 
     assert(layer.type == "Convolution" or layer.type == "Convolution_g"), "Unsupported layer type"
 
@@ -122,11 +131,47 @@ def resourceConstr(layer, ip):
     cout, cin, kw, kh = map(int, (layer.params[0].split("=")[1]).split("x"))
     S = int(layer.params[1].split("=")[1])
 
+    const = []
+
     #FIXME: This 32 may need to be changed later, should not be fixed
     const.append(math.ceil(in_width * math.ceil(float(in_depth)/32) * (kh + S) / 2))
     const.append(math.ceil(out_width * math.ceil(float(out_depth)/32) /2))
 
     return const
     
+def genIPTablePerLayer(IP_table, layerQueue, hw_layers):
+    """
+    After generating the general IP_table, there are some IP specific constraints, 
+    These are application (layer) related. 
+    So for each layer, the IP candidates may be just a subset of general IP table.
+    This can reduce the number of variables in the ILP solution.
 
-
+    Args:
+        IP_table: Dict. The general IP_table. The output of function constructIPTable
+            Key: The IP type. Value: The list of IPs in that type
+        layerQueue:
+            the dict of layers that are in the application (NN).
+            Key: The layer type.  Value: The list of layers that are in that type
+        hw_layers: 
+            The dict of layers that can be mapped to hardware.
+            Key: The hardware supported layer type. Value: Dont'care
+    Return:
+        the dictionary of IP_table that is customized for each layer.
+        Key: The layer class. Value: The list of IPs that can be mapped to the layer
+    """
+    #FIXME currently this is hard-coded, since only 1 type of IP is there
+    ret = dict()
+    for layerType in layerQueue:
+        if layerType in hw_layers:
+            for l in layerQueue[layerType]:
+                ret[l] =  []
+                IP_queue = IP_table[layerType]
+                for ip in IP_queue:
+                    if layerType != "Convolution" and layerType != "Convolution_g":
+                        ret[l].append(1)
+                    else:
+                        const = resourceConstr(l, ip)
+                        #print "\n" ,const[0], ip.type, ip.paramList[2], const[0] > ip.paramList[2], "\n"
+                        ret[l].append(0) if (const[0] > ip.paramList[2] or const[1] > ip.paramList[3]) else ret[l].append(1)
+                print ret[l] 
+    return ret
