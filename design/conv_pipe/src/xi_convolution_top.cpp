@@ -98,6 +98,11 @@ int XiConvolutionTop(
 #pragma HLS interface s_axilite port=istg_out2 bundle=control
 #pragma HLS interface s_axilite port=return bundle=control
 #endif 
+	hls::stream< gmem_inputtype_layerx > inStreamEnd1("inStream1");
+	hls::stream< gmem_inputtype_layerx > inStreamEnd2("inStream2");
+
+	hls::stream< gmem_outputtype > outStreamEnd1("outStream1");
+	hls::stream< gmem_outputtype > outStreamEnd2("outStream2");
 
 	Convolution<XI_IN_W,XI_IN_H,XI_OUT_W,XI_OUT_H,XI_NUM_KERNELS,XI_FILTER_SIZE,XI_CONV_STRIDE,XI_POOL_STRIDE,XI_POOL_SIZE,XI_INPUT_PLANES,XI_NKPF>
 	(weights1,weights2,
@@ -108,10 +113,14 @@ int XiConvolutionTop(
 #if !XI_SINGLE_IO_PORT_EN
 			output2,
 #endif
+			outStreamEnd1,
+			outStreamEnd2,
 			input_other1,
 #if !XI_SINGLE_IO_PORT_EN
 			input_other2,
 #endif
+			inStreamEnd1,
+			inStreamEnd2,
 			input_1st,bias,
 #if !XI_DISABLE_BN
 			inp_norm_2,inp_norm_3,

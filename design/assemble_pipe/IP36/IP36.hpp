@@ -14,6 +14,9 @@ See the License for the specific language governing permissions and
 limitations under the License.
 ----------------------------------------------------*/
 
+#ifndef IP36_HPP
+#define IP36_HPP
+
 #define DEBUG_COMPUTE 0
 #if DEBUG_COMPUTE
 FILE *fp_input=fopen("/proj/sdxapps/users/maheshm/debug_t/input_compute.txt","w");
@@ -23,13 +26,22 @@ FILE *fptr= fopen("/proj/sdxapps/users/maheshm/debug_t/input_pix0.txt","w");
 
 #endif
 
-#include "../include/xi_conv_config.h"
-#include "../tb/dbg.h"
+#include "IP36_defines.h"
+
 
 #include <dsp_builtins.h>
 
+#define PROCFEEDTINGBUFF_COMPUTE 1
+#define PRINT_INPUTREADADDR 0
+#define PRINT_OUTPUTWRITADDR 0
+namespace IP36{
+gmem_inputtype_layerx* inMemBase1;
+gmem_inputtype_layerx* inMemBase2;
 
-gmem_inputtype_layer1* BaseLayer1;
+
+gmem_inputtype_layerx* outMemBase1;
+gmem_inputtype_layerx* outMemBase2;
+#define DBG_EXAMPLEPRINT 0
 
 template< int BUFFER_LENGTH, class uInBuffAddr_t>
 void readLineBuffer
@@ -40,7 +52,6 @@ void readLineBuffer
     #if !XI_SINGLE_IO_PORT_EN
     gmem_inputtype_layerx* inData2,
     #endif
-
 	hls::stream< gmem_inputtype_layerx> &inStream1,
 	hls::stream< gmem_inputtype_layerx> &inStream2,
 	gmem_inputtype_layer1* inLayer1,
@@ -57,6 +68,7 @@ void readLineBuffer
 )
 { 
 	
+	printf("row: %d %d\n", (int) startRow, (int) endRow );
 
     uRowIdx_t startRowSat;
     if(startRow<0) startRowSat=0;
@@ -64,94 +76,113 @@ void readLineBuffer
 
 
     uRowIdx_t endRowSat;
-    if(endRow> inHeight)  endRowSat= (uRowIdx_t) (inHeight -1) ;
+    if(endRow> inHeight-1)  endRowSat= (uRowIdx_t) (inHeight -1) ;
     else endRowSat= (uRowIdx_t) endRow;
 
     uPixelIdx_t pixelsTotal;
 
 
     if(startRowSat > endRowSat)
+	{
         pixelsTotal =  0;
-    else
+		startRowSat = endRowSat+1;
+	}
+	else
         pixelsTotal = (endRowSat-startRowSat+1)* inWidth;
 
-    ap_uint<16> ddrAddressOffset=startRowSat*inWidth;
-    ap_uint<32>  bufferAddrOffset=startRowSat*widthxPackNum;
-
-
-
+    // ap_uint<16> ddrAddressOffset=startRowSat*inWidth;
+    // ap_uint<32>  bufferAddrOffset=startRowSat*widthxPackNum;
+	// if(startRowSat >= endRowSat) startRowSat=
 
 	ap_uint<32> start_off_A_fg0 = startRowSat*conv_desc.conv3d_ip_w;
 
-    #if !XI_SINGLE_IO_PORT_EN
-	ap_uint<1> switch4=0;
-    #else 
-    ap_uint<2> switch4=0;
-    #endif
-    
+
 	if(conv_desc.layer_id!=0)
     {
-		for(uPlnIdx_t planePackIdx =0; planePackIdx<planes; planePackIdx+=16)
-		{
-			uInBuffAddr_t bufferAddr=bufferAddrOffset;
-			ap_uint<32> ddrAddr=ddrAddressOffset;
-			for(ap_uint<16> pixelIdx=0; pixelIdx < pixelsTotal; pixelIdx++, ddrAddr++, bufferAddr+=packNum)
+		for(sRowIdx_t startRowIdx=startRowSat; startRowIdx<endRowSat+1;startRowIdx++)
+		{	
+			ap_uint<16> ddrAddressOffset=startRowIdx*inWidth;
+			ap_uint<32>  bufferAddrOffset=startRowIdx*widthxPackNum;
+			#if !XI_SINGLE_IO_PORT_EN
+			ap_uint<1> switch4=0;
+			#else 
+			ap_uint<2> switch4=0;
+			#endif
+			for(uPlnIdx_t planePackIdx =0; planePackIdx<planes; planePackIdx+=16)
 			{
+				uInBuffAddr_t bufferAddr=bufferAddrOffset;
+				ap_uint<32> ddrAddr=ddrAddressOffset;	
+				for(ap_uint<16> pixelIdx=0; pixelIdx < inWidth; pixelIdx++, ddrAddr++, bufferAddr+=packNum)
+				{
+
+					#if !XI_SINGLE_IO_PORT_EN
+					#pragma HLS pipeline
+					#pragma HLS dependence variable=inLineBuffer intra false
+					#pragma HLS dependence variable=inLineBuffer inter false
+					gmem_inputtype_layerx readPortA, readPortB;
+
+					#if PRINT_INPUTREADADDR
+						int ddrAddress=inData1+ddrAddr-inMemBase1;
+						printf("Addr:%6d %6d, Pix[%2d %2d], PlanIdx%2d\n",
+						(int) bufferAddr,
+						(int) ddrAddress, 
+						(int) (ddrAddress%(inWidth*inHeight)/inWidth),
+						(int) (ddrAddress%(inWidth*inHeight)%inWidth),
+						(int) (ddrAddress/(inWidth*inHeight)) );
+					#endif
+					if(conv_desc.inStreamFlag)
+					{
+						inStream1>>readPortA;
+						inStream2>>readPortB;
+					}
+					else
+					{
+						readPortA=inData1[ddrAddr];
+						readPortB=inData2[ddrAddr];
+					}
+					inLineBuffer[switch4*4+0][bufferAddr] = readPortA.range(63,0);
+					inLineBuffer[switch4*4+1][bufferAddr] = readPortA.range(127, 64);
+					inLineBuffer[switch4*4+2][bufferAddr] = readPortB.range(63, 0);
+					inLineBuffer[switch4*4+3][bufferAddr] = readPortB.range(127, 64);
+					#else //XI_SINGLE_IO_PORT_EN
+					inLineBuffer[switch4*2+0][bufferAddr] = readPortA.range(63,0);
+					inLineBuffer[switch4*2+1][bufferAddr] = readPortA.range(127,0);
+					#endif
+				}
+
 
 				#if !XI_SINGLE_IO_PORT_EN
-				#pragma HLS pipeline
-				#pragma HLS dependence variable=inLineBuffer intra false
-				#pragma HLS dependence variable=inLineBuffer inter false
-				gmem_inputtype_layerx readPortA, readPortB;
-				if(conv_desc.inStreamFlag)
+				if(switch4)
 				{
-					inStream1>>readPortA;
-					inStream2>>readPortB;
+					bufferAddrOffset++;
 				}
-				else
-				{
-					readPortA=inData1[ddrAddr];
-					readPortB=inData2[ddrAddr];
-				}
-
-				
-				inLineBuffer[switch4*4+0][bufferAddr] = readPortA.range(63,0);
-				inLineBuffer[switch4*4+1][bufferAddr] = readPortA.range(127, 64);
-				inLineBuffer[switch4*4+2][bufferAddr] = readPortB.range(63, 0);
-				inLineBuffer[switch4*4+3][bufferAddr] = readPortB.range(127, 64);
-			
-			
-				#else //XI_SINGLE_
-				IO_PORT_EN
-				inLineBuffer[switch4*2+0][bufferAddr] = readPortA.range(63,0);
-				inLineBuffer[switch4*2+1][bufferAddr] = readPortA.range(127,0);
-				#endif
-			}
-
-
-			#if !XI_SINGLE_IO_PORT_EN
-			if(switch4)
-			{
+				#else 
 				bufferAddrOffset++;
+				#endif
+				switch4++;
+				ddrAddressOffset+=imageSize;
 			}
-			#else 
-			bufferAddrOffset++;
-			#endif
-			switch4++;
-			ddrAddressOffset+=imageSize;
 		} 
 	}
 	else
 	{
 			InputReadLayer1LineBuffer(pixelsTotal, input_desc,conv_desc,  inLayer1+ start_off_A_fg0, inLineBuffer, pingpong);
 	}
+
+
 #if PRINT_LINEBUFFER_CONTENT
 	for(int i=0;i<BUFFER_LENGTH;i++)
 	{
 		printf("ADDR[%6d]",i );
+		
 		for(int j=0;j<8;j++)
 		{
-			printf("[%3d %4d]", (int) inLineBuffer[j][i].range(63,16), (int) inLineBuffer[j][i].range(15,0)  );
+			printf("[% 8x]",  (unsigned long int) inLineBuffer[j][i].range(63,0)  );
+
+			// if(testLineBuffer[j][i] != inLineBuffer[j][i] )
+			// {
+			// 	printf("[%4d %4d][%d %d] ",  i,j, (int) inLineBuffer[j][i], (int) testLineBuffer[j][i]  );
+			// }
 		}
 		printf("\n");
 	}   
@@ -234,7 +265,7 @@ void LoadDesc_ffa(int *scalar_conv_args,
 	int l_conv_3d_inp_offset        = scalar_args[55];
 	int l_conv_3d_istg_row_cnt      = scalar_args[56];
 	int l_conv_3d_outshift          = scalar_args[57];
-	int l_conv_3d_ostg_row_cnt            = scalar_args[58];
+	int l_conv_3d_ostg_row_cnt    	= scalar_args[58];
 	int l_conv_3d_ip_size           = scalar_args[59];
 
 	int l_input_planes_align4_ffa0       	= scalar_args[60];
@@ -279,6 +310,7 @@ void LoadDesc_ffa(int *scalar_conv_args,
 	int l_pool_ew                = scalar_args[101];
 	int l_scale_offset                 = scalar_args[102];
 	bool l_offline_quant_en   = scalar_args[103];
+	conv_desc.noOperateFlag= (bool) scalar_args[125];
 	conv_desc.inStreamFlag=(bool) scalar_args[126];
 	conv_desc.outStreamFlag=(bool) scalar_args[127];
 
@@ -1244,7 +1276,7 @@ void Compute16Ker_fy(conv_struct conv_desc,
 		ap_uint<4> nkpf_cnt_fe0,
 		ap_int<36> result_ping_fe0[XI_KER_PROC][XI_PIX_PROC],
 		ap_uint<16> nk_process_fd0,
-		out_pix_struct out_pixels0_fc0,
+		const out_pix_struct &out_pixels0_fc0,
 		output_struct output_desc,
 		ap_uint<14> weight_buff_offset,
 		bool ap_clk_div2)
@@ -3356,8 +3388,8 @@ void LoadInputBuffLayerX_fm(input_struct input_desc,
 									pad_flags[pix_w] = 0;
 								else
 									pad_flags[pix_w] = 1;
-								
-
+								//no protection here?
+								//would a buffer with such data better?
 								// if(addrLine >= 540*2 && pad_flags[pix_w]==0) printf("out range coordinate[%d %d %d]\n", (int) rowIdx, (int) colIdx,(int)  input_desc.endRow);
 
 
@@ -3970,6 +4002,8 @@ void LoadFeedingBuff_fl(input_struct input_desc,
 
 		out_col++;
 	}
+	
+
 
 	ap_uint<10> feeding_buff_off[16];
 #pragma HLS ARRAY_PARTITION variable=feeding_buff_off complete dim=0
@@ -3982,8 +4016,6 @@ void LoadFeedingBuff_fl(input_struct input_desc,
 
 	bool inc1 = (conv_desc.pix_per_kp.range(3, 0) != 0);
 	ap_uint<8> pxcnt_loopmax = conv_desc.pix_per_kp.range(7, 4) + inc1;
-
-	// 
 
 	
 	if (conv_desc.l2_sos_enable == 1 || (conv_desc.sos_enable == 0 && conv_desc.layer_id != 0))
@@ -4027,6 +4059,9 @@ void LoadFeedingBuff_fl(input_struct input_desc,
 #endif
 
 
+
+
+
 #if PRINT_FEEDING_BUFF
 	printf("Pixel Coordinates:");
 	for (ap_uint<8> pix = 0; pix < XI_PIX_PROC; pix++)
@@ -4040,7 +4075,7 @@ void LoadFeedingBuff_fl(input_struct input_desc,
 		printf("ADDRFEEDING[%6d]",i );
 		for(int j=0;j<XI_PIX_PROC/2;j++)
 		{
-			printf("[%3d %4d]", (int) input_buff0_fc0[j][i].range(63,16), (int) input_buff0_fc0[j][i].range(15,0)  );
+			printf("[% 8x]", (unsigned long int) input_buff0_fc0[j][i].range(63,0));
 		}
 		printf("\n");
 	}	
@@ -4605,6 +4640,11 @@ void OutputWrite_fk(conv_struct conv_desc, ap_uint<16> pixbuff_planeoffset_fj0,
 				outStream1<<write1;	
 			else
 				gmem_output1_fa0[ddr_pntr_fk0] = write1;
+
+
+		#if PRINT_OUTPUTWRITADDR
+			printf("OutAddr1: %d\n", (int) (gmem_output1_fa0+ddr_pntr_fk0-outMemBase1));
+		#endif
 			
 			
 #else
@@ -4625,6 +4665,10 @@ void OutputWrite_fk(conv_struct conv_desc, ap_uint<16> pixbuff_planeoffset_fj0,
 				outStream2<<write2;		
 			else
 				gmem_output2_fa0[ddr_pntr_fk0] = write2;
+
+		#if PRINT_OUTPUTWRITADDR
+			printf("OutAddr2: %d\n", (int) (gmem_output2_fa0+ddr_pntr_fk0-outMemBase));
+		#endif
 
 #elif !XI_SINGLE_IO_PORT_EN && XI_IO_64bit_PORT_EN
 			gmem_output2_fa0[ddr_pntr_fk0] = write1.range(127,64);
@@ -5057,7 +5101,6 @@ void InputReadLayer1LineBuffer(ap_uint<16> layerx_loop_cnt_fg0,
 #pragma HLS pipeline
 
 		inputtype read_64bit_fi0 = gmem_input_layer1_fa0[ddr_pntr_fi0];
-
 		if(conv_desc.batch1_int8_en==0)
 		{
 
@@ -5142,7 +5185,6 @@ void InputReadLayer1_fi(ap_uint<16> layerx_loop_cnt_fg0,
 
 	ap_uint<16> counter_row8_x_iw = 0;
 	ap_uint<3> istg_dim2 = 0;
-	printf("layerx_loop_cnt_fg0 %d\n",(int) layerx_loop_cnt_fg0);
 	Input_Layer1_Loop:
 	for (ap_uint<16> ddr_pntr_fi0 = 0;ddr_pntr_fi0 < layerx_loop_cnt_fg0; ddr_pntr_fi0++)
 	{
@@ -7046,7 +7088,7 @@ void ProcResult_fe(input_struct input_desc,
 		weight_struct weight_desc,
 		ap_uint<16> nk_process_fd0,
 		output_struct output_desc,
-		out_pix_struct out_pixels0_fc0,
+		const out_pix_struct &out_pixels0_fc0,
 		weight_width weight_buff0_fd0[XI_KER_PROC][4][XI_WEIGHTBUFF_DEPTH],
 		ap_uint<64> input_buff0_fc0[XI_PIX_PROC/2][1024],
 		ap_uint<72> ostaging_buff0_fb0[2][XI_OSTG_BUFFER_SET][XI_OSTAGEBUFF_DEPTH],
@@ -7107,7 +7149,8 @@ void ProcResult_fe(input_struct input_desc,
 
 
 	ap_uint<14> weight_buff_offset = 0;
-
+	
+	
 	Compute16Ker_fy<CFILTER_SIZE,CCONV_STRIDE,CNUM_KERNELS,(IINPUT_PLANES>>2),PNKPF>
 	(conv_desc, weight_buff0_fd0, input_buff0_fc0, 0,result_ping_fe0, nk_process_fd0, out_pixels0_fc0,output_desc, weight_buff_offset,ap_clk_div2);
 
@@ -7153,6 +7196,7 @@ void ProcResult_fe(input_struct input_desc,
 		OStgBuffSeq_fx<PNKPF>
 		( result_pong_fe0, out_pixels0_fc0, nk_process_fd0, conv_desc, output_desc, ostaging_buff0_fb0,ostgrow_x_width, nkpf2_cnt_fe1,out_row_offset_fb0, mac_fz0);
 	}
+	
 
 }
 
@@ -7161,7 +7205,7 @@ void ProcWeightBuff_fd(input_struct input_desc,
 		conv_struct conv_desc,
 		weight_struct weight_desc,
 		output_struct output_desc,
-		out_pix_struct out_pixels0_fc0,
+		out_pix_struct &out_pixels0_fc0,
 		ap_uint<64> input_buff0_fc0[XI_PIX_PROC / 2][1024],
 		ap_uint<72> ostaging_buff0_fb0[2][XI_OSTG_BUFFER_SET][XI_OSTAGEBUFF_DEPTH],
 		gmem_weighttype *gmem_weight1_fa0, gmem_weighttype *gmem_weight2_fa0,
@@ -7175,6 +7219,9 @@ void ProcWeightBuff_fd(input_struct input_desc,
 #pragma HLS interface register port=pc_proc_wts
 #pragma HLS INLINE OFF
 
+
+
+	
 	output_desc.pix_cnt = pix_proc_cnt;
 
 	bool load_ker_enable;
@@ -7232,6 +7279,8 @@ void ProcWeightBuff_fd(input_struct input_desc,
 #endif//XI_KER_PROC
 
 
+
+
 	LoadKernelsEn_fz<CFILTER_SIZE,CCONV_STRIDE,CNUM_KERNELS,(IINPUT_PLANES>>2),PNKPF>(weight_desc,weight_buff0_fd0,gmem_weight1_fa0+weight_offset_fd0,gmem_weight2_fa0+weight_offset_fd0,
 #if (XI_KER_PROC==16 || (XI_WTS_PORT_64BIT_EN==1 && XI_KER_PROC==8) )
 			gmem_weight3_fa0+weight_offset_fd0,gmem_weight4_fa0+weight_offset_fd0,
@@ -7240,6 +7289,8 @@ void ProcWeightBuff_fd(input_struct input_desc,
 
 	bool flagpro_fd0 = 0;
 	ap_uint<16> nk_fd0 = 0, nk_process_fd0=0;
+
+	
 	Nk_Loop:
 	for(nk_fd0=(XI_KER_PROC*weight_desc.nkpf),nk_process_fd0=0; nk_fd0 < conv_desc.ker_loop_cnt; nk_fd0 += (XI_KER_PROC*weight_desc.nkpf),nk_process_fd0+=(XI_KER_PROC*weight_desc.nkpf))
 	{
@@ -7453,7 +7504,11 @@ void ProcInputBuff_fc(input_struct input_desc,
 			#endif
 			input_buff1_fc0, pc_fc0,current_plane_fc0,out_row_offset_fb0,
 					/*..continue..*/pad_row_fc0, pad_row_wo_fc0,row_id_1st_32pix_fc0, col_id_1st_32pix_fc0, row_id_2nd_32pix_fc0, col_id_2nd_32pix_fc0, mac_fz0,&pc_pong);
+
+
+
 #if COMPUTE_OFF
+		
 			ProcWeightBuff_fd<IN_WW,IN_HH,OUT_WW,OUT_HH,CNUM_KERNELS,CFILTER_SIZE,CCONV_STRIDE,PPOOL_STRIDE,PPOOL_SIZE,IINPUT_PLANES,KERCNT,PNKPF>
 			(input_desc, conv_desc, weight_desc,output_desc,out_pixels0_fc0,input_buff0_fc0,ostaging_buff0_fb0,gmem_weight1_fa0,gmem_weight2_fa0,
 #if (XI_KER_PROC==16 || (XI_WTS_PORT_64BIT_EN==1 && XI_KER_PROC==8) )
@@ -7479,6 +7534,7 @@ void ProcInputBuff_fc(input_struct input_desc,
 			#endif
 			input_buff0_fc0, pc_fc0,current_plane_fc0,out_row_offset_fb0,
 					/*..continue..*/pad_row_fc0, pad_row_wo_fc0,row_id_1st_32pix_fc0, col_id_1st_32pix_fc0, row_id_2nd_32pix_fc0, col_id_2nd_32pix_fc0, mac_fz0,&pc_ping);
+
 	#if COMPUTE_OFF
 			ProcWeightBuff_fd<IN_WW,IN_HH,OUT_WW,OUT_HH,CNUM_KERNELS,CFILTER_SIZE,CCONV_STRIDE,PPOOL_STRIDE,PPOOL_SIZE,IINPUT_PLANES,KERCNT,PNKPF>
 			(input_desc, conv_desc, weight_desc,output_desc,out_pixels1_fc0,input_buff1_fc0,ostaging_buff0_fb0,gmem_weight1_fa0,gmem_weight2_fa0,
@@ -7660,6 +7716,8 @@ void ProcFeedingBuff_En_fz(input_struct input_desc,
 		bool last_itr_stage, bool ap_clk_div2) {
 #pragma HLS INLINE OFF
 
+#if PROCFEEDTINGBUFF_COMPUTE
+
 #if FUTRUE_IMPLEMENTATION
 	if (conv_desc.conv3d_intg_en || conv_desc.avg_pool_en
 			|| conv_desc.max_pool_en || conv_desc.pool_fuse_en) {
@@ -7730,6 +7788,7 @@ void ProcFeedingBuff_En_fz(input_struct input_desc,
 				istaging_buff0_fb0, startrow_fg0, endrow_fg0, start_off_A_fg0);
 	#endif
 	}
+#endif
 
 }
 
@@ -8001,8 +8060,7 @@ void ProcIStagingBuff_fb(input_struct input_desc,
 			/*..continue..*/output_row_fb0 += conv_desc.ostg_row_count, output_row_next_fb0 += conv_desc.ostg_row_count)
 	{
 	#pragma HLS LOOP_TRIPCOUNT min=59 max=59
-	
-	printf("row%d %d\n", (int) lastEndRowIdx,(int) endrow_fb0);
+
 
 
 	#if LINEBUFFER_PORT
@@ -8059,7 +8117,7 @@ void ProcIStagingBuff_fb(input_struct input_desc,
 			if( conv_desc.layer_id==0)
 			lastEndRowIdx=startrow_fb0;
 			else
-			lastEndRowIdx=endrow_fb0;
+			lastEndRowIdx=endrow_fb0+1;
 			endrow_fb0 += startrow_inc_fb0;
 
 #if LINEBUFFER_PORT
@@ -8160,7 +8218,7 @@ void ProcIStagingBuff_fb(input_struct input_desc,
 			if( conv_desc.layer_id==0)
 			lastEndRowIdx=startrow_fb0;
 			else
-			lastEndRowIdx=endrow_fb0;
+			lastEndRowIdx=endrow_fb0+1;
 			endrow_fb0 += startrow_inc_fb0;
 #if LINEBUFFER_PORT
 			readLineBuffer<XI_ISTAGEBUFF_DEPTH*2, uLineBuffAddr_t >
@@ -8221,7 +8279,6 @@ void ProcIStagingBuff_fb(input_struct input_desc,
 		out_row_offset_fb0+=conv_desc.ostg_row_count;
 		write_en_fb0 = 1;
 	}//ProciStg_Loop
-printf("START processing row:%d %d\n ",(int) startrow_process_fb0, (int) input_desc.endRow );
 	ap_uint<16> rows_to_process_last_fb0 = conv_desc.ostg_row_count - (outrow_max_fb0 - output_desc.height);
 #if 1
 	if (pingpong_flag_fb0 == 1) {
@@ -8378,12 +8435,21 @@ void ConvLayer_fa(input_struct input_desc,
 #endif
 		bool ap_clk_div2) {
 #pragma HLS INLINE OFF
+	
 
+	#if PRINT_INPUTREADADDR
+		inMemBase1=input_other1;
+		inMemBase2=input_other2;
+	#endif
+	#if PRINT_OUTPUTWRITADDR
+		outMemBase1=output1;
+		outMemBase2=output2;
+	#endif
 	ap_uint<32> input_group_offset_1st_fa0, input_group_offset_other_fa0,
 	weights_group_offset_fa0, output_group_offset_fa0,
 	bias_group_offset_fa0;
 
-	if (conv_desc.group_en == 0)
+	if (conv_desc.group_en== 0)
 	{
 		input_group_offset_1st_fa0 = 0;
 		input_group_offset_other_fa0 = 0;
@@ -8400,7 +8466,6 @@ void ConvLayer_fa(input_struct input_desc,
 		bias_group_offset_fa0 = group_desc.bias_offset;
 	}
 
-
 	gmem_inputtype_layer1 *gmem_input_layer1_fa0 = input_1st + input_group_offset_1st_fa0;
 	gmem_inputtype_layerx *gmem_input_layer_other1_fa0 = input_other1 + input_group_offset_other_fa0;
 #if !XI_SINGLE_IO_PORT_EN
@@ -8413,6 +8478,8 @@ void ConvLayer_fa(input_struct input_desc,
 	gmem_weighttype *gmem_weight4_fa0 = weights4 + weights_group_offset_fa0;
 #endif
 	gmem_biastype *gmem_bias_fa0 = bias + bias_group_offset_fa0;
+
+
 	gmem_outputtype *gmem_output1_fa0 = output1 + output_group_offset_fa0;
 #if !XI_SINGLE_IO_PORT_EN
 	gmem_outputtype *gmem_output2_fa0 = output2 + output_group_offset_fa0;
@@ -8456,81 +8523,7 @@ void ConvLayer_fa(input_struct input_desc,
 			ap_clk_div2);
 }
 
-template<
-int IN_WW, int IN_HH, int OUT_WW, int OUT_HH, int CNUM_KERNELS,
-int CFILTER_SIZE, int CCONV_STRIDE, int PPOOL_STRIDE, int PPOOL_SIZE,
-int IINPUT_PLANES, int PNKPF>
-void Convolution(gmem_weighttype *weights1, gmem_weighttype *weights2,
-#if (XI_KER_PROC==16 || (XI_WTS_PORT_64BIT_EN==1 && XI_KER_PROC==8) )
-		gmem_weighttype *weights3,
-		gmem_weighttype *weights4,
-#endif
-		gmem_outputtype *output1,
-#if !XI_SINGLE_IO_PORT_EN
-		gmem_outputtype *output2,
-#endif
-		hls::stream< gmem_outputtype> &outStream1,
-		hls::stream< gmem_outputtype> &outStream2,
-		gmem_inputtype_layerx *input_other1,
-#if !XI_SINGLE_IO_PORT_EN
-		gmem_inputtype_layerx *input_other2,
-#endif
-		hls::stream< gmem_inputtype_layerx > &inStream1,
-		hls::stream< gmem_inputtype_layerx > &inStream2,
-		gmem_inputtype_layer1 *input_1st,
-		gmem_biastype *bias,
-#if !XI_DISABLE_BN
-		gmem_inputtype_layer1 *inp_norm_2, gmem_inputtype_layer1 *inp_norm_3,
-#endif
-		gmem_inputtype_layer1 *istg_out1,
-#if !XI_SINGLE_IO_PORT_EN
-		gmem_inputtype_layer1 *istg_out2,
-#endif
-		int *scalar_conv_args, bool ap_clk_div2) {
-#pragma HLS INLINE OFF
-
-	input_struct input_desc;
-	output_struct output_desc;
-	weight_struct weight_desc;
-	conv_struct conv_desc;
-	group_conv_struct group_desc;
-	LoadDesc_ffa(scalar_conv_args, input_desc, output_desc, weight_desc,conv_desc, group_desc);
-
-	#if DBG_INFO
-		printDesc(conv_desc,input_desc,output_desc,weight_desc,group_desc,stdout);
-	#endif
-
-	ConvLayer_fa<IN_WW, IN_HH, OUT_WW, OUT_HH, CNUM_KERNELS, CFILTER_SIZE,
-	CCONV_STRIDE, PPOOL_STRIDE, PPOOL_SIZE, IINPUT_PLANES, PNKPF>(
-			input_desc, weight_desc, output_desc, conv_desc, group_desc,
-			weights1 + weight_desc.weight_offset,
-			weights2 + weight_desc.weight_offset,
-
-			/*..continue..*/
-#if (XI_KER_PROC==16 || (XI_WTS_PORT_64BIT_EN==1 && XI_KER_PROC==8) )
-			weights3 + weight_desc.weight_offset,weights4 + weight_desc.weight_offset,
-#endif
-			input_1st, input_other1,
-			inStream1,
-			inStream2,
-#if !XI_SINGLE_IO_PORT_EN
-			input_other2,
-#endif
-			/*..continue..*/bias + output_desc.bias_offset,
-			output1 + output_desc.out_offset,
-#if !XI_SINGLE_IO_PORT_EN
-			output2 + output_desc.out_offset,
-#endif
-			outStream1,
-			outStream2,
-			/*..continue..*/
-#if !XI_DISABLE_BN
-			inp_norm_2, inp_norm_3,
-#endif
-			istg_out1,
-#if !XI_SINGLE_IO_PORT_EN
-			istg_out2,
-#endif
-			ap_clk_div2);
 
 }
+
+#endif

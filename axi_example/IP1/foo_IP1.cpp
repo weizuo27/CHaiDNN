@@ -30,10 +30,7 @@ void write1(int i, AXI_VALUE & tmp, uint buff_out[2][N], int out_comp_row_write,
 			}
 
 }
-void foo_IP1 ( uint *in, AXI_STREAM &out, int *args) {
-#pragma HLS INTERFACE m_axi depth=100 port=dest_out
-#pragma HLS INTERFACE axis register both port=out
-#pragma HLS INTERFACE m_axi depth=1024 port=in
+void foo_IP1 ( uint *in, AXI_STREAM &out, int *dest_out) {
 
 	uint buff_in[4][N];
 #pragma HLS RESOURCE variable=buff_in core=RAM_S2P_BRAM
@@ -94,6 +91,9 @@ void foo_IP1 ( uint *in, AXI_STREAM &out, int *args) {
 		//tmp = buff_out[out_comp_row_write][j];
 		out.write(tmp);
 	}
+	write(writeStartAddr,writeEndAddr,buff_out,out, destID);
+
+
 }
 
 

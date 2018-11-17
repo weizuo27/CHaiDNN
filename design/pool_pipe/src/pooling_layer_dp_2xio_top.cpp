@@ -187,10 +187,10 @@ void PoolTop
 {
 
 #ifndef __SDSOC
-#pragma HLS interface m_axi port=in1       		offset=slave bundle=gmem0 depth=4096
-#pragma HLS interface m_axi port=out1			offset=slave bundle=gmem1 depth=4096
-#pragma HLS interface m_axi port=in2       		offset=slave bundle=gmem2 depth=4096
-#pragma HLS interface m_axi port=out2			offset=slave bundle=gmem3 depth=4096
+#pragma HLS interface m_axi port=in1       		offset=slave bundle=gmem0 depth=18150
+#pragma HLS interface m_axi port=out1			offset=slave bundle=gmem1 depth=18150
+#pragma HLS interface m_axi port=in2       		offset=slave bundle=gmem2 depth=18150
+#pragma HLS interface m_axi port=out2			offset=slave bundle=gmem3 depth=18150
 #pragma HLS interface m_axi port=wts			offset=slave bundle=gmem4 depth=36
 #pragma HLS interface m_axi port=scalar_pool_args	offset=slave bundle=gmem5 depth=32
 #pragma HLS interface s_axilite port=in1		bundle=control
@@ -202,16 +202,23 @@ void PoolTop
 #pragma HLS interface s_axilite port=return 	bundle=control
 #endif
 
-memData inData1(in1);
-memData inData2(in2);
-memData outData1(out1);
-memData outData2(out2);
+hls::stream< GMEM_MAXPOOLTYPE > inStreamEnd1("inStreamEnd1");
+hls::stream< GMEM_MAXPOOLTYPE > inStreamEnd2("inStreamEnd2");
+hls::stream< GMEM_MAXPOOLTYPE > outStreamEnd1("outStreamEnd1");
+hls::stream< GMEM_MAXPOOLTYPE > outStreamEnd2("outStreamEnd2");
+
 
 PoolingLayerLineBuffer<
 					memData,
 					memData,
 					16>
-					(inData1,inData2,outData1,outData2,
+					(					
+					in1,in2,
+					inStreamEnd1,
+					inStreamEnd2,
+					out1,out2,
+					outStreamEnd1,
+					outStreamEnd2,
 					scalar_pool_args);
 	#ifndef __SDSOC
 	return 0;

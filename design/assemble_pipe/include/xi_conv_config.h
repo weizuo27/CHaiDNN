@@ -51,11 +51,11 @@ limitations under the License.
 #define XI_OSTAGEBUFF_DEPTH 1024
 #define XI_WEIGHTBUFF_DEPTH 1024
 #else
-#define XI_KER_PROC       	16 		//8
-#define XI_PIX_PROC       	32 		//16
-#define XI_ISTAGEBUFF_DEPTH 8192 	//2048
-#define XI_OSTAGEBUFF_DEPTH 2048  	//1024
-#define XI_WEIGHTBUFF_DEPTH 2048  	//1024	
+#define XI_KER_PROC       	8		//8
+#define XI_PIX_PROC       	16 		//16
+#define XI_ISTAGEBUFF_DEPTH 2048	//2048
+#define XI_OSTAGEBUFF_DEPTH 512  	//1024
+#define XI_WEIGHTBUFF_DEPTH 512  	//1024	
 #endif
 
 //**DON'T MODIFY THE BELOW MACROS**//
@@ -382,7 +382,36 @@ void XiConvolutionTop(
 // 	}
 // };
 
-#undef DBG_INFO
-#define GMEM_ELEMENT   4
-#define GMEM_SHIFT_CNT 2
+void Convolution(gmem_weighttype *weights1, gmem_weighttype *weights2,
+#if (XI_KER_PROC==16 || (XI_WTS_PORT_64BIT_EN==1 && XI_KER_PROC==8) )
+		gmem_weighttype *weights3,
+		gmem_weighttype *weights4,
+#endif
+		gmem_outputtype *output1,
+#if !XI_SINGLE_IO_PORT_EN
+		gmem_outputtype *output2,
+#endif
+		hls::stream< gmem_outputtype> &outStream1,
+		hls::stream< gmem_outputtype> &outStream2,
+		gmem_inputtype_layerx *input_other1,
+#if !XI_SINGLE_IO_PORT_EN
+		gmem_inputtype_layerx *input_other2,
+#endif
+		hls::stream< gmem_inputtype_layerx > &inStream1,
+		hls::stream< gmem_inputtype_layerx > &inStream2,
+		gmem_inputtype_layer1 *input_1st,
+		gmem_biastype *bias,
+#if !XI_DISABLE_BN
+		gmem_inputtype_layer1 *inp_norm_2, gmem_inputtype_layer1 *inp_norm_3,
+#endif
+		gmem_inputtype_layer1 *istg_out1,
+#if !XI_SINGLE_IO_PORT_EN
+		gmem_inputtype_layer1 *istg_out2,
+#endif
+		int *scalar_conv_args, bool ap_clk_div2);
+
+		
+
+#undef GMEM_ELEMENT   
+#undef GMEM_SHIFT_CNT 
 #endif//_XI_CONV_CONFIG_H_
