@@ -14,6 +14,9 @@ See the License for the specific language governing permissions and
 limitations under the License.
 ----------------------------------------------------*/
 
+#ifndef IP110_HPP
+#define IP110_HPP
+
 #define DEBUG_COMPUTE 0
 #if DEBUG_COMPUTE
 FILE *fp_input=fopen("/proj/sdxapps/users/maheshm/debug_t/input_compute.txt","w");
@@ -23,7 +26,7 @@ FILE *fptr= fopen("/proj/sdxapps/users/maheshm/debug_t/input_pix0.txt","w");
 
 #endif
 
-#include "xi_conv_config.h"
+#include "IP110_defines.h"
 
 
 #include <dsp_builtins.h>
@@ -31,7 +34,7 @@ FILE *fptr= fopen("/proj/sdxapps/users/maheshm/debug_t/input_pix0.txt","w");
 #define PROCFEEDTINGBUFF_COMPUTE 1
 #define PRINT_INPUTREADADDR 0
 #define PRINT_OUTPUTWRITADDR 0
-
+namespace IP110{
 gmem_inputtype_layerx* inMemBase1;
 gmem_inputtype_layerx* inMemBase2;
 
@@ -66,7 +69,6 @@ void readLineBuffer
 )
 { 
 	
-printf("Row%d %d\n", (int) startRow,(int) endRow);
 
 
 
@@ -111,6 +113,7 @@ printf("Row%d %d\n", (int) startRow,(int) endRow);
 			#else 
 			ap_uint<2> switch4=0;
 			#endif
+			
 
 			for(uPlnIdx_t planePackIdx =0; planePackIdx<planes; planePackIdx+=16)
 			{
@@ -125,7 +128,7 @@ printf("Row%d %d\n", (int) startRow,(int) endRow);
 					#pragma HLS dependence variable=inLineBuffer intra false
 					#pragma HLS dependence variable=inLineBuffer inter false
 					gmem_inputtype_layerx readPortA, readPortB;
-
+				
 					#if PRINT_INPUTREADADDR
 						int ddrAddress=inData1+ddrAddr-inMemBase1;
 						printf("Addr:%6d %6d, Pix[%2d %2d], PlanIdx%2d\n",
@@ -141,15 +144,14 @@ printf("Row%d %d\n", (int) startRow,(int) endRow);
 					{
 						inStream1>>readPortA;
 						inStream2>>readPortB;
+						
 					}
 					else
 					{
 						readPortA=inData1[ddrAddr];
 						readPortB=inData2[ddrAddr];
 					}
-
-					if(readPortA!=inData1[ddrAddr]) printf("[%d] [%d %d]\n", (int) (ddrAddr), (int) readPortA, (int)inData1[ddrAddr]);
-					if(readPortB!=inData2[ddrAddr]) printf("[%d] [%d %d]\n", (int) (ddrAddr), (int) readPortB, (int)inData2[ddrAddr]);
+					
 
 					inLineBuffer[switch4*4+0][bufferAddr] = readPortA.range(63,0);
 					inLineBuffer[switch4*4+1][bufferAddr] = readPortA.range(127, 64);
@@ -181,23 +183,23 @@ printf("Row%d %d\n", (int) startRow,(int) endRow);
 			InputReadLayer1LineBuffer(pixelsTotal, input_desc,conv_desc,  inLayer1+ start_off_A_fg0, inLineBuffer, pingpong);
 	}
 
-#if PRINT_LINEBUFFER_CONTENT
-	for(int i=0;i<BUFFER_LENGTH;i++)
-	{
-		printf("ADDR[%6d]",i );
+// #if PRINT_LINEBUFFER_CONTENT
+// 	for(int i=0;i<BUFFER_LENGTH;i++)
+// 	{
+// 		printf("ADDR[%6d]",i );
 		
-		for(int j=0;j<8;j++)
-		{
-			printf("[%4d]",  (long int) inLineBuffer[j][i]  );
+// 		for(int j=0;j<8;j++)
+// 		{
+// 			printf("[%4d]",  (long int) inLineBuffer[j][i]  );
 
-			// if(testLineBuffer[j][i] != inLineBuffer[j][i] )
-			// {
-			// 	printf("[%4d %4d][%d %d] ",  i,j, (int) inLineBuffer[j][i], (int) testLineBuffer[j][i]  );
-			// }
-		}
-		printf("\n");
-	}   
-#endif
+// 			// if(testLineBuffer[j][i] != inLineBuffer[j][i] )
+// 			// {
+// 			// 	printf("[%4d %4d][%d %d] ",  i,j, (int) inLineBuffer[j][i], (int) testLineBuffer[j][i]  );
+// 			// }
+// 		}
+// 		printf("\n");
+// 	}   
+// #endif
 }
 
 
@@ -321,6 +323,7 @@ void LoadDesc_ffa(int *scalar_conv_args,
 	int l_pool_ew                = scalar_args[101];
 	int l_scale_offset                 = scalar_args[102];
 	bool l_offline_quant_en   = scalar_args[103];
+	conv_desc.noOperateFlag= (bool) scalar_args[125];
 	conv_desc.inStreamFlag=(bool) scalar_args[126];
 	conv_desc.outStreamFlag=(bool) scalar_args[127];
 
@@ -1042,6 +1045,7 @@ void LoadKernels_fz(weight_struct weight_desc,
 			char a = weight_256bit_fz0.range((bit+7),bit);
 			weight_buff0_fd0[word_cnt_fz0.range(4,2)][word_cnt_fz0.range(1,0)][ddrpntr_fz0] = weight_256bit_fz0.range((bit+7),bit);
 		} //Weighttype_Loop
+	
 	} //Weight_Loop
 #endif//XI_KER_PROC
 
@@ -1286,7 +1290,7 @@ void Compute16Ker_fy(conv_struct conv_desc,
 		ap_uint<4> nkpf_cnt_fe0,
 		ap_int<36> result_ping_fe0[XI_KER_PROC][XI_PIX_PROC],
 		ap_uint<16> nk_process_fd0,
-		out_pix_struct out_pixels0_fc0,
+		out_pix_struct &out_pixels0_fc0,
 		output_struct output_desc,
 		ap_uint<14> weight_buff_offset,
 		bool ap_clk_div2)
@@ -1960,7 +1964,7 @@ void add_sat(ap_int<18> in1, ap_int<18> in2, ap_int<18> *out)
 
 template<int PNKPF>
 void OStgBuffSeq_fx(ap_int<36> result_ping_fe0[XI_KER_PROC][XI_PIX_PROC],
-		out_pix_struct out_pixels0_fc0, ap_uint<16> nk_process_fd0,
+		out_pix_struct &out_pixels0_fc0, ap_uint<16> nk_process_fd0,
 		conv_struct conv_desc, output_struct output_desc,
 		ap_uint<72> ostaging_buff0_fb0[2][XI_OSTG_BUFFER_SET][XI_OSTAGEBUFF_DEPTH],
 		ap_uint<16> ostgrow_x_width, ap_uint<4> nkpf2_cnt_fe1,
@@ -4069,24 +4073,24 @@ void LoadFeedingBuff_fl(input_struct input_desc,
 #endif
 
 
-#if PRINT_FEEDING_BUFF
-	printf("Pixel Coordinates:");
-	for (ap_uint<8> pix = 0; pix < XI_PIX_PROC; pix++)
-	{
-		printf("[%d %d]",(int) in_row_num[pix], (int) in_col_num[pix]);
-	}
-	printf("\n");
+// #if PRINT_FEEDING_BUFF
+// 	printf("Pixel Coordinates:");
+// 	for (ap_uint<8> pix = 0; pix < XI_PIX_PROC; pix++)
+// 	{
+// 		printf("[%d %d]",(int) in_row_num[pix], (int) in_col_num[pix]);
+// 	}
+// 	printf("\n");
 
-	for(int i=0;i<1024;i++)
-	{
-		printf("ADDRFEEDING[%6d]",i );
-		for(int j=0;j<XI_PIX_PROC/2;j++)
-		{
-			printf("[%3d %4d]", (int) input_buff0_fc0[j][i].range(63,16), (int) input_buff0_fc0[j][i].range(15,0)  );
-		}
-		printf("\n");
-	}	
-#endif
+// 	for(int i=0;i<1024;i++)
+// 	{
+// 		printf("ADDRFEEDING[%6d]",i );
+// 		for(int j=0;j<XI_PIX_PROC/2;j++)
+// 		{
+// 			printf("[% 8x]", (unsigned long int) input_buff0_fc0[j][i].range(63,0));
+// 		}
+// 		printf("\n");
+// 	}		
+// #endif
 }
 
 ap_int<32> abs_32bit(ap_int<32> in)
@@ -4278,9 +4282,7 @@ void reg_scale_val(ap_uint<24> scale_value_batch2[4][4],ap_uint<24> scale_value_
 template<int OUT_WW>
 void OutputWrite_fk(conv_struct conv_desc, ap_uint<16> pixbuff_planeoffset_fj0,
 		gmem_outputtype *gmem_output1_fa0,
-#if !XI_SINGLE_IO_PORT_EN
 		gmem_outputtype *gmem_output2_fa0,
-#endif
 		hls::stream< gmem_outputtype > &outStream1,
 		hls::stream< gmem_outputtype > &outStream2,
 		bool oStagBuf_dim2_bool_fj0,
@@ -4292,7 +4294,6 @@ void OutputWrite_fk(conv_struct conv_desc, ap_uint<16> pixbuff_planeoffset_fj0,
 		ap_uint<16> *fc_pixel_count,
 		ap_uint<2> plane_mod2)
 {
-#pragma HLS inline off
 
 	ap_uint<16> counter_ow_x_ostgrow_t = 0;
 	ap_uint<16> counter_plane16_t = 0;
@@ -4306,16 +4307,8 @@ void OutputWrite_fk(conv_struct conv_desc, ap_uint<16> pixbuff_planeoffset_fj0,
 
 
 	Write_Loop:
-#if !XI_IO_64bit_PORT_EN
 	for (ap_uint<16> ddr_pntr_fk0 = 0;    ddr_pntr_fk0 < layerx_loop_cnt_fj0; ddr_pntr_fk0++)
-#else
-		for (ap_uint<16> ddr_pntr_fk0 = 0;    ddr_pntr_fk0 < layerx_loop_cnt_fj0*2; ddr_pntr_fk0++)
-#endif
 		{
-#pragma HLS PIPELINE
-#pragma HLS LOOP_TRIPCOUNT min=11*120 max=11*120
-
-
 			ap_uint<16> ostg_addr_new = row_stage_offset + counter_ow_x_ostgrow_t + offset_all_featureMap;
 
 			ap_uint<16> ostg_addr_fk0 = ostg_addr_new;
@@ -4328,31 +4321,19 @@ void OutputWrite_fk(conv_struct conv_desc, ap_uint<16> pixbuff_planeoffset_fj0,
 
 			if(conv_desc.batch1_int8_en==0)//#if XI_BATCH1_EN==0
 			{
-#if !XI_SINGLE_IO_PORT_EN
 				ap_uint<16> bias_index_conv = (outImg_fj0/16) + counter_plane16_t;
 				ap_uint<16> bias_index_fc = fc_bias_idx/16;
-#else//if !XI_IO_64bit_PORT_EN
-				ap_uint<16> bias_index_conv = (outImg_fj0/8) + counter_plane16_t;
-				ap_uint<16> bias_index_fc = fc_bias_idx/8;
-#endif
 				ap_uint<16> bias_index;
 				if(conv_desc.fc_enable == 1)
 					bias_index = bias_index_fc;
 				else
 					bias_index = bias_index_conv;
 
-#if !XI_SINGLE_IO_PORT_EN
 				ap_uint<16> bias_index1 = bias_index*2;
 				ap_uint<16> bias_index2 = bias_index*2 + 1;
-#else//if XI_SINGLE_IO_PORT_EN && !XI_IO_64bit_PORT_EN
-				ap_uint<16> bias_index1 = bias_index;
-				ap_uint<16> bias_index2 = bias_index;
-#endif
 				ap_int<16> bias_from_bram[16];
-#pragma HLS ARRAY_PARTITION variable=bias_from_bram complete dim=0
 				for(ap_uint<5> idx=0; idx<8;idx++)
 				{
-#pragma HLS UNROLL
 					ap_int<16> word1 = bias_buff_fb0[idx][bias_index1];
 					ap_int<16> word2 = bias_buff_fb0[idx][bias_index2];
 					bias_from_bram[idx] 	= ((ap_int<16>)word1);
@@ -4360,10 +4341,8 @@ void OutputWrite_fk(conv_struct conv_desc, ap_uint<16> pixbuff_planeoffset_fj0,
 				}
 
 				ap_uint<24> scale_from_bram[16];
-#pragma HLS ARRAY_PARTITION variable=scale_from_bram complete dim=0
 				for(ap_uint<5> idx=0; idx<8;idx++)
 				{
-#pragma HLS UNROLL
 					ap_uint<24> scaleword1 = scale_buff_fb0[idx][bias_index1];
 					ap_uint<24> scaleword2 = scale_buff_fb0[idx][bias_index2];
 					scale_from_bram[idx] 	= ((ap_uint<24>)scaleword1);
@@ -4372,13 +4351,10 @@ void OutputWrite_fk(conv_struct conv_desc, ap_uint<16> pixbuff_planeoffset_fj0,
 
 				ap_int<32> bias_value_batch2[4][4];
 				ap_uint<24> scale_value_batch2[4][4],scale_value_batch2_reg[4][4];
-#pragma HLS ARRAY_PARTITION variable=scale_value_batch2_reg complete dim=0
-#pragma HLS ARRAY_PARTITION variable=scale_value_batch2 complete dim=0
 				ap_int<16> bias_value_fc = bias_from_bram[fc_bias_idx.range(3,0)];
 				ap_uint<24> scale_value_fc = scale_from_bram[fc_bias_idx.range(3,0)];
 				for(ap_uint<5> idx=0; idx<16;idx++)
 				{
-#pragma HLS UNROLL
 					if(conv_desc.fc_enable == 1)
 					{
 
@@ -4416,20 +4392,12 @@ void OutputWrite_fk(conv_struct conv_desc, ap_uint<16> pixbuff_planeoffset_fj0,
 				Outtype_Loop:
 				for (ap_uint<8> planes_fh0 = 0, bit_fh0 = 0,bit2_fh0 = 64, bit18=0; planes_fh0 < 4;    planes_fh0++, bit_fh0 += 16, bit2_fh0 += 16, bit18+=18)
 				{
-#pragma HLS LOOP_TRIPCOUNT min=4 max=4
-#pragma HLS UNROLL
-
 					ap_int<18> ostg_word_fh0[2][4];
-#pragma HLS ARRAY_PARTITION variable=ostg_word_fh0 complete dim=0
 
-#if XI_OSTG_BUFFER_SET==8
-
-#if !XI_SINGLE_IO_PORT_EN && !XI_IO_64bit_PORT_EN
 					if (eff_plane32_bool_fk0 == 0)
 					{
 						for (ap_uint<4> pl = 0; pl < 4; pl++)
 						{
-#pragma HLS UNROLL
 							ostg_word_fh0[0][pl] =    ostaging_buff0_fb0[0][pl][ostg_addr_fk0].range(bit18 + 17, bit18);
 							ostg_word_fh0[1][pl] =    ostaging_buff0_fb0[1][pl][ostg_addr_fk0].range(bit18 + 17, bit18);
 						}
@@ -4438,145 +4406,26 @@ void OutputWrite_fk(conv_struct conv_desc, ap_uint<16> pixbuff_planeoffset_fj0,
 					{
 						for (ap_uint<4> pl = 0; pl < 4; pl++)
 						{
-#pragma HLS UNROLL
 							ostg_word_fh0[0][pl] =  ostaging_buff0_fb0[0][pl + 4][ostg_addr_fk0].range(bit18 + 17, bit18);
 							ostg_word_fh0[1][pl] =  ostaging_buff0_fb0[1][pl + 4][ostg_addr_fk0].range(bit18 + 17, bit18);
 						}
 					}
-#else
-					if (eff_plane_mod2.range(1,0) == 0)
-					{
-						for (ap_uint<4> pl = 0; pl < 2; pl++)
-						{
-#pragma HLS UNROLL
-							ostg_word_fh0[0][pl] = ostaging_buff0_fb0[0][pl][ostg_addr_fk0].range(bit18 + 17, bit18);
-							ostg_word_fh0[1][pl] = ostaging_buff0_fb0[1][pl][ostg_addr_fk0].range(bit18 + 17, bit18);
-						}
-					}
-					else if (eff_plane_mod2.range(1,0) == 1)
-					{
-						for (ap_uint<4> pl = 0; pl < 2; pl++)
-						{
-#pragma HLS UNROLL
-							ostg_word_fh0[0][pl] = ostaging_buff0_fb0[0][pl + 2][ostg_addr_fk0].range(bit18 + 17, bit18);
-							ostg_word_fh0[1][pl] = ostaging_buff0_fb0[1][pl + 2][ostg_addr_fk0].range(bit18 + 17, bit18);
-						}
-					}
-					else if (eff_plane_mod2.range(1,0) == 2)
-					{
-						for (ap_uint<4> pl = 0; pl < 2; pl++)
-						{
-#pragma HLS UNROLL
-							ostg_word_fh0[0][pl] = ostaging_buff0_fb0[0][pl + 4][ostg_addr_fk0].range(bit18 + 17, bit18);
-							ostg_word_fh0[1][pl] = ostaging_buff0_fb0[1][pl + 4][ostg_addr_fk0].range(bit18 + 17, bit18);
-						}
-					}
-					else
-					{
-						for (ap_uint<4> pl = 0; pl < 2; pl++)
-						{
-#pragma HLS UNROLL
-							ostg_word_fh0[0][pl] = ostaging_buff0_fb0[0][pl + 6][ostg_addr_fk0].range(bit18 + 17, bit18);
-							ostg_word_fh0[1][pl] = ostaging_buff0_fb0[1][pl + 6][ostg_addr_fk0].range(bit18 + 17, bit18);
-						}
-					}
-#endif//NUM_IO_PORT==2
-
-#else//XI_OSTG_BUFFER_SET==4
-#if !XI_SINGLE_IO_PORT_EN && !XI_IO_64bit_PORT_EN
-					for (ap_uint<4> pl = 0; pl < 4; pl++)
-					{
-#pragma HLS UNROLL
-						ostg_word_fh0[0][pl] = ostaging_buff0_fb0[0][pl][ostg_addr_fk0].range(bit18 + 17, bit18);
-						ostg_word_fh0[1][pl] = ostaging_buff0_fb0[1][pl][ostg_addr_fk0].range(bit18 + 17, bit18);
-					}
-#elif XI_SINGLE_IO_PORT_EN && !XI_IO_64bit_PORT_EN
-					if (eff_plane_mod2[0] == 0)
-					{
-						for (ap_uint<4> pl = 0; pl < 2; pl++)
-						{
-#pragma HLS UNROLL
-							ostg_word_fh0[0][pl] = ostaging_buff0_fb0[0][pl][ostg_addr_fk0].range(bit18 + 17, bit18);
-							ostg_word_fh0[1][pl] = ostaging_buff0_fb0[1][pl][ostg_addr_fk0].range(bit18 + 17, bit18);
-						}
-					}
-					else
-					{
-						for (ap_uint<4> pl = 0; pl < 2; pl++)
-						{
-#pragma HLS UNROLL
-							ostg_word_fh0[0][pl] = ostaging_buff0_fb0[0][pl+2][ostg_addr_fk0].range(bit18 + 17, bit18);
-							ostg_word_fh0[1][pl] = ostaging_buff0_fb0[1][pl+2][ostg_addr_fk0].range(bit18 + 17, bit18);
-						}
-					}
-#else
-					if (ddr_pntr_fk0[0] == 0)
-					{
-						for (ap_uint<4> pl = 0, pld = 0; pl < 4; pl+=2, pld++)
-						{
-#pragma HLS UNROLL
-							ostg_word_fh0[0][pld] = ostaging_buff0_fb0[0][pl][ostg_addr_fk0].range(bit18 + 17, bit18);
-							ostg_word_fh0[1][pld] = ostaging_buff0_fb0[1][pl][ostg_addr_fk0].range(bit18 + 17, bit18);
-						}
-					}
-					else
-					{
-						for (ap_uint<4> pl = 1, pld = 0; pl < 4; pl+=2, pld++)
-						{
-#pragma HLS UNROLL
-							ostg_word_fh0[0][pld] = ostaging_buff0_fb0[0][pl][ostg_addr_fk0].range(bit18 + 17, bit18);
-							ostg_word_fh0[1][pld] = ostaging_buff0_fb0[1][pl][ostg_addr_fk0].range(bit18 + 17, bit18);
-						}
-					}
-#endif
-
-#endif//XI_OSTG_BUFFER_SET
 
 					ap_int<32> ostg_word_out_fh0[2][OUT_PARTITION];
-#pragma HLS ARRAY_PARTITION variable=ostg_word_fh0 complete dim=0
-#pragma HLS resource variable=ostg_word_out_fh0 core=DSP48 latency=2
-#if !XI_SINGLE_IO_PORT_EN && XI_IO_64bit_PORT_EN
+
 					for (ap_uint<4> pl = 0; pl < OUT_PARTITION; pl++)
 					{
-#pragma HLS UNROLL
-						ap_int<18> mul_in1_0,mul_in1_1;
-						ap_int<24> mul_in2;
-						ap_int<32> add_in2;
-						if (ddr_pntr_fk0[0] == 0)
-						{
-							mul_in1_0 = ostg_word_fh0[0][pl];
-							mul_in1_1 = ostg_word_fh0[1][pl];
-							mul_in2 = scale_value_batch2_reg[planes_fh0][2*pl];
-							add_in2 = bias_value_batch2[planes_fh0][2*pl];
-						}
-						else
-						{
-							mul_in1_0 = ostg_word_fh0[0][pl];
-							mul_in1_1 = ostg_word_fh0[1][pl];
-							mul_in2 = scale_value_batch2_reg[planes_fh0][2*pl + 1];
-							add_in2 = bias_value_batch2[planes_fh0][2*pl + 1];
-						}
-						ostg_word_out_fh0[0][pl] = mul_in1_0*mul_in2 + add_in2;//ostg_word_fh0[0][pl] * scale_value_batch2_reg[planes_fh0][pl] + bias_value_batch2[planes_fh0][pl];
-						ostg_word_out_fh0[1][pl] = mul_in1_1*mul_in2 + add_in2;//ostg_word_fh0[1][pl]	* scale_value_batch2_reg[planes_fh0][pl] + bias_value_batch2[planes_fh0][pl];
-					}
-#else
-					for (ap_uint<4> pl = 0; pl < OUT_PARTITION; pl++)
-					{
-#pragma HLS UNROLL
 						ostg_word_out_fh0[0][pl] = ostg_word_fh0[0][pl] * scale_value_batch2_reg[planes_fh0][pl] + bias_value_batch2[planes_fh0][pl];
 						ostg_word_out_fh0[1][pl] = ostg_word_fh0[1][pl]	* scale_value_batch2_reg[planes_fh0][pl] + bias_value_batch2[planes_fh0][pl];
 					}
-#endif
 
 					ap_int<16> word_relu_fh0[OUT_PARTITION];
 					saturation_round(ostg_word_out_fh0, word_relu_fh0,conv_desc.inout_precision, conv_desc.int6_en_out,conv_desc.relu_en, crelu_bit, rounding_value);
 
 					word1_128bit_fk0.range(bit_fh0 + 15, bit_fh0) = word_relu_fh0[0];
 					word1_128bit_fk0.range(bit2_fh0 + 15, bit2_fh0) = word_relu_fh0[1];
-#if !XI_SINGLE_IO_PORT_EN && !XI_IO_64bit_PORT_EN
 					word2_128bit_fk0.range(bit_fh0 + 15, bit_fh0) = word_relu_fh0[2];
 					word2_128bit_fk0.range(bit2_fh0 + 15, bit2_fh0) = word_relu_fh0[3];
-#endif
 				}//Outtype_loop
 			}
 			else
@@ -4584,15 +4433,12 @@ void OutputWrite_fk(conv_struct conv_desc, ap_uint<16> pixbuff_planeoffset_fj0,
 				Outtype_Loop1:
 				for (ap_uint<10> set_fh0 = 0, bit_fh0 = 0; set_fh0 < 4;    set_fh0++, bit_fh0 += 32)
 				{
-#pragma HLS LOOP_TRIPCOUNT min=4 max=4
-#pragma HLS UNROLL
 
 					ap_uint<72> word72bit_ostg = ostaging_buff0_fb0[0][set_fh0][ostg_addr_fk0];
 					ap_uint<32> word32bit_sat;
 
 					for(ap_uint<10> plane=0, bit18=0, bit8=0; plane<4; plane++,bit18+=18,bit8+=8)
 					{
-#pragma HLS UNROLL
 						ap_int<18> ostg_word_fh0 =  word72bit_ostg.range(bit18 + 17, bit18);
 						ap_int<8> word_relu_fh0;
 						saturation_round_batch1(ostg_word_fh0, &word_relu_fh0,
@@ -4605,19 +4451,16 @@ void OutputWrite_fk(conv_struct conv_desc, ap_uint<16> pixbuff_planeoffset_fj0,
 
 				}//Outtype_loop
 
-#if XI_OSTG_BUFFER_SET==8
 				Outtype_Loop2:
 				for (ap_uint<10> set_fh0 = 4, bit_fh0 = 0; set_fh0 < 8; set_fh0++, bit_fh0 += 32)
 				{
-#pragma HLS LOOP_TRIPCOUNT min=4 max=4
-#pragma HLS UNROLL
+
 
 					ap_uint<72> word72bit_ostg = ostaging_buff0_fb0[0][set_fh0][ostg_addr_fk0];
 					ap_uint<32> word32bit_sat;
 
 					for(ap_uint<10> plane=0, bit18=0, bit8=0; plane<4; plane++,bit18+=18,bit8+=8)
 					{
-#pragma HLS UNROLL
 						ap_int<18> ostg_word_fh0 = word72bit_ostg.range(bit18 + 17, bit18);
 						ap_int<8> word_relu_fh0;
 						saturation_round_batch1(ostg_word_fh0, &word_relu_fh0,
@@ -4629,7 +4472,7 @@ void OutputWrite_fk(conv_struct conv_desc, ap_uint<16> pixbuff_planeoffset_fj0,
 					word2_128bit_fk0.range(bit_fh0 + 31, bit_fh0) = word32bit_sat;
 
 				} //Outtype_loop
-#endif
+
 
 			}//Batch1 or batch2
 
@@ -4646,7 +4489,12 @@ void OutputWrite_fk(conv_struct conv_desc, ap_uint<16> pixbuff_planeoffset_fj0,
 			if(conv_desc.outStreamFlag)
 				outStream1<<write1;	
 			else
+			{
 				gmem_output1_fa0[ddr_pntr_fk0] = write1;
+				// printf("%8x\n", (int)write1);
+			}
+
+				
 			
 			
 #else
@@ -5091,7 +4939,6 @@ void InputReadLayer1LineBuffer(ap_uint<16> layerx_loop_cnt_fg0,
 
 	ap_uint<16> counter_row8_x_iw = 0;
 	ap_uint<3> istg_dim2 = 0;
-	printf("layerx_loop_cnt_fg0 %d\n",(int) layerx_loop_cnt_fg0);
 	Input_Layer1_Loop:
 	for (ap_uint<16> ddr_pntr_fi0 = 0;ddr_pntr_fi0 < layerx_loop_cnt_fg0; ddr_pntr_fi0++)
 	{
@@ -5184,7 +5031,6 @@ void InputReadLayer1_fi(ap_uint<16> layerx_loop_cnt_fg0,
 
 	ap_uint<16> counter_row8_x_iw = 0;
 	ap_uint<3> istg_dim2 = 0;
-	printf("layerx_loop_cnt_fg0 %d\n",(int) layerx_loop_cnt_fg0);
 	Input_Layer1_Loop:
 	for (ap_uint<16> ddr_pntr_fi0 = 0;ddr_pntr_fi0 < layerx_loop_cnt_fg0; ddr_pntr_fi0++)
 	{
@@ -7088,7 +6934,7 @@ void ProcResult_fe(input_struct input_desc,
 		weight_struct weight_desc,
 		ap_uint<16> nk_process_fd0,
 		output_struct output_desc,
-		out_pix_struct out_pixels0_fc0,
+		out_pix_struct &out_pixels0_fc0,
 		weight_width weight_buff0_fd0[XI_KER_PROC][4][XI_WEIGHTBUFF_DEPTH],
 		ap_uint<64> input_buff0_fc0[XI_PIX_PROC/2][1024],
 		ap_uint<72> ostaging_buff0_fb0[2][XI_OSTG_BUFFER_SET][XI_OSTAGEBUFF_DEPTH],
@@ -7203,7 +7049,7 @@ void ProcWeightBuff_fd(input_struct input_desc,
 		conv_struct conv_desc,
 		weight_struct weight_desc,
 		output_struct output_desc,
-		out_pix_struct out_pixels0_fc0,
+		out_pix_struct &out_pixels0_fc0,
 		ap_uint<64> input_buff0_fc0[XI_PIX_PROC / 2][1024],
 		ap_uint<72> ostaging_buff0_fb0[2][XI_OSTG_BUFFER_SET][XI_OSTAGEBUFF_DEPTH],
 		gmem_weighttype *gmem_weight1_fa0, gmem_weighttype *gmem_weight2_fa0,
@@ -7457,6 +7303,7 @@ void ProcInputBuff_fc(input_struct input_desc,
 			/*..continue..*/pad_row_fc0, pad_row_wo_fc0,row_id_1st_32pix_fc0, col_id_1st_32pix_fc0, row_id_2nd_32pix_fc0, col_id_2nd_32pix_fc0, mac_fz0, &pc_ping);
 
 	bool flag_fc0 = 0;
+	
 	Pc_Loop:
 	for(ap_uint<16> pc_encoded_fc0=conv_desc.pix_per_kp, pc_fc0=0;pc_encoded_fc0<pc_loop_max_fc0;pc_encoded_fc0=pc_encoded_fc0+conv_desc.pix_per_kp)
 	{
@@ -8265,7 +8112,6 @@ void ProcIStagingBuff_fb(input_struct input_desc,
 		out_row_offset_fb0+=conv_desc.ostg_row_count;
 		write_en_fb0 = 1;
 	}//ProciStg_Loop
-printf("START processing row:%d %d\n ",(int) startrow_process_fb0, (int) input_desc.endRow );
 	ap_uint<16> rows_to_process_last_fb0 = conv_desc.ostg_row_count - (outrow_max_fb0 - output_desc.height);
 #if 1
 	if (pingpong_flag_fb0 == 1) {
@@ -8393,7 +8239,7 @@ void ConvLayer_fa(input_struct input_desc,
 		weight_struct weight_desc,
 		output_struct output_desc,
 		conv_struct conv_desc,
-		group_conv_struct group_desc,
+		group_conv_struct &group_desc,
 		gmem_weighttype *weights1,
 		gmem_weighttype *weights2,
 #if (XI_KER_PROC==16 || (XI_WTS_PORT_64BIT_EN==1 && XI_KER_PROC==8) )
@@ -8452,8 +8298,8 @@ void ConvLayer_fa(input_struct input_desc,
 		output_group_offset_fa0 = group_desc.output_offset;
 		bias_group_offset_fa0 = group_desc.bias_offset;
 	}
-	printf("GROUP_OFFSET!:%d V:%d\n",(int) output_group_offset_fa0,(int) conv_desc.group_en);
 
+	printf("Group offset: %d\n", (int) output_group_offset_fa0);
 	gmem_inputtype_layer1 *gmem_input_layer1_fa0 = input_1st + input_group_offset_1st_fa0;
 	gmem_inputtype_layerx *gmem_input_layer_other1_fa0 = input_other1 + input_group_offset_other_fa0;
 #if !XI_SINGLE_IO_PORT_EN
@@ -8512,3 +8358,6 @@ void ConvLayer_fa(input_struct input_desc,
 }
 
 
+}
+
+#endif

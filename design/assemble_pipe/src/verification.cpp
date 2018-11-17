@@ -1,4 +1,4 @@
-#include "testbench_defines.h"
+#include "verification.h"
 #include <stdio.h>
 #include "../include/xi_conv_config.h"
 
@@ -16,6 +16,7 @@ void memToStream(
     int offset
 )
 {
+    printf(" Mem to stream options: %d %d %d", height,width,depthBy16);
     for(int rowIdx=0;rowIdx<height;rowIdx++)
     {
         for(int j=0;j<depthBy16;j++)
@@ -104,7 +105,17 @@ void loadStreamData(int layerId, int groupId,
 }
 
 
-
+void load_args_pool_bypass
+(
+    int inWidth,
+    int inHeight,
+    int planes,
+    int *scalar_args
+)
+{
+    scalar_args[21]=1;
+    scalar_args[22]=inWidth*inHeight*planes/16;
+}
 
 
 void load_args_pool
@@ -154,6 +165,7 @@ void load_args_pool
     scalar_args[18] = outDDRPlaneStep;
 	scalar_args[19] = 0;
     scalar_args[20] = 0;
+    scalar_args[21] = 0;
 
 }
 
@@ -168,7 +180,7 @@ void load_pool_input
 {
 	char filename[200];
     FILE* fd;
-    sprintf(filename,DATA_FILE_PATH"pool_input_%d_%d", layerId, groupId);
+    sprintf(filename,ARG_FILE_PATH"pool_input_%d_%d", layerId, groupId);
 	
 	fd = fopen(filename, "rb");
     if(fd==NULL) { printf("%s not found\n", filename); exit(-3);}
@@ -193,11 +205,14 @@ void load_args_conv
 { 
     char filename[200];
     FILE* fd;
-    sprintf(filename,DATA_FILE_PATH"args_%d_group%d", layerIdx, groupIdx);
+    if(layerIdx==0 || layerIdx == 4)
+    sprintf(filename,"/home/xliu79/Research/2018Fall/model_args/alexnet_36_6bit/args_%d_group%d", layerIdx, groupIdx);
+    else
+    sprintf(filename,"/home/xliu79/Research/2018Fall/model_args/alexnet_110_6bit/args_%d_group%d", layerIdx, groupIdx);
+
     fd = fopen(filename, "rb");
     if(fd==NULL) { 
         printf("%s not found\n", filename); 
-      
         return;}
     fread(scalar_args,sizeof(int),128, fd);
     scalar_args[126]=0;
@@ -328,6 +343,7 @@ void save_answer
     gmem_outputtype* output2_gold
 )
 {
+    printf("Save %s\n",filename );
     FILE* fd = fopen(filename, "wb");
     fwrite( output1_gold,sizeof(char),OUTPUT_BYTES,fd);
     fwrite( output2_gold,sizeof(char),OUTPUT_BYTES,fd);
@@ -340,6 +356,7 @@ void load_answer
     gmem_outputtype* output1_gold,
     gmem_outputtype* output2_gold)
 {
+    printf("Loading %s\n",filename );
     FILE* fd = fopen(filename, "rb");
     if(fd==NULL)
     {

@@ -21,7 +21,7 @@ limitations under the License.
 #include "xi_conv_config.h"
 
 #define XI_LINEBUFFER_DEPTH 8192*2
-typedef ap_uint<14> uLineBuffAddr_t;
+typedef ap_uint<12> uLineBuffAddr_t;
 
 
 

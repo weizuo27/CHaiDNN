@@ -11,7 +11,7 @@
 
 #define PLANE_PACK_SIZE 16 
 
-#define WEIGHT_BYTES 221184
+#define WEIGHT_BYTES 2359296
 #define INPUT_BYTES 1605632
 #define OUTPUT_BYTES 1605632
 #define BIAS_BYTES 12288
@@ -28,7 +28,7 @@
 #define INDEPTH INBYTES/16
 
 #define DATA_FILE_PATH "/home/xliu79/Research/2018Fall/model_args/AlexOneRow/"
-
+#define ARG_FILE_PATH ""
 void load_args_pool
 (
     int layerIdx,
@@ -102,6 +102,12 @@ void memToStream(
     ap_uint<128>* mem,
     int offset
 );
-
+void load_args_pool_bypass
+(
+    int inWidth,
+    int inHeight,
+    int planes,
+    int *scalar_args
+);
 
 #endif //_TESTBENCH_DEFINE_H 

@@ -6,10 +6,10 @@
 #include <hls_stream.h>
 #include <time.h>
 #include "../include/xi_conv_desc.h"
-#include "../include/xi_conv_config.h"
 #include "../include/maxpool_config.h"
-#include "testbench_defines.h"
-
+#include "../IP36/IP36.h"
+#include "verification.h"
+#include "pipeSystem.h"
 
 
 
@@ -25,125 +25,155 @@ gmem_weighttype weights4[8][WEIGHT_DEPTH]={};
 
 
 
-gmem_inputtype_layerx input1[7][INPUT_DEPTH]={};
-gmem_inputtype_layerx input2[7][INPUT_DEPTH]={};
+gmem_inputtype_layerx input1[8][INPUT_DEPTH]={};
+gmem_inputtype_layerx input2[8][INPUT_DEPTH]={};
 
 
 
 
 
 
-gmem_inputtype_layer1 input_layer1[INPUT_DEPTH]={};
+gmem_inputtype_layer1 input_layer1[8][INPUT_DEPTH]={};
 
 
-gmem_inputtype_layer1 inp_norm_2[INPUT_DEPTH]={};
-gmem_inputtype_layer1 inp_norm_3[INPUT_DEPTH]={};
-
-
-
-gmem_biastype bias[7][BIAS_DEPTH]={};
+gmem_inputtype_layer1 inp_norm_2[8][INPUT_DEPTH]={};
+gmem_inputtype_layer1 inp_norm_3[8][INPUT_DEPTH]={};
 
 
 
+gmem_biastype bias[8][BIAS_DEPTH]={};
 
 
 
-gmem_inputtype_layer1 istg_out1[OUTPUT_DEPTH]={};
-gmem_inputtype_layer1 istg_out2[OUTPUT_DEPTH]={};
+
+
+
+gmem_inputtype_layer1 istg_out1[8][OUTPUT_DEPTH]={};
+gmem_inputtype_layer1 istg_out2[8][OUTPUT_DEPTH]={};
 
 
 
 gmem_inputtype_layer1 istg_out1_gold[INPUT_DEPTH]={};
 gmem_inputtype_layer1 istg_out2_gold[INPUT_DEPTH]={};
 
-gmem_outputtype output1[7][OUTPUT_DEPTH]={};
-gmem_outputtype output2[7][OUTPUT_DEPTH]={};
+gmem_outputtype output1[8][OUTPUT_DEPTH]={};
+gmem_outputtype output2[8][OUTPUT_DEPTH]={};
 
 
-gmem_outputtype outputSol1[7][OUTPUT_DEPTH]={};
-gmem_outputtype outputSol2[7][OUTPUT_DEPTH]={};
+gmem_outputtype outputSol1[8][OUTPUT_DEPTH]={};
+gmem_outputtype outputSol2[8][OUTPUT_DEPTH]={};
 
 
 gmem_inputtype_layerx wts[100];
 
 
 
-void dividor(int height, int width, int depthPackNumHalf,
-    hls::stream< ap_uint<128> > & in_stream1,
-    hls::stream< ap_uint<128> > & in_stream2,
-    hls::stream< ap_uint<128> > & out_stream1Group0,
-    hls::stream< ap_uint<128> > & out_stream2Group0,
-    hls::stream< ap_uint<128> > & out_stream1Group1,
-    hls::stream< ap_uint<128> > & out_stream2Group1
+
+
+void setDivisorArgs
+(
+    int* divisorArgs,
+    int* groupArgs, 
+    int opFlag
 )
 {
-    for(int j=0;j<height;j++)
+    if(opFlag)
     {
-        for(int i=0;i<depthPackNumHalf;i++)
-        {
-            for(int k=0;k<width; k++)
-            {
-                #pragma HLS pipeline
-                ap_uint<128> temp1,temp2;
-                in_stream1>>temp1;
-                in_stream2>>temp2;
-                out_stream1Group0<<temp1;
-                out_stream2Group0<<temp2;
-            }
-        }
-        for(int i=0;i<depthPackNumHalf;i++)
-        {
-            for(int k=0;k<width; k++)
-            {
-                #pragma HLS pipeline
-                ap_uint<128> temp1,temp2;
-                in_stream1>>temp1;
-                in_stream2>>temp2;
-                out_stream1Group1<<temp1;
-                out_stream2Group1<<temp2;
-            }
-        }
+        divisorArgs[0]=groupArgs[0];
+        divisorArgs[1]=groupArgs[1];
+        divisorArgs[2]=groupArgs[61]/16;  
     }
+    else
+    {
+        divisorArgs[0]=0;
+        divisorArgs[1]=0;
+        divisorArgs[2]=0;
+    }
+    printf("divider argumetns: %d %d %d\n", divisorArgs[0], divisorArgs[1], divisorArgs[2]);
+    
+}
+
+void setCombinerArgs
+(
+    int* combinerArgs,
+    int* groupArgs, // the group that goes into it
+    int opFlag
+)
+{
+    if(opFlag)
+    {
+        combinerArgs[0]=groupArgs[2];
+        combinerArgs[1]=groupArgs[3];
+        combinerArgs[2]=groupArgs[62]/16;  
+    }
+    else
+    {
+        combinerArgs[0]=0;
+        combinerArgs[1]=0;
+        combinerArgs[2]=0;
+    }
+    printf("combiner argumetns: %d %d %d\n", combinerArgs[0], combinerArgs[1], combinerArgs[2]);
 }
 
 
-void combiner(int height, int width, int depthPackNumHalf,
-    hls::stream< ap_uint<128> > & in_stream1,
-    hls::stream< ap_uint<128> > & in_stream2,
-    hls::stream< ap_uint<128> > & out_stream1Group0,
-    hls::stream< ap_uint<128> > & out_stream2Group0,
-    hls::stream< ap_uint<128> > & out_stream1Group1,
-    hls::stream< ap_uint<128> > & out_stream2Group1
+void setConvArgs
+(
+    int* convArgs,
+    int opFlag,
+    int streamInFlag,
+    int streamOutFlag
 )
 {
-    for(int j=0;j<height;j++)
+    if(opFlag) 
     {
-        for(int i=0;i<depthPackNumHalf;i++)
+        printf("Conv Operates\n");
+        convArgs[125]=0;
+    }
+    else 
+    {
+        printf("Conv No Operates\n");
+        convArgs[125]=1;
+    }
+
+    
+    convArgs[126]=streamInFlag;
+    convArgs[127]=streamOutFlag;
+}
+
+void setPoolArgs
+(
+    int* poolArgs,
+    int* convArgs, // bypass number decided by its previous layer
+    int opFlag,
+    int byPassFlag,
+    int streamInFlag,
+    int streamOutFlag
+)
+{
+    printf("Opflags: %d %d %d %d\n",opFlag, byPassFlag, streamInFlag, streamOutFlag);
+    if(opFlag)
+    {
+        poolArgs[19]=streamInFlag;
+        poolArgs[20]=streamOutFlag;
+        if(byPassFlag)
         {
-            for(int k=0;k<width; k++)
-            {
-                #pragma HLS pipeline
-                ap_uint<128> temp1,temp2;
-                in_stream1>>temp1;
-                in_stream2>>temp2;
-                out_stream1Group0<<temp1;
-                out_stream2Group0<<temp2;
-            }
-        }
-        for(int i=0;i<depthPackNumHalf;i++)
-        {
-            for(int k=0;k<width; k++)
-            {
-                #pragma HLS pipeline
-                ap_uint<128> temp1,temp2;
-                in_stream1>>temp1;
-                in_stream2>>temp2;
-                out_stream1Group1<<temp1;
-                out_stream2Group1<<temp2;
-            }
+        int inHeight=convArgs[2];
+        int inWidth=convArgs[3];
+        int depth=convArgs[62];
+        poolArgs[19]=0;
+        poolArgs[20]=0;
+        load_args_pool_bypass(inHeight,inWidth,depth,poolArgs);
         }
     }
+    else
+    {
+        load_args_pool_bypass(0,0,0,poolArgs);
+    }
+
+    printf("Scala Pool:%d %d %d %d\n",poolArgs[19], poolArgs[20],poolArgs[21], poolArgs[22]);
 }
+
+
 
 
 #define __SDSVHLS__
@@ -151,299 +181,202 @@ int main()
 {
     clock_t startTime = clock();
     int scalaArgs[8][2][128]={};
-    int scalarPoolArgs[32]={};
-
-    int layerId=0;
-
-
-
-
-    
-    
-    
-    
-
-
-
-
-//args loadign region
-
-    for(int i=0;i<8;i++)
-    {
-        
-        load_args_conv(i,0,scalaArgs[i][0]); 
-        load_args_conv(i,1,scalaArgs[i][1]);        
-        load_args_pool(i,0,scalaArgs[i][0]); 
-        load_args_pool(i,1,scalaArgs[i][1]);  
-            
-    }
-
-
-    
-  
-
-
-    
-    
-
-
-    
-
-
-
-
-
-
-    //declaration of streaming system
-    hls::stream< ap_uint<128> > streamStart1("streamStart1");
-    hls::stream< ap_uint<128> > streamStart2("streamStart2");
-
-    hls::stream< ap_uint<128> > stream0To1_1("stream0_1_1");
-    hls::stream< ap_uint<128> > stream0To1_2("stream0_1_2");
-
-    hls::stream< ap_uint<128> > stream1To2_1("stream1_2_1");
-    hls::stream< ap_uint<128> > stream1To2_2("stream1_2_2");
-
-    hls::stream< ap_uint<128> > stream1To2group0_1("stream1_2_g0_1");
-    hls::stream< ap_uint<128> > stream1To2group1_1("stream1_2_g1_1");
-    hls::stream< ap_uint<128> > stream1To2group0_2("stream1_2_g0_2");
-    hls::stream< ap_uint<128> > stream1To2group1_2("stream1_2_g1_2");
-
-    hls::stream< ap_uint<128> > stream2To3group0_1("stream2_3_g0_1");
-    hls::stream< ap_uint<128> > stream2To3group1_1("stream2_3_g0_2");
-    hls::stream< ap_uint<128> > stream2To3group0_2("stream2_3_g1_1");
-    hls::stream< ap_uint<128> > stream2To3group1_2("stream2_3_g1_2");
-
-    hls::stream< ap_uint<128> > stream2To3_1("stream2_3_1");
-    hls::stream< ap_uint<128> > stream2To3_2("stream2_3_2");
-
-    hls::stream< ap_uint<128> > stream3To4_1("stream3_4_1");
-    hls::stream< ap_uint<128> > stream3To4_2("stream3_4_2");
-
-    hls::stream< ap_uint<128> > stream4To5_1("stream4_5_1");
-    hls::stream< ap_uint<128> > stream4To5_2("stream4_5_2");
-
-
-    hls::stream< ap_uint<128> > stream4To5group0_1("stream4_5_g0_1");
-    hls::stream< ap_uint<128> > stream4To5group1_1("stream4_5_g0_2");
-    hls::stream< ap_uint<128> > stream4To5group0_2("stream4_5_g1_1");
-    hls::stream< ap_uint<128> > stream4To5group1_2("stream4_5_g1_2");
-
-    hls::stream< ap_uint<128> > stream5To6group0_1("stream5_6_g0_1");
-    hls::stream< ap_uint<128> > stream5To6group1_1("stream5_6_g0_2");
-    hls::stream< ap_uint<128> > stream5To6group0_2("stream5_6_g1_1");
-    hls::stream< ap_uint<128> > stream5To6group1_2("stream5_6_g1_2");
-
-    hls::stream< ap_uint<128> > stream6To7group0_1("stream6_7_g0_1");
-    hls::stream< ap_uint<128> > stream6To7group1_1("stream6_7_g0_2");
-    hls::stream< ap_uint<128> > stream6To7group0_2("stream6_7_g1_1");
-    hls::stream< ap_uint<128> > stream6To7group1_2("stream6_7_g1_2");
-
-    hls::stream< ap_uint<128> > stream6To7_1("stream6_7_1");
-    hls::stream< ap_uint<128> > stream6To7_2("stream6_7_2");
-
-
-    hls::stream< ap_uint<128> > streamEnd1("streamEnd1");
-    hls::stream< ap_uint<128> > streamEnd2("streamEnd2");
-    
-
-    //modify stream option
-
-
-
-
-
-    
-    // layerId=1;
-    
-
-    // PoolingLayerLineBuffer(
-    // output1[0],
-    // output2[0],
-    // stream0To1_1,
-    // stream0To1_2,
-    // output1[layerId],
-    // output2[layerId],
-    // streamEnd1,
-    // streamEnd2,
-    // scalaArgs[layerId][0]
-    // );
-
-
-
-    layerId=2;
-    load_data(
-    layerId, 
-    weights1[layerId],
-    weights2[layerId], 
-    weights3[layerId],
-    weights4[layerId], 
-    input1[layerId], 
-    input2[layerId],
-    input_layer1,
-    bias[layerId],
-    inp_norm_2, 
-    inp_norm_3,
-    outputSol1[layerId],
-    outputSol2[layerId],
-    istg_out1,istg_out2);
-
-    // short out_h       	= scalar_args[2]; 
-	// short out_w      	= scalar_args[3];
-	// short n_planes    	= scalar_args[4]; 
-
+    int scalarPoolArgs[8][32]={};
 
    
 
-    memToStream(
-        27, 
-        27,
-        6,
-        stream1To2_1,
-        input1[layerId],
-        0
-        );
-
-    memToStream(
-        27, 
-        27,
-        6,
-        stream1To2_2,
-        input2[layerId],
-        0
-        );
-
-
-    dividor(        
-        27, 
-        27,
-        3,
-        stream1To2_1,
-        stream1To2_2,
-        stream1To2group0_1,
-        stream1To2group0_2,
-        stream1To2group1_1,
-        stream1To2group1_2
-        );
-    
-
-
-
-
-    
-
-
-    // int depth=96;
-    // int Pixel=27*27;
-    // for(int j=0;j<depth/16;j++)
-    // for(int i=0;i<Pixel;i++)
-    // {
-    //     unsigned long int addr=j*Pixel+i;
-    //     unsigned long int Val1=i;
-    //     unsigned long int Val2=j;
-
-    //     input1[layerId][addr].range(63,0)=Val1;
-    //     input1[layerId][addr].range(127,64)=Val2;
-
-
-    //     input2[layerId][addr].range(63,0)=Val1;
-    //     input2[layerId][addr].range(127,64)=Val2;
-
-    // }
-
-    scalaArgs[layerId][0][126]=1;
-    scalaArgs[layerId][0][127]=0;
-    scalaArgs[layerId][1][126]=1;
-    scalaArgs[layerId][1][127]=0;
-
-    Convolution(
-    weights1[layerId],
-    weights2[layerId],
-    #if (XI_KER_PROC==16 || (XI_WTS_PORT_64BIT_EN==1 && XI_KER_PROC==8) )
-    weights3[layerId],
-    weights4[layerId],
-    #endif
-    output1[layerId],
-    output2[layerId],
-    stream2To3_1,
-    stream2To3_2,
-    input1[layerId],
-    input2[layerId],
-    stream1To2group0_1,
-    stream1To2group0_2,
-    input_layer1,
-    bias[layerId],
-    inp_norm_2,
-    inp_norm_3,
-    istg_out1,
-    istg_out2,
-    scalaArgs[2][0],
-    0
-    );
-
-
-
-
-    Convolution(
-    weights1[layerId],
-    weights2[layerId],
-    #if (XI_KER_PROC==16 || (XI_WTS_PORT_64BIT_EN==1 && XI_KER_PROC==8) )
-    weights3[layerId],
-    weights4[layerId],
-    #endif
-    output1[layerId],
-    output2[layerId],
-    stream2To3_1,
-    stream2To3_2,
-    input1[layerId],
-    input2[layerId],
-    stream1To2group1_1,
-    stream1To2group1_2,
-    input_layer1,
-    bias[layerId],
-    inp_norm_2,
-    inp_norm_3,
-    istg_out1,
-    istg_out2,
-    scalaArgs[2][1],
-    0
-    );
-
-
-    char filename[200];
-    sprintf(filename,"/home/xliu79/Research/2018Fall/debugData/AlexConv_%02d",layerId);
-    load_answer(filename,outputSol1[layerId],outputSol2[layerId]);
-
-
-    for(int i=0;i<18150;i++)
-    {
-        if(outputSol1[layerId][i]!=output1[layerId][i]) 
-        {
-            printf("Addr[%8d] %08x %08x %08x %08x\n", i,
-            (unsigned int) outputSol1[layerId][i].range(127,96),
-            (unsigned int) outputSol1[layerId][i].range(95,64),
-            (unsigned int) outputSol1[layerId][i].range(63,32),
-            (unsigned int) outputSol1[layerId][i].range(31,0));
-        
-            printf("Addr[%8d] %08x %08x %08x %08x\n", i,
-            (unsigned int) output1[layerId][i].range(127,96),
-            (unsigned int) output1[layerId][i].range(95,64),
-            (unsigned int) output1[layerId][i].range(63,32),
-            (unsigned int) output1[layerId][i].range(31,0));
-        }
+    for(int i=0;i<8;i++)
+    {     
+        load_args_conv(i,0,scalaArgs[i][0]); 
+        load_args_conv(i,1,scalaArgs[i][1]);        
+        load_args_pool(i,0,scalarPoolArgs[i]); 
+        load_args_pool(i,1,scalarPoolArgs[i]); 
+                  
     }
 
+    char filename[200];
 
-    if(!memcmp(outputSol1[layerId],output1[layerId],sizeof(gmem_outputtype)*INPUT_DEPTH) )
+    int IP36_layerId=0;
+    int IP110_layerId=6;
+    int output_layerId=7;
+
+
+    load_data(
+    IP36_layerId, 
+    weights1[IP36_layerId],
+    weights2[IP36_layerId], 
+    weights3[IP36_layerId],
+    weights4[IP36_layerId], 
+    input1[IP36_layerId], 
+    input2[IP36_layerId],
+    input_layer1[IP36_layerId],
+    bias[IP36_layerId],
+    inp_norm_2[IP36_layerId], 
+    inp_norm_3[IP36_layerId],
+    outputSol1[IP36_layerId],
+    outputSol2[IP36_layerId],
+    istg_out1[IP36_layerId],
+    istg_out2[IP36_layerId]);
+
+    load_data(IP110_layerId, 
+    weights1[IP110_layerId],
+    weights2[IP110_layerId], 
+    weights3[IP110_layerId],
+    weights4[IP110_layerId], 
+    input1[IP110_layerId], 
+    input2[IP110_layerId],
+    input_layer1[IP110_layerId],
+    bias[IP110_layerId],
+    inp_norm_2[IP110_layerId], 
+    inp_norm_3[IP110_layerId],
+    outputSol1[IP110_layerId],
+    outputSol2[IP110_layerId],
+    istg_out1[IP110_layerId],
+    istg_out2[IP110_layerId]);
+
+        
+    sprintf(filename,"/home/xliu79/Research/2018Fall/debugData/Pipe_%02d",5);
+    load_answer(filename,input1[IP110_layerId],input2[IP110_layerId]);        
+    
+    
+
+    int* argsIP36=scalaArgs[IP36_layerId][0];
+    int* argsIP110A=scalaArgs[IP110_layerId][0];
+    int* argsIP110B=scalaArgs[IP110_layerId][1];
+    int* argsPool1=scalarPoolArgs[IP36_layerId+1];
+    int* argsPool2=scalarPoolArgs[IP110_layerId+1];
+    int argsComb[3];
+    int argsDiv[3];
+
+//prepare args for IP36
+
+#define STREAM_ON  1
+#define STREAM_OFF 0
+
+#define CONVOP_ON 0
+#define CONVOP_OFF 1
+
+#define POOLOP_ON 1
+#define POOLOP_OFF 0
+
+#define BYPASS_ON 1
+#define BYPASS_OFF 0
+
+    setConvArgs(argsIP36, 0,  0, 1);
+
+    setPoolArgs(argsPool1,argsIP36, 0 ,1, 0,  0);
+
+
+    setDivisorArgs(argsDiv,argsIP110A,0);
+
+    setConvArgs(argsIP110A,1,0,1);
+    setConvArgs(argsIP110B,1,0,1);
+
+    setCombinerArgs(argsComb,argsIP110A,1);
+    setPoolArgs(argsPool2,argsIP110A,1,0,1,0);
+
+    ConvPipeline
+    (
+        weights1[IP36_layerId],
+        weights2[IP36_layerId], 
+        weights3[IP36_layerId],
+        weights4[IP36_layerId], 
+        output1[IP36_layerId],
+        output2[IP36_layerId],
+        input1[IP36_layerId], 
+        input2[IP36_layerId],
+        input_layer1[IP36_layerId],
+        bias[IP36_layerId],
+        inp_norm_2[IP36_layerId], 
+        inp_norm_3[IP36_layerId],
+        istg_out1[IP36_layerId],
+        istg_out2[IP36_layerId],
+        
+        weights1[IP110_layerId],
+        weights2[IP110_layerId], 
+        output1[IP110_layerId],
+        output2[IP110_layerId],
+        input1[IP110_layerId],//input1[IP110_layerId], 
+        input2[IP110_layerId],//input2[IP110_layerId],
+        input_layer1[IP110_layerId],
+        bias[IP110_layerId],
+        inp_norm_2[IP110_layerId],
+        inp_norm_3[IP110_layerId],
+        istg_out1[IP110_layerId],
+        istg_out2[IP110_layerId],
+        
+        weights1[IP110_layerId],
+        weights2[IP110_layerId], 
+        output1[IP110_layerId],
+        output2[IP110_layerId],
+        input1[IP110_layerId],//input1[IP110_layerId], 
+        input2[IP110_layerId],//input2[IP110_layerId],
+        input_layer1[IP110_layerId],
+        bias[IP110_layerId],
+        inp_norm_2[IP110_layerId],
+        inp_norm_3[IP110_layerId],
+        istg_out1[IP110_layerId],
+        istg_out2[IP110_layerId],
+
+        input1[IP36_layerId+1],
+        input2[IP36_layerId+1],
+
+        output1[IP36_layerId+1],
+        output2[IP36_layerId+1],
+
+        input1[IP110_layerId+1],
+        input2[IP110_layerId+1],
+
+        output1[IP110_layerId+1],
+        output2[IP110_layerId+1],
+
+        argsIP36,
+        argsIP110A,
+        argsIP110B,
+        argsPool1,
+        argsPool2,
+        argsDiv,
+        argsComb  
+    );
+
+    sprintf(filename,"/home/xliu79/Research/2018Fall/debugData/Pipe%02d_Ans", output_layerId);
+    printf("%s\n", filename);
+    save_answer(filename,output1[output_layerId],output2[output_layerId]);
+
+
+            
+    sprintf(filename,"/home/xliu79/Research/2018Fall/debugData/Pipe_%02d", output_layerId);
+    printf("%s\n", filename);
+    load_answer(filename,outputSol1[output_layerId],outputSol2[output_layerId]);
+
+    for(int i=0;i<OUTPUT_DEPTH;i++)
+    {
+        // if(outputSol1[output_layerId][i]!=output1[output_layerId][i]) 
+        // {
+            printf("Addr[%8d] %08x %08x %08x %08x\n", i,
+            (unsigned int) outputSol1[output_layerId][i].range(127,96),
+            (unsigned int) outputSol1[output_layerId][i].range(95,64),
+            (unsigned int) outputSol1[output_layerId][i].range(63,32),
+            (unsigned int) outputSol1[output_layerId][i].range(31,0));
+        
+            printf("Addr[%8d] %08x %08x %08x %08x\n", i,
+            (unsigned int) output1[output_layerId][i].range(127,96),
+            (unsigned int) output1[output_layerId][i].range(95,64),
+            (unsigned int) output1[output_layerId][i].range(63,32),
+            (unsigned int) output1[output_layerId][i].range(31,0));
+        // }
+    }
+    if(!memcmp(outputSol1[output_layerId],output1[output_layerId],sizeof(gmem_outputtype)*OUTPUT_DEPTH) )
     puts("output1 same!");
     else
     puts("output1_differ!");
-
-    if(!memcmp(outputSol2[layerId],output2[layerId],sizeof(gmem_outputtype)*INPUT_DEPTH))
+    
+    if(!memcmp(outputSol2[output_layerId],output2[output_layerId],sizeof(gmem_outputtype)*OUTPUT_DEPTH))
     puts("output2 same!");
     else 
     puts("output2_differ!");
-
+    
+    
 
 
     
@@ -475,9 +408,7 @@ int main()
  
     //save_answer("/home/xliu79/Research/2018Fall/CHaiPipeline/hls_project/src/gold_model/sol_layer1",output3,output4);
 #else
-    // char filename[200];
-    // sprintf(filename,"/home/xliu79/Research/2018Fall/debugData/AlexConv_%02dto%02d",layerId,layerId+1);
-    // save_answer(filename,outputSol1[layerId+1],outputSol2[layerId+1]);
+
 
 
 

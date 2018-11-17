@@ -51,11 +51,11 @@ limitations under the License.
 #define XI_OSTAGEBUFF_DEPTH 1024
 #define XI_WEIGHTBUFF_DEPTH 1024
 #else
-#define XI_KER_PROC       	16 		//8
-#define XI_PIX_PROC       	32 		//16
-#define XI_ISTAGEBUFF_DEPTH 8192 	//2048
-#define XI_OSTAGEBUFF_DEPTH 2048  	//1024
-#define XI_WEIGHTBUFF_DEPTH 2048  	//1024	
+#define XI_KER_PROC       	8		//8
+#define XI_PIX_PROC       	16 		//16
+#define XI_ISTAGEBUFF_DEPTH 2048	//2048
+#define XI_OSTAGEBUFF_DEPTH 512  	//1024
+#define XI_WEIGHTBUFF_DEPTH 512  	//1024	
 #endif
 
 //**DON'T MODIFY THE BELOW MACROS**//
