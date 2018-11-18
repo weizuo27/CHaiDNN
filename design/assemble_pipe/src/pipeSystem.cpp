@@ -1,7 +1,7 @@
 #include "../IP36/IP36.h"
 #include "../IP110/IP110.h"
 #include "../IP217/IP217.h"
-#include "../include/xi_conv_config.h"
+#include "../include/pipeSystem.h"
 #include <hls_stream.h>
 #include <ap_int.h>
 

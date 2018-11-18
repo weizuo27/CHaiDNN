@@ -1,5 +1,5 @@
-
-//#include "../IP217/IP217.h"
+#ifndef _PIPE_SYSTEM_H_
+#define _PIPE_SYSTEM_H_
 #include <hls_stream.h>
 #include <ap_int.h>
 
@@ -37,7 +37,6 @@ typedef  unsigned long long int gmem_biastype;
 #pragma SDS data zero_copy(IP36_weights4[0:(WEIGHT_SIZE)>>NPC1])
 #pragma SDS data zero_copy(IP36_bias[0:(BIAS_SIZE)>>NPC2])
 #pragma SDS data zero_copy(IP36_input_other1[0:(INPUT_SIZE)>>NPC1])
-#pragma SDS data zero_copy(IP36_input_other1[0:(INPUT_SIZE)>>NPC1])
 #pragma SDS data zero_copy(IP36_input_other2[0:(INPUT_SIZE)>>NPC1])
 #pragma SDS data zero_copy(IP36_output1[0:(OUTPUT_SIZE)>>NPC1])
 #pragma SDS data zero_copy(IP36_output2[0:(OUTPUT_SIZE)>>NPC1])
@@ -69,7 +68,6 @@ typedef  unsigned long long int gmem_biastype;
 #pragma SDS data zero_copy(IP110A_weights2[0:(WEIGHT_SIZE)>>NPC1])
 #pragma SDS data zero_copy(IP110A_bias[0:(BIAS_SIZE)>>NPC2])
 #pragma SDS data zero_copy(IP110A_input_other1[0:(INPUT_SIZE)>>NPC1])
-#pragma SDS data zero_copy(IP110A_input_other1[0:(INPUT_SIZE)>>NPC1])
 #pragma SDS data zero_copy(IP110A_input_other2[0:(INPUT_SIZE)>>NPC1])
 #pragma SDS data zero_copy(IP110A_output1[0:(OUTPUT_SIZE)>>NPC1])
 #pragma SDS data zero_copy(IP110A_output2[0:(OUTPUT_SIZE)>>NPC1])
@@ -96,7 +94,6 @@ typedef  unsigned long long int gmem_biastype;
 #pragma SDS data zero_copy(IP110B_weights1[0:(WEIGHT_SIZE)>>NPC1])
 #pragma SDS data zero_copy(IP110B_weights2[0:(WEIGHT_SIZE)>>NPC1])
 #pragma SDS data zero_copy(IP110B_bias[0:(BIAS_SIZE)>>NPC2])
-#pragma SDS data zero_copy(IP110B_input_other1[0:(INPUT_SIZE)>>NPC1])
 #pragma SDS data zero_copy(IP110B_input_other1[0:(INPUT_SIZE)>>NPC1])
 #pragma SDS data zero_copy(IP110B_input_other2[0:(INPUT_SIZE)>>NPC1])
 #pragma SDS data zero_copy(IP110B_output1[0:(OUTPUT_SIZE)>>NPC1])
@@ -231,3 +228,4 @@ void ConvPipeline
     int* argsStreamDivisor,
     int* argsStreamCombiner
 );
+#endif

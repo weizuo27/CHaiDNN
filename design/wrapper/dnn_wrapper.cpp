@@ -15,7 +15,8 @@ limitations under the License.
 ----------------------------------------------------*/
 
 #ifdef __SDSOC
-#include "xi_conv_config.h"
+//#include "xi_conv_config.h"
+#include "pipeSystem.h"
 #endif
 #include "ap_int.h"
 
@@ -55,6 +56,146 @@ limitations under the License.
 #define GMEM_RGBTYPE       unsigned long long int
 #define GMEM_DECONVTYPE    unsigned long long int
 #define GMEM_DISPLAYTYPE   unsigned long long int
+
+typedef unsigned long long int gmem_inputtype_layer1;
+typedef  ap_uint<128> gmem_outputtype;
+typedef  ap_uint<128>  gmem_weighttype;
+typedef ap_uint<128> gmem_inputtype_layerx;
+typedef  unsigned long long int gmem_biastype;
+
+int ConvlutionPipeWrapper(
+    gmem_weighttype *IP36_weights1, 
+    gmem_weighttype *IP36_weights2,
+    gmem_weighttype *IP36_weights3,
+    gmem_weighttype *IP36_weights4,
+    gmem_outputtype *IP36_output1,
+    gmem_outputtype *IP36_output2,
+    gmem_inputtype_layerx *IP36_input_other1,	
+    gmem_inputtype_layerx *IP36_input_other2,
+    gmem_inputtype_layer1 *IP36_input_1st,
+    gmem_biastype *IP36_bias,
+    gmem_inputtype_layer1 *IP36_inp_norm_2, 
+    gmem_inputtype_layer1 *IP36_inp_norm_3,
+    gmem_inputtype_layer1 *IP36_istg_out1,
+    gmem_inputtype_layer1 *IP36_istg_out2,
+
+    gmem_weighttype *IP110A_weights1, 
+    gmem_weighttype *IP110A_weights2,
+    gmem_outputtype *IP110A_output1,
+    gmem_outputtype *IP110A_output2,
+    gmem_inputtype_layerx *IP110A_input_other1,	
+    gmem_inputtype_layerx *IP110A_input_other2,
+    gmem_inputtype_layer1 *IP110A_input_1st,
+    gmem_biastype *IP110A_bias,
+    gmem_inputtype_layer1 *IP110A_inp_norm_2,  
+    gmem_inputtype_layer1 *IP110A_inp_norm_3,
+    gmem_inputtype_layer1 *IP110A_istg_out1,
+    gmem_inputtype_layer1 *IP110A_istg_out2,
+
+    gmem_weighttype *IP110B_weights1, 
+    gmem_weighttype *IP110B_weights2,
+    gmem_outputtype *IP110B_output1,
+    gmem_outputtype *IP110B_output2,
+    gmem_inputtype_layerx *IP110B_input_other1,	
+    gmem_inputtype_layerx *IP110B_input_other2,
+    gmem_inputtype_layer1 *IP110B_input_1st,
+    gmem_biastype *IP110B_bias,
+    gmem_inputtype_layer1 *IP110B_inp_norm_2, 
+    gmem_inputtype_layer1 *IP110B_inp_norm_3,
+    gmem_inputtype_layer1 *IP110B_istg_out1,
+    gmem_inputtype_layer1 *IP110B_istg_out2,
+
+
+
+
+    GMEM_MAXPOOLTYPE* pool1_inMem1,
+    GMEM_MAXPOOLTYPE* pool1_inMem2,
+    GMEM_MAXPOOLTYPE* pool1_outMem1,
+    GMEM_MAXPOOLTYPE* pool1_outMem2,
+
+  
+    GMEM_MAXPOOLTYPE* pool2_inMem1,
+    GMEM_MAXPOOLTYPE* pool2_inMem2,
+    GMEM_MAXPOOLTYPE* pool2_outMem1,
+    GMEM_MAXPOOLTYPE* pool2_outMem2,
+  
+    int* argsConvIP36,
+    int* argsConvIP110A,
+    int* argsConvIP110B,
+    int* argsPool1,
+    int* argsPool2,
+    int* argsStreamDivisor,
+    int* argsStreamCombiner
+
+        ){
+#if __SDSOC
+	#pragma SDS async(1)
+#endif
+    ConvPipeline
+(
+    IP36_weights1, 
+    IP36_weights2,
+    IP36_weights3,
+    IP36_weights4,
+    IP36_output1,
+    IP36_output2,
+    IP36_input_other1,	
+    IP36_input_other2,
+    IP36_input_1st,
+    IP36_bias,
+    IP36_inp_norm_2, 
+    IP36_inp_norm_3,
+    IP36_istg_out1,
+    IP36_istg_out2,
+
+    IP110A_weights1, 
+    IP110A_weights2,
+    IP110A_output1,
+    IP110A_output2,
+    IP110A_input_other1,	
+    IP110A_input_other2,
+    IP110A_input_1st,
+    IP110A_bias,
+    IP110A_inp_norm_2,  
+    IP110A_inp_norm_3,
+    IP110A_istg_out1,
+    IP110A_istg_out2,
+
+    IP110B_weights1, 
+    IP110B_weights2,
+    IP110B_output1,
+    IP110B_output2,
+    IP110B_input_other1,	
+    IP110B_input_other2,
+    IP110B_input_1st,
+    IP110B_bias,
+    IP110B_inp_norm_2, 
+    IP110B_inp_norm_3,
+    IP110B_istg_out1,
+    IP110B_istg_out2,
+
+     pool1_inMem1,
+     pool1_inMem2,
+     pool1_outMem1,
+     pool1_outMem2,
+
+  
+     pool2_inMem1,
+     pool2_inMem2,
+     pool2_outMem1,
+     pool2_outMem2,
+  
+     argsConvIP36,
+     argsConvIP110A,
+     argsConvIP110B,
+     argsPool1,
+     argsPool2,
+     argsStreamDivisor,
+     argsStreamCombiner
+);
+    return 0;
+}
+
 
 #if __CONV_ENABLE__==1
 void XiConvolutionTop(

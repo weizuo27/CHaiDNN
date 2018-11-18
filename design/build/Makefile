@@ -46,38 +46,29 @@ PROJ_PATH   := ..
 DIET_CHAI_Z	     ?= 0
 DIET_CHAI_ZUPLUS ?= 0
 
-CONV_ENABLE   ?= 0
-POOL_ENABLE   ?= 1
-DECONV_ENABLE ?= 0
-
-ifeq (${DIET_CHAI_Z}, 1)
-	POOL_ENABLE   := 0
-	DECONV_ENABLE := 0
-else
- ifeq (${DIET_CHAI_ZUPLUS}, 1)
-	POOL_ENABLE   := 0
-	DECONV_ENABLE := 0
- endif
-endif
+POOL_ENABLE   := 0
+DECONV_ENABLE := 0
+CONV_ENABLE := 0
 
 # Internal Path Variables
 SRC_PATH      := ${PROJ_PATH}
 WRAPPER_PATH  := ${PROJ_PATH}/wrapper
 # Include directories
-CONV_INC_DIRS   := include src
-POOL_INC_DIRS   := include src
-DECONV_INC_DIRS := include src
-CONV_INCS       := ${CONV_INC_DIRS:%=-I${SRC_PATH}/conv_pipe/%}
-POOL_INCS       := ${POOL_INC_DIRS:%=-I${SRC_PATH}/pool_pipe/%}
-DECONV_INCS     := ${DECONV_INC_DIRS:%=-I${SRC_PATH}/deconv/%}
+ASSEMBLE_PIPE_INC_DIRS   := include src
+ASSEMBLE_PIPE_INCS       := ${ASSEMBLE_PIPE_INC_DIRS:%=-I${SRC_PATH}/assemble_pipe/%}
+
 # Below path must have absolute path
-CONV_SCRIPTS_PATH := $(shell pwd)/${PROJ_PATH}/conv_pipe/scripts
+ASSEMBLE_PIPE_SCRIPTS_PATH := $(shell pwd)/${PROJ_PATH}/conv_pipe/scripts
 
 # Options and command(s) variables
 VERBOSE  := #-verbose
+
 CC       := sds++ -sds-pf ${PLATFORM} ${VERBOSE}
-IDIRS    := -I. ${CONV_INCS} ${POOL_INCS} ${DECONV_INCS}
+
+IDIRS    := -I. ${ASSEMBLE_PIPE_INCS}
+
 CFLAGS   := -Wall -O3 -c ${IDIRS} -D__SDSOC=1 -Wno-unused-label -D__SYNTHESIS__=1
+
 SDSFLAGS := -dmclkid ${DM_CLOCK_ID} \
             -xp param:compiler.skipTimingCheckAndFrequencyScaling=1 \
             -xp "vivado_prop:run.impl_1.{STEPS.OPT_DESIGN.ARGS.MORE OPTIONS}={-directive Explore}" \
@@ -87,10 +78,11 @@ SDSFLAGS := -dmclkid ${DM_CLOCK_ID} \
             -xp "vivado_prop:run.impl_1.{STEPS.ROUTE_DESIGN.ARGS.MORE OPTIONS}={-directive Explore}"
 
 WRAPPER_FLAGS := -DXI_DIET_CHAI_Z=${DIET_CHAI_Z} -DXI_DIET_CHAI_ZUPLUS=${DIET_CHAI_ZUPLUS}
-CONV_FLAGS    := -DXI_DIET_CHAI_Z=${DIET_CHAI_Z} -DXI_DIET_CHAI_ZUPLUS=${DIET_CHAI_ZUPLUS} \
+
+ASSEMBLE_PIPE_FLAGS    := -DXI_DIET_CHAI_Z=${DIET_CHAI_Z} -DXI_DIET_CHAI_ZUPLUS=${DIET_CHAI_ZUPLUS} \
                  -D__DSP48E2__ \
-                 -xp "vivado_prop:run.synth_1.{STEPS.SYNTH_DESIGN.TCL.PRE}={${CONV_SCRIPTS_PATH}/mcps.tcl}" \
-                 -xp "vivado_prop:run.impl_1.{STEPS.PLACE_DESIGN.TCL.PRE}={${CONV_SCRIPTS_PATH}/mcps.tcl}" 
+                 -xp "vivado_prop:run.synth_1.{STEPS.SYNTH_DESIGN.TCL.PRE}={${ASSEMBLE_PIPE_SCRIPTS_PATH}/mcps.tcl}" \
+                 -xp "vivado_prop:run.impl_1.{STEPS.PLACE_DESIGN.TCL.PRE}={${ASSEMBLE_PIPE_SCRIPTS_PATH}/mcps.tcl}" 
 
 REQ_LIBS := dnn_wrapper.o
 
@@ -110,6 +102,9 @@ ifeq (${DECONV_ENABLE}, 1)
 	WRAPPER_FLAGS += -D__DECONV_ENABLE__=1
 endif
 
+REQ_LIBS += ConvPipeline.o
+
+
 
 # Actual Tragets
 .PHONY: all
@@ -119,25 +114,14 @@ print_vars :
 	@echo "PROJ_PATH         = \"${PROJ_PATH}\""
 	@echo "SRC_PATH          = \"${SRC_PATH}\""
 	@echo "WRAPPER_PATH      = \"${WRAPPER_PATH}\""
-	@echo "CONV_SCRIPTS_PATH = \"${CONV_SCRIPTS_PATH}\""
-	@echo "CONV_INCS         = \"${CONV_INCS}\""
-	@echo "POOL_INCS         = \"${POOL_INCS}\""
-	@echo "DECONV_INCS       = \"${DECONV_INCS}\""
-	@echo "DIET_CHAI_Z       = \"${DIET_CHAI_Z}\""
-	@echo "DIET_CHAI_ZUPLUS  = \"${DIET_CHAI_ZUPLUS}\""
-	@echo "CONV_ENABLE       = \"${CONV_ENABLE}\""
-	@echo "POOL_ENABLE       = \"${POOL_ENABLE}\""
-	@echo "DECONV_ENABLE     = \"${DECONV_ENABLE}\""
+	@echo "ASSEMBLE_PIPE_SCRIPTS_PATH = \"${ASSEMBLE_PIPE_SCRIPTS_PATH}\""
+	@echo "ASSEMBLE_PIPE_INCS         = \"${ASSEMBLE_PIPE_INCjS}\""
 
-xi_convolution_top.o: ${SRC_PATH}/conv_pipe/src/xi_convolution_top.cpp
-	${CC} ${SDSFLAGS} ${CFLAGS} ${CONV_FLAGS} -sds-hw XiConvolutionTop ${SRC_PATH}/conv_pipe/src/xi_convolution_top.cpp -clkid ${CLOCK_ID} \
-	                                                  -hls-tcl ${CONV_SCRIPTS_PATH}/config_core.tcl -sds-end -fPIC $< -o $@
+ConvPipeline.o: ${SRC_PATH}/assemble_pipe/src/pipeSystem.cpp 
+	${CC} ${SDSFLAGS} ${CFLAGS} ${CONV_FLAGS} -sds-hw ConvPipeline ${SRC_PATH}/assemble_pipe/src/pipeSystem.cpp \
+        -files ${SRC_PATH}/assemble_pipe/IP110/IP110.cpp,${SRC_PATH}/assemble_pipe/IP36/IP36.cpp,${SRC_PATH}/assemble_pipe/IP217/IP217.cpp \
+    -clkid ${CLOCK_ID} -hls-tcl ${ASSEMBLE_PIPE_SCRIPTS_PATH}/config_core.tcl -sds-end -fPIC $< -o $@
 
-pooling_layer_dp_2xio_top.o: ${SRC_PATH}/pool_pipe/src/pooling_layer_dp_2xio_top.cpp
-	${CC} ${SDSFLAGS} ${CFLAGS} -sds-hw PoolTop ${SRC_PATH}/pool_pipe/src/pooling_layer_dp_2xio_top.cpp -clkid ${CLOCK_ID} -sds-end -fPIC $< -o $@
-
-xi_deconv_top.o: ${SRC_PATH}/deconv/src/xi_deconv_top.cpp
-	${CC} ${SDSFLAGS} ${CFLAGS} -sds-hw XiDeconvTop ${SRC_PATH}/deconv/src/xi_deconv_top.cpp -clkid ${CLOCK_ID} -sds-end -fPIC $< -o $@
 
 dnn_wrapper.o: ${WRAPPER_PATH}/dnn_wrapper.cpp
 	${CC} ${SDSFLAGS} ${CFLAGS} ${WRAPPER_FLAGS} -fPIC $< -o $@

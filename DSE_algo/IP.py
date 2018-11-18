@@ -41,7 +41,6 @@ class IP():
         Return:
             The latency
         """
-        #FIXME: This needs to fill in the real computation later
         if self.type == "Convolution" or self.type == "Convolution_g":
             #dcode the parameter:
             cout, cin, kw, kh, S, padding, group = paramList

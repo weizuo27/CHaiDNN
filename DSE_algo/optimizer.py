@@ -58,7 +58,7 @@ class optimizer:
         firstIter = True
         oneIter = 0
         self.latency_table = dict()
-#while(oneIter < 1): #For debugging purpose
+        #while(oneIter < 1): #For debugging purpose
         while(-self.latency_lb+self.latency_ub> EPS):
             print oneIter, "iteration\n"
             self.rb.createProblem()
