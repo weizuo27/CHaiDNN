@@ -180,6 +180,7 @@ void ConvPipeline
     int* argsStreamCombiner
 )
 {
+    #ifndef __SDSOC
 
     #pragma HLS interface m_axi port=IP36_weights1          bundle=IP36GMEM1   depth=2048 
     #pragma HLS interface m_axi port=IP36_weights2          bundle=IP36GMEM2   depth=2048
@@ -244,6 +245,7 @@ void ConvPipeline
     #pragma HLS interface m_axi port=argsStreamDivisor       bundle=IP36GMEM52  depth=2048
     #pragma HLS interface m_axi port=argsStreamCombiner      bundle=IP36GMEM53  depth=2048 
 
+    #endif
     #pragma HLS dataflow
 
     hls::stream< ap_uint<128> > streamStart1("streamStart1");
