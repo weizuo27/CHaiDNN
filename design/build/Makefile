@@ -118,9 +118,14 @@ print_vars :
 	@echo "ASSEMBLE_PIPE_INCS         = \"${ASSEMBLE_PIPE_INCjS}\""
 
 ConvPipeline.o: ${SRC_PATH}/assemble_pipe/src/pipeSystem.cpp 
-	${CC} ${SDSFLAGS} ${CFLAGS} ${ASSEMBLE_PIPE_FLAGS} -sds-hw ConvPipeline ${SRC_PATH}/assemble_pipe/src/pipeSystem.cpp \
-        -files ${SRC_PATH}/assemble_pipe/IP110/IP110.cpp,${SRC_PATH}/assemble_pipe/IP36/IP36.cpp,${SRC_PATH}/assemble_pipe/IP217/IP217.cpp \
-    -clkid ${CLOCK_ID} -hls-tcl ${ASSEMBLE_PIPE_SCRIPTS_PATH}/config_core.tcl -sds-end -fPIC $< -o $@
+	${CC} ${SDSFLAGS} ${ASSEMBLE_PIPE_FLAGS} -sds-hw ConvPipeline ${SRC_PATH}/assemble_pipe/src/pipeSystem.cpp \
+        -files ${SRC_PATH}/assemble_pipe/IP110/IP110.cpp,\
+        ${SRC_PATH}/assemble_pipe/IP110/IP110.h,\
+        ${SRC_PATH}/assemble_pipe/IP36/IP36.cpp,\
+        ${SRC_PATH}/assemble_pipe/IP36/IP36.h,\
+        ${SRC_PATH}/assemble_pipe/IP217/IP217.cpp,\
+        ${SRC_PATH}/assemble_pipe/IP217/IP217.h\
+        -clkid ${CLOCK_ID} -hls-tcl ${ASSEMBLE_PIPE_SCRIPTS_PATH}/config_core.tcl -sds-end -fPIC $< -o $@
 
 #-hls-tcl ${SRC_PATH}/assemble_pipe/scripts/vivado_hls.tcl \
 
