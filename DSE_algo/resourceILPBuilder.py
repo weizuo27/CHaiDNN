@@ -121,22 +121,57 @@ class resourceILPBuilder():
         self.constraints.append(exp_LUT <= self.LUT_budget)
         self.constraints.append(exp_BW <= self.BW_budget)
 
-    def addViolationPaths(self, violation_path, layerQueue, IP_table):
-        """
-        Violation means that the current mapping cannot be held for all 
-        nodes in the path at the same time. So the constraints should be
-        the sum of the mapping of the violation path should be less the the 
-        length of the path
+#    def addViolationPaths(self, violation_path, layerQueue, IP_table):
+#        """
+#        Violation means that the current mapping cannot be held for all 
+#        nodes in the path at the same time. So the constraints should be
+#        the sum of the mapping of the violation path should be less the the 
+#        length of the path
+#
+#        Also, all the IPs share the original name should be included
+#        """
+#        exp = 0
+#        for node in violation_path:
+#            i_idx = layerQueue[node.type].index(node)
+#            for j_idx, ip in enumerate(IP_table[node.type]):
+#                if ip.orig_name == node.mappedIP.orig_name:
+#                    exp+= self.mappingVariables[node.type][i_idx][j_idx]
+#        self.violation_constraints.append(exp <= len(violation_path)-1)
 
-        Also, all the IPs share the original name should be included
-        """
-        exp = 0
-        for node in violation_path:
-            i_idx = layerQueue[node.type].index(node)
-            for j_idx, ip in enumerate(IP_table[node.type]):
-                if ip.orig_name == node.mappedIP.orig_name:
-                    exp+= self.mappingVariables[node.type][i_idx][j_idx]
-        self.violation_constraints.append(exp <= len(violation_path)-1)
+    def addViolationPaths(self, violation_path, layerQueue, IP_table):
+        violate_layers = dict()
+        all_violate_IPs = dict()
+        
+        for l in violation_path:
+            if l.mappedIP not in violate_layers:
+                violate_layers[l.mappedIP] = [l]
+                all_violate_IPs[l.mappedIP] = []
+            else:
+                violate_layers[l.mappedIP].append(l)
+
+        #for each violated IP, collect the IPs that are smaller than this IP
+        for vio_ip in all_violate_IPs:
+            for idx, ip in enumerate(IP_table[vio_ip.type]):
+                if all(ip.paramList[i] <= vio_ip.paramList[i] for i in range(len(ip.paramList))):
+                    all_violate_IPs[vio_ip].append((idx,ip))
+        print all_violate_IPs
+        self.recAddViolationPath(0, all_violate_IPs.keys(), len(violation_path), all_violate_IPs, violate_layers, [], layerQueue)
+
+
+    def recAddViolationPath(self, idx, keys_list, violation_path_length, all_violate_IPs, violate_layers, exp_list, layerQueue):
+        if idx == len(keys_list):
+            if sum(exp_list) != 0:
+                self.violation_constraints.append(sum(exp_list) <= violation_path_length-1)
+            print "aaa", exp_list, sum(exp_list)
+
+        else:
+            for j_idx, ip in all_violate_IPs[keys_list[idx]]:
+                for l in violate_layers[keys_list[idx]]:
+                    i_idx = layerQueue[l.type].index(l)
+                    exp_list.append(self.mappingVariables[l.type][i_idx][j_idx])
+                self.recAddViolationPath(idx+1, keys_list, violation_path_length, all_violate_IPs, violate_layers, exp_list, layerQueue)
+                for l in violate_layers[keys_list[idx]]:
+                    exp_list.pop()
 
     def createProblem(self):
         """
@@ -159,7 +194,8 @@ class resourceILPBuilder():
         """
             return: True if the optimal solution can be found. False otherwise
         """
-        self.prob.solve(solver = "GUROBI")
+        paramList = {"MIPFocus":1}
+        self.prob.solve(solver = "GUROBI", kwargs =paramList)
         return self.prob.status == "optimal"
     def printSolution(self, level = 1):
         """

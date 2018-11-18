@@ -1,4 +1,4 @@
-ID,  TYPE,          BRAM,    DSP, FF,  LUT, BW, Latency, XI_KER_PROC, XI_PIX_PROC, XI_WEIGHTBUFF_DEPTH
-IP1, Convolution,   10,      10,  10,  10,  10, 20,  8, 8, 512
-IP2, Convolution,   20,      20,  20,  20,  20, 15,  8, 16, 512
-IP3, Convolution,   40,      40,  40,  40,  40, 10,  8, 32, 512
+ID, TYPE, BRAM, DSP, FF, LUT, BW, Latency, XI_KER_PROC, XI_PIX_PROC, XI_IBUFF_DEPTH, XI_OBUFF_DEPTH, XI_WEIGHTBUFF_DEPTH
+IP1, Convolution,   10,      10,  10,  10,  10, 20,  8, 8, 512, 512, 512 
+IP2, Convolution,   20,      20,  20,  20,  20, 15,  8, 16, 512, 512, 512
+IP3, Convolution,   40,      40,  40,  40,  40, 10,  8, 32, 512, 512, 512

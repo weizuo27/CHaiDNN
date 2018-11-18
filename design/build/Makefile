@@ -68,6 +68,7 @@ CC       := sds++ -sds-pf ${PLATFORM} ${VERBOSE}
 IDIRS    := -I. ${ASSEMBLE_PIPE_INCS}
 
 CFLAGS   := -Wall -O3 -c ${IDIRS} -D__SDSOC=1 -Wno-unused-label -D__SYNTHESIS__=1
+CFLAGS1   := -Wall -O3 -c 
 
 SDSFLAGS := -dmclkid ${DM_CLOCK_ID} \
             -xp param:compiler.skipTimingCheckAndFrequencyScaling=1 \
@@ -118,7 +119,7 @@ print_vars :
 	@echo "ASSEMBLE_PIPE_INCS         = \"${ASSEMBLE_PIPE_INCjS}\""
 
 ConvPipeline.o: ${SRC_PATH}/assemble_pipe/src/pipeSystem.cpp 
-	${CC} ${SDSFLAGS} ${CFLAGS} ${ASSEMBLE_PIPE_FLAGS} -sds-hw ConvPipeline ${SRC_PATH}/assemble_pipe/src/pipeSystem.cpp \
+	${CC} ${CFLAGS1} ${SDSFLAGS} ${ASSEMBLE_PIPE_FLAGS} -sds-hw ConvPipeline ${SRC_PATH}/assemble_pipe/src/pipeSystem.cpp \
         -files ${SRC_PATH}/assemble_pipe/IP110/IP110.cpp,${SRC_PATH}/assemble_pipe/IP110/IP110.h,${SRC_PATH}/assemble_pipe/IP36/IP36.cpp,${SRC_PATH}/assemble_pipe/IP36/IP36.h,${SRC_PATH}/assemble_pipe/IP217/IP217.cpp,${SRC_PATH}/assemble_pipe/IP217/IP217.h\
         -clkid ${CLOCK_ID} -hls-tcl ${ASSEMBLE_PIPE_SCRIPTS_PATH}/config_core.tcl -sds-end -fPIC $< -o $@
 
