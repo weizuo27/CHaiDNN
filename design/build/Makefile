@@ -118,18 +118,18 @@ print_vars :
 	@echo "ASSEMBLE_PIPE_INCS         = \"${ASSEMBLE_PIPE_INCjS}\""
 
 ConvPipeline.o: ${SRC_PATH}/assemble_pipe/src/pipeSystem.cpp 
-	${CC} ${SDSFLAGS} ${CFLAGS} ${CONV_FLAGS} -sds-hw ConvPipeline ${SRC_PATH}/assemble_pipe/src/pipeSystem.cpp \
-        -hls-tcl ${SRC_PATH}/assemble_pipe/scripts/vivado_hls.tcl \
+	${CC} ${SDSFLAGS} ${CFLAGS} ${ASSEMBLE_PIPE_FLAGS} -sds-hw ConvPipeline ${SRC_PATH}/assemble_pipe/src/pipeSystem.cpp \
+        -files ${SRC_PATH}/assemble_pipe/IP110/IP110.cpp,${SRC_PATH}/assemble_pipe/IP36/IP36.cpp,${SRC_PATH}/assemble_pipe/IP217/IP217.cpp \
     -clkid ${CLOCK_ID} -hls-tcl ${ASSEMBLE_PIPE_SCRIPTS_PATH}/config_core.tcl -sds-end -fPIC $< -o $@
 
-#-files ${SRC_PATH}/assemble_pipe/IP110/IP110.cpp,${SRC_PATH}/assemble_pipe/IP36/IP36.cpp,${SRC_PATH}/assemble_pipe/IP217/IP217.cpp \
+#-hls-tcl ${SRC_PATH}/assemble_pipe/scripts/vivado_hls.tcl \
 
 dnn_wrapper.o: ${WRAPPER_PATH}/dnn_wrapper.cpp
 	${CC} ${SDSFLAGS} ${CFLAGS} ${WRAPPER_FLAGS} -fPIC $< -o $@
 
 
 ${LIBRARY}: ${REQ_LIBS}
-	${CC} ${SDSFLAGS} ${CONV_FLAGS} -mno-bitstream -shared $^ -o $@
+	${CC} ${SDSFLAGS} ${ASSEMBLE_PIPE_FLAGS} -mno-bitstream -shared $^ -o $@
 
 # Copy lib to SD_Card dir
 copy:
