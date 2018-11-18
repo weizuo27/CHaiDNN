@@ -118,7 +118,7 @@ print_vars :
 	@echo "ASSEMBLE_PIPE_INCS         = \"${ASSEMBLE_PIPE_INCjS}\""
 
 ConvPipeline.o: ${SRC_PATH}/assemble_pipe/src/pipeSystem.cpp 
-	${CC} ${SDSFLAGS} ${ASSEMBLE_PIPE_FLAGS} -sds-hw ConvPipeline ${SRC_PATH}/assemble_pipe/src/pipeSystem.cpp \
+	${CC} ${SDSFLAGS} ${CFLAGS} ${ASSEMBLE_PIPE_FLAGS} -sds-hw ConvPipeline ${SRC_PATH}/assemble_pipe/src/pipeSystem.cpp \
         -files ${SRC_PATH}/assemble_pipe/IP110/IP110.cpp,\
         ${SRC_PATH}/assemble_pipe/IP110/IP110.h,\
         ${SRC_PATH}/assemble_pipe/IP36/IP36.cpp,\
