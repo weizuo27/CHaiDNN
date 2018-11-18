@@ -5,7 +5,7 @@
 #include <hls_stream.h>
 #include <ap_int.h>
 
-#define WRITE_CHECKPOINT 1
+#define WRITE_CHECKPOINT 0
 
 
 #if WRITE_CHECKPOINT 
