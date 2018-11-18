@@ -58,7 +58,7 @@ ASSEMBLE_PIPE_INC_DIRS   := include src
 ASSEMBLE_PIPE_INCS       := ${ASSEMBLE_PIPE_INC_DIRS:%=-I${SRC_PATH}/assemble_pipe/%}
 
 # Below path must have absolute path
-ASSEMBLE_PIPE_SCRIPTS_PATH := $(shell pwd)/${PROJ_PATH}/conv_pipe/scripts
+ASSEMBLE_PIPE_SCRIPTS_PATH := $(shell pwd)/${PROJ_PATH}/assemble_pipe/scripts
 
 # Options and command(s) variables
 VERBOSE  := #-verbose
@@ -119,9 +119,10 @@ print_vars :
 
 ConvPipeline.o: ${SRC_PATH}/assemble_pipe/src/pipeSystem.cpp 
 	${CC} ${SDSFLAGS} ${CFLAGS} ${CONV_FLAGS} -sds-hw ConvPipeline ${SRC_PATH}/assemble_pipe/src/pipeSystem.cpp \
-        -files ${SRC_PATH}/assemble_pipe/IP110/IP110.cpp,${SRC_PATH}/assemble_pipe/IP36/IP36.cpp,${SRC_PATH}/assemble_pipe/IP217/IP217.cpp \
+        -hls-tcl ${SRC_PATH}/assemble_pipe/scripts/vivado_hls.tcl \
     -clkid ${CLOCK_ID} -hls-tcl ${ASSEMBLE_PIPE_SCRIPTS_PATH}/config_core.tcl -sds-end -fPIC $< -o $@
 
+#-files ${SRC_PATH}/assemble_pipe/IP110/IP110.cpp,${SRC_PATH}/assemble_pipe/IP36/IP36.cpp,${SRC_PATH}/assemble_pipe/IP217/IP217.cpp \
 
 dnn_wrapper.o: ${WRAPPER_PATH}/dnn_wrapper.cpp
 	${CC} ${SDSFLAGS} ${CFLAGS} ${WRAPPER_FLAGS} -fPIC $< -o $@
