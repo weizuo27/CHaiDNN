@@ -27,6 +27,7 @@ limitations under the License.
 #define GMEM_SHIFT_CNT 2
 
 #define NPC1 GMEM_SHIFT_CNT
+#undef GMEM_SHIFT_CNT
 
 #define NUM_KERNELS 8
 #define OUTWIDTH	480
